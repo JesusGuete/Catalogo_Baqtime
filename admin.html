@@ -28,6 +28,12 @@
   .thumb-card .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
   .thumb-card .thumb .empty{ display:flex; align-items:center; justify-content:center; height:100%; color:#aaa; font-size:10px; text-align:center; }
   .thumb-card .count{ font-size:10px; color:var(--ink-soft); margin-top:4px; }
+  .delete-product-btn{ position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:50%; border:none; background:rgba(255,255,255,.9); font-size:11px; cursor:pointer; z-index:2; }
+  .thumb-card{ cursor:grab; }
+  .thumb-card.dragging-card{ opacity:.4; }
+  .thumb-card.drop-target-card{ outline:2px solid var(--mocha); }
+  .add-card{ display:flex; align-items:center; justify-content:center; border:2px dashed var(--border); box-shadow:none; }
+  .add-card .thumb{ background:none; aspect-ratio:auto; height:100px; }
 
   .overlay{ position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
   .hidden{ display:none !important; }
@@ -123,11 +129,19 @@
 <div class="overlay hidden" id="productOverlay">
   <div class="modal">
     <div class="modal-head">
-      <div>
+      <div style="flex:1;">
         <h2 id="modalName"></h2>
         <div class="variant" id="modalVariant"></div>
       </div>
       <button class="close-x" onclick="closeProductModal()">×</button>
+    </div>
+
+    <div id="renameWrap" style="margin-bottom:14px;padding:10px;background:var(--cream);border-radius:6px;">
+      <label style="font-size:11px;color:var(--ink-soft);display:block;margin-bottom:4px;">Nombre del producto</label>
+      <input type="text" id="renameNameInput" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid var(--border);border-radius:4px;font-size:13px;">
+      <label style="font-size:11px;color:var(--ink-soft);display:block;margin-bottom:4px;">Variante (si aplica)</label>
+      <input type="text" id="renameVariantInput" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid var(--border);border-radius:4px;font-size:13px;">
+      <button class="btn" id="renameSaveBtn" style="font-size:12px;">Guardar nombre</button>
     </div>
 
     <div class="main-photo-lg" id="modalMain"></div>
@@ -140,7 +154,69 @@
       <button class="btn btn-undo" id="undoBtn" disabled>Deshacer último cambio</button>
     </div>
     <button class="btn" id="saveChangesBtn" disabled style="width:100%;margin-top:12px;background:var(--ink);color:#fff;border:none;">Guardar cambios</button>
+    <button class="btn" id="deleteProductBtn" style="width:100%;margin-top:8px;color:var(--danger);border-color:#f0c9c4;">🗑 Eliminar este producto del catálogo</button>
     <div class="status" id="modalStatus"></div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="newProductOverlay">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head">
+      <h2 style="font-size:16px;">Agregar nuevo modelo</h2>
+      <button class="close-x" onclick="closeNewProductModal()">×</button>
+    </div>
+    <p style="font-size:12px;color:var(--ink-soft);margin-top:-8px;">Categoría: <strong id="newProductCatLabel"></strong></p>
+
+    <label style="font-size:12px;color:var(--ink-soft);display:block;margin-bottom:4px;">Nombre del color (ej. Vino, Azul, Gris Perla)</label>
+    <input type="text" id="newColorName" placeholder="Ej. Vino" style="width:100%;padding:8px;margin-bottom:12px;border:1px solid var(--border);border-radius:4px;font-size:14px;">
+
+    <div id="newVariantWrap">
+      <label style="font-size:12px;color:var(--ink-soft);display:block;margin-bottom:4px;">Variante (ej. Cordones Vino)</label>
+      <input type="text" id="newVariantName" placeholder="Ej. Cordones Vino" style="width:100%;padding:8px;margin-bottom:12px;border:1px solid var(--border);border-radius:4px;font-size:14px;">
+    </div>
+
+    <div id="colorSectionWrap">
+      <label style="font-size:12px;color:var(--ink-soft);display:block;margin-bottom:6px;">Color de referencia</label>
+      <div id="colorPalette" style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:10px;"></div>
+      <button type="button" class="btn" id="moreColorsBtn" style="font-size:12px;margin-bottom:14px;">+ Más colores</button>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <span style="font-size:12px;color:var(--ink-soft);">Color elegido:</span>
+        <div id="selectedColorPreview" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#5a4133;"></div>
+      </div>
+    </div>
+
+    <p id="newProductError" style="color:var(--danger);font-size:12px;min-height:14px;"></p>
+
+    <div class="action-row">
+      <button class="btn" style="background:var(--ink);color:#fff;border:none;" onclick="createNewProduct()">Crear producto</button>
+      <button class="btn" onclick="closeNewProductModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Selector de color avanzado -->
+<div class="overlay hidden" id="colorPickerOverlay">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-head">
+      <h2 style="font-size:16px;">Colores</h2>
+      <button class="close-x" onclick="closeColorPicker()">×</button>
+    </div>
+    <div style="position:relative;width:100%;aspect-ratio:1.3;margin-bottom:10px;">
+      <canvas id="svCanvas" width="280" height="215" style="width:100%;height:100%;border-radius:6px;cursor:crosshair;"></canvas>
+      <div id="svCursor" style="position:absolute;width:12px;height:12px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 2px rgba(0,0,0,.6);pointer-events:none;transform:translate(-6px,-6px);"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <canvas id="hueCanvas" width="280" height="18" style="width:100%;height:18px;border-radius:9px;cursor:pointer;"></canvas>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <span style="font-size:12px;color:var(--ink-soft);">Hex:</span>
+      <input type="text" id="hexInput" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:13px;">
+      <div id="pickerPreview" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);"></div>
+    </div>
+    <div class="action-row">
+      <button class="btn" style="background:var(--ink);color:#fff;border:none;" onclick="acceptColorPicker()">Aceptar</button>
+      <button class="btn" onclick="closeColorPicker()">Cancelar</button>
+    </div>
   </div>
 </div>
 
@@ -246,6 +322,54 @@ const PRODUCTS = [
   {id:"m4", cat:"Makeup Bag", name:"Makeup Bag Vino"},
 ];
 
+// Configuración por categoría para poder crear modelos nuevos
+const CATEGORY_CONFIG = {
+  "Tote Bag":        { key:"tote",         price:130000, personalizable:true,  maxInitials:7, hasVariant:true  },
+  "Neceser":         { key:"neceser",      price:60000,  personalizable:true,  maxInitials:2, hasVariant:false },
+  "Bag Lumiere":     { key:"lumiere",      price:140000, personalizable:false, maxInitials:0, hasVariant:false },
+  "Tote Bag Luxury": { key:"tote-luxury",  price:130000, personalizable:true,  maxInitials:2, hasVariant:false },
+  "Cosmetiquera":    { key:"cosmetiquera", price:50000,  personalizable:true,  maxInitials:2, hasVariant:false },
+  "Makeup Bag":      { key:"makeup-bag",   price:70000,  personalizable:true,  maxInitials:3, hasVariant:false },
+};
+
+// Paleta amplia de colores para elegir el color de referencia de un modelo nuevo
+const COLOR_PALETTE = [
+  {name:"Beige",  hex:"#EDE6D6"},
+  {name:"Blanco", hex:"#F2EFE8"},
+  {name:"Mocca",  hex:"#6B4A38"},
+  {name:"Negro",  hex:"#1A1A1A"},
+  {name:"Rosado", hex:"#E9C7CE"},
+  {name:"Verde",  hex:"#3B4A34"},
+  {name:"Vino",   hex:"#6E1F2A"},
+  {name:"Azul",   hex:"#25324A"},
+];
+
+let customProductCounter = 0;
+
+async function loadCustomProducts(){
+  try{
+    const snap = await db.ref('customProducts').once('value');
+    const data = snap.val() || {};
+    Object.values(data).forEach(p=>{
+      if(!PRODUCTS.find(x=>x.id===p.id)){
+        PRODUCTS.push({ id:p.id, cat:categoryKeyToLabel(p.category), name:p.name, variant:p.variant||'' });
+      }
+    });
+  }catch(e){ console.warn('No se pudieron cargar los modelos nuevos', e); }
+
+  try{
+    const delSnap = await db.ref('deletedProducts').once('value');
+    const deleted = delSnap.val() || {};
+    for(let i = PRODUCTS.length - 1; i >= 0; i--){
+      if(deleted[PRODUCTS[i].id]) PRODUCTS.splice(i,1);
+    }
+  }catch(e){ console.warn('No se pudieron cargar los productos eliminados', e); }
+}
+function categoryKeyToLabel(key){
+  const found = Object.entries(CATEGORY_CONFIG).find(([label,cfg])=>cfg.key===key);
+  return found ? found[0] : key;
+}
+
 function showSaved(){
   const el = document.getElementById('saveMsg');
   el.style.opacity = '1';
@@ -272,7 +396,46 @@ function markDirty(){
   document.getElementById('saveChangesBtn').disabled = false;
 }
 
+async function applyStoredOrder(){
+  const cats = [...new Set(PRODUCTS.map(p=>p.cat))];
+  for(const cat of cats){
+    const cfg = CATEGORY_CONFIG[cat];
+    if(!cfg) continue;
+    try{
+      const snap = await db.ref('productOrder/'+cfg.key).once('value');
+      const order = snap.val();
+      if(!order || !order.length) continue;
+      const catProducts = PRODUCTS.filter(x=>x.cat===cat);
+      const others = PRODUCTS.filter(x=>x.cat!==cat);
+      catProducts.sort((a,b)=> order.indexOf(a.id) - order.indexOf(b.id) || 0);
+      // los que no estén en el orden guardado (ids nuevos) quedan al final, en su posición original
+      const known = catProducts.filter(x=>order.includes(x.id));
+      const unknown = catProducts.filter(x=>!order.includes(x.id));
+      known.sort((a,b)=> order.indexOf(a.id) - order.indexOf(b.id));
+      const sorted = [...known, ...unknown];
+      PRODUCTS.length = 0;
+      PRODUCTS.push(...others, ...sorted);
+    }catch(e){ console.warn('No se pudo aplicar el orden guardado de', cat, e); }
+  }
+}
+
+async function applyStoredNames(){
+  try{
+    const snap = await db.ref('productOverrides').once('value');
+    const data = snap.val() || {};
+    PRODUCTS.forEach(p=>{
+      if(data[p.id]){
+        if(data[p.id].name) p.name = data[p.id].name;
+        if(data[p.id].variant !== undefined) p.variant = data[p.id].variant;
+      }
+    });
+  }catch(e){ console.warn('No se pudieron cargar los nombres personalizados', e); }
+}
+
 async function initPanel(){
+  await loadCustomProducts();
+  await applyStoredNames();
+  await applyStoredOrder();
   const groupsEl = document.getElementById('groups');
   const cats = [...new Set(PRODUCTS.map(p=>p.cat))];
   for(const cat of cats){
@@ -281,27 +444,313 @@ async function initPanel(){
     group.innerHTML = `<h2>${cat}</h2>`;
     const grid = document.createElement('div');
     grid.className = 'grid';
+    grid.id = 'grid-'+cat.replace(/\s+/g,'_');
     group.appendChild(grid);
     groupsEl.appendChild(group);
     for(const p of PRODUCTS.filter(x=>x.cat===cat)){
       grid.appendChild(await renderThumbCard(p));
     }
+    grid.appendChild(renderAddCard(cat));
   }
 }
+
+function renderAddCard(cat){
+  const addCard = document.createElement('div');
+  addCard.className = 'thumb-card add-card';
+  addCard.innerHTML = `
+    <div class="thumb" style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;">
+      <span style="font-size:28px;color:var(--ink-soft);">+</span>
+      <span style="font-size:11px;color:var(--ink-soft);">Agregar nuevo modelo</span>
+    </div>
+  `;
+  addCard.addEventListener('click', ()=>openNewProductModal(cat));
+  return addCard;
+}
+
+let newProductCat = null;
+let selectedColor = COLOR_PALETTE[2].hex;
+
+function renderColorPalette(){
+  const el = document.getElementById('colorPalette');
+  el.innerHTML = '';
+  COLOR_PALETTE.forEach(c=>{
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;';
+    wrap.innerHTML = `
+      <div style="width:100%;aspect-ratio:1;border-radius:50%;background:${c.hex};border:2px solid ${c.hex===selectedColor?'var(--ink)':'transparent'};box-shadow:0 0 0 1px var(--border) inset;"></div>
+      <span style="font-size:9px;color:var(--ink-soft);">${c.name}</span>
+    `;
+    wrap.addEventListener('click', ()=>{
+      selectedColor = c.hex;
+      document.getElementById('selectedColorPreview').style.background = selectedColor;
+      if(!document.getElementById('newColorName').value.trim()) document.getElementById('newColorName').value = c.name;
+      renderColorPalette();
+    });
+    el.appendChild(wrap);
+  });
+}
+
+function openNewProductModal(cat){
+  newProductCat = cat;
+  const cfg = CATEGORY_CONFIG[cat];
+  document.getElementById('newProductCatLabel').textContent = cat;
+  document.getElementById('newColorName').value = '';
+  document.getElementById('newVariantName').value = '';
+  document.getElementById('newVariantWrap').style.display = cfg.hasVariant ? 'block' : 'none';
+  document.getElementById('colorSectionWrap').style.display = cfg.hasVariant ? 'none' : 'block';
+  document.getElementById('newProductError').textContent = '';
+  selectedColor = COLOR_PALETTE[2].hex;
+  document.getElementById('selectedColorPreview').style.background = selectedColor;
+  renderColorPalette();
+  document.getElementById('newProductOverlay').classList.remove('hidden');
+}
+function closeNewProductModal(){
+  document.getElementById('newProductOverlay').classList.add('hidden');
+}
+
+async function createNewProduct(){
+  const cfg = CATEGORY_CONFIG[newProductCat];
+  const colorName = document.getElementById('newColorName').value.trim();
+  const variantName = document.getElementById('newVariantName').value.trim();
+  const errEl = document.getElementById('newProductError');
+  if(!colorName){ errEl.textContent = 'Escribe el nombre del color.'; return; }
+  if(cfg.hasVariant && !variantName){ errEl.textContent = 'Escribe la variante.'; return; }
+
+  const id = 'custom_' + Date.now();
+  const name = `${newProductCat} ${colorName}`;
+  const productData = {
+    id, category: cfg.key, name, color: colorName,
+    price: cfg.price, personalizable: cfg.personalizable, groupKey: colorName
+  };
+  if(!cfg.hasVariant) productData.hex = selectedColor;
+  if(cfg.hasVariant) productData.variant = variantName;
+  if(cfg.maxInitials) productData.maxInitials = cfg.maxInitials;
+
+  await db.ref('customProducts/'+id).set(productData);
+
+  const p = { id, cat: newProductCat, name, variant: variantName };
+  PRODUCTS.push(p);
+  const grid = document.getElementById('grid-'+newProductCat.replace(/\s+/g,'_'));
+  const addCardEl = grid.querySelector('.add-card');
+  const newCard = await renderThumbCard(p);
+  grid.insertBefore(newCard, addCardEl);
+
+  closeNewProductModal();
+  openProductModal(p);
+}
+
+// ===== Selector de color avanzado (estilo Windows) =====
+let pickerHue = 210, pickerSat = 60, pickerVal = 40;
+
+function hsvToHex(h,s,v){
+  s/=100; v/=100;
+  const c = v*s, x = c*(1-Math.abs((h/60)%2-1)), m = v-c;
+  let r,g,b;
+  if(h<60){ r=c;g=x;b=0; } else if(h<120){ r=x;g=c;b=0; }
+  else if(h<180){ r=0;g=c;b=x; } else if(h<240){ r=0;g=x;b=c; }
+  else if(h<300){ r=x;g=0;b=c; } else { r=c;g=0;b=x; }
+  const R=Math.round((r+m)*255), G=Math.round((g+m)*255), B=Math.round((b+m)*255);
+  return '#'+[R,G,B].map(n=>n.toString(16).padStart(2,'0')).join('');
+}
+function hexToHsv(hex){
+  const r=parseInt(hex.substr(1,2),16)/255, g=parseInt(hex.substr(3,2),16)/255, b=parseInt(hex.substr(5,2),16)/255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+  let h=0;
+  if(d!==0){
+    if(max===r) h=60*(((g-b)/d)%6);
+    else if(max===g) h=60*((b-r)/d+2);
+    else h=60*((r-g)/d+4);
+  }
+  if(h<0) h+=360;
+  const s = max===0 ? 0 : d/max*100;
+  const v = max*100;
+  return {h,s,v};
+}
+
+function drawSvCanvas(){
+  const canvas = document.getElementById('svCanvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const base = hsvToHex(pickerHue,100,100);
+  ctx.fillStyle = base;
+  ctx.fillRect(0,0,w,h);
+  const gradWhite = ctx.createLinearGradient(0,0,w,0);
+  gradWhite.addColorStop(0,'rgba(255,255,255,1)');
+  gradWhite.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle = gradWhite;
+  ctx.fillRect(0,0,w,h);
+  const gradBlack = ctx.createLinearGradient(0,0,0,h);
+  gradBlack.addColorStop(0,'rgba(0,0,0,0)');
+  gradBlack.addColorStop(1,'rgba(0,0,0,1)');
+  ctx.fillStyle = gradBlack;
+  ctx.fillRect(0,0,w,h);
+}
+function drawHueCanvas(){
+  const canvas = document.getElementById('hueCanvas');
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,canvas.width,0);
+  for(let i=0;i<=360;i+=30) grad.addColorStop(i/360, hsvToHex(i,100,100));
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+}
+function updatePickerFromState(){
+  const hex = hsvToHex(pickerHue, pickerSat, pickerVal);
+  document.getElementById('hexInput').value = hex;
+  document.getElementById('pickerPreview').style.background = hex;
+  const canvas = document.getElementById('svCanvas');
+  const cursor = document.getElementById('svCursor');
+  cursor.style.left = (pickerSat/100*canvas.clientWidth)+'px';
+  cursor.style.top = ((100-pickerVal)/100*canvas.clientHeight)+'px';
+}
+function svPointerHandler(e){
+  const canvas = document.getElementById('svCanvas');
+  const rect = canvas.getBoundingClientRect();
+  const point = e.touches ? e.touches[0] : e;
+  let x = (point.clientX - rect.left)/rect.width;
+  let y = (point.clientY - rect.top)/rect.height;
+  x = Math.max(0, Math.min(1,x)); y = Math.max(0, Math.min(1,y));
+  pickerSat = x*100; pickerVal = (1-y)*100;
+  updatePickerFromState();
+}
+function huePointerHandler(e){
+  const canvas = document.getElementById('hueCanvas');
+  const rect = canvas.getBoundingClientRect();
+  const point = e.touches ? e.touches[0] : e;
+  let x = (point.clientX - rect.left)/rect.width;
+  x = Math.max(0, Math.min(1,x));
+  pickerHue = x*360;
+  drawSvCanvas();
+  updatePickerFromState();
+}
+
+document.getElementById('moreColorsBtn').addEventListener('click', ()=>{
+  const hsv = hexToHsv(selectedColor);
+  pickerHue = hsv.h; pickerSat = hsv.s; pickerVal = hsv.v;
+  document.getElementById('colorPickerOverlay').classList.remove('hidden');
+  setTimeout(()=>{ drawSvCanvas(); drawHueCanvas(); updatePickerFromState(); }, 0);
+});
+function closeColorPicker(){
+  document.getElementById('colorPickerOverlay').classList.add('hidden');
+}
+function acceptColorPicker(){
+  selectedColor = document.getElementById('hexInput').value;
+  document.getElementById('selectedColorPreview').style.background = selectedColor;
+  renderColorPalette();
+  closeColorPicker();
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  const svCanvas = document.getElementById('svCanvas');
+  let svDragging = false;
+  svCanvas.addEventListener('mousedown', (e)=>{ svDragging = true; svPointerHandler(e); });
+  window.addEventListener('mousemove', (e)=>{ if(svDragging) svPointerHandler(e); });
+  window.addEventListener('mouseup', ()=>{ svDragging = false; });
+  svCanvas.addEventListener('touchstart', (e)=>{ svDragging = true; svPointerHandler(e); }, {passive:true});
+  svCanvas.addEventListener('touchmove', (e)=>{ if(svDragging) svPointerHandler(e); }, {passive:true});
+  svCanvas.addEventListener('touchend', ()=>{ svDragging = false; });
+
+  const hueCanvas = document.getElementById('hueCanvas');
+  let hueDragging = false;
+  hueCanvas.addEventListener('mousedown', (e)=>{ hueDragging = true; huePointerHandler(e); });
+  window.addEventListener('mousemove', (e)=>{ if(hueDragging) huePointerHandler(e); });
+  window.addEventListener('mouseup', ()=>{ hueDragging = false; });
+  hueCanvas.addEventListener('touchstart', (e)=>{ hueDragging = true; huePointerHandler(e); }, {passive:true});
+  hueCanvas.addEventListener('touchmove', (e)=>{ if(hueDragging) huePointerHandler(e); }, {passive:true});
+  hueCanvas.addEventListener('touchend', ()=>{ hueDragging = false; });
+
+  document.getElementById('hexInput').addEventListener('change', (e)=>{
+    let hex = e.target.value.trim();
+    if(!/^#[0-9A-Fa-f]{6}$/.test(hex)) return;
+    const hsv = hexToHsv(hex);
+    pickerHue = hsv.h; pickerSat = hsv.s; pickerVal = hsv.v;
+    drawSvCanvas();
+    updatePickerFromState();
+  });
+});
 
 async function renderThumbCard(p){
   const photos = await getPhotos(p.id);
   const card = document.createElement('div');
   card.className = 'thumb-card';
   card.id = 'card-'+p.id;
+  card.dataset.id = p.id;
+  card.dataset.cat = p.cat;
+  card.draggable = true;
+  card.style.position = 'relative';
   card.innerHTML = `
+    <button class="delete-product-btn" title="Eliminar producto" data-id="${p.id}">🗑</button>
     <div class="name">${p.name}</div>
     <div class="variant">${p.variant||''}</div>
     <div class="thumb">${photos[0] ? `<img src="${photos[0]}">` : '<div class="empty">Sin foto</div>'}</div>
     <div class="count">${photos.length} foto${photos.length!==1?'s':''}</div>
   `;
   card.addEventListener('click', ()=>openProductModal(p));
+  card.querySelector('.delete-product-btn').addEventListener('click', (e)=>{
+    e.stopPropagation();
+    deleteProduct(p);
+  });
+  card.addEventListener('dragstart', ()=>{ productDragId = p.id; productDragCat = p.cat; card.classList.add('dragging-card'); });
+  card.addEventListener('dragend', ()=>{ card.classList.remove('dragging-card'); });
+  card.addEventListener('dragover', (e)=>{
+    e.preventDefault();
+    if(card.dataset.cat === productDragCat) card.classList.add('drop-target-card');
+  });
+  card.addEventListener('dragleave', ()=>{ card.classList.remove('drop-target-card'); });
+  card.addEventListener('drop', async (e)=>{
+    e.preventDefault();
+    card.classList.remove('drop-target-card');
+    if(productDragId===null || productDragId===p.id) return;
+    if(card.dataset.cat !== productDragCat) return;
+    await reorderProduct(p.cat, productDragId, p.id);
+    productDragId = null;
+  });
   return card;
+}
+let productDragId = null;
+let productDragCat = null;
+
+async function reorderProduct(cat, draggedId, targetId){
+  const catProducts = PRODUCTS.filter(x=>x.cat===cat);
+  const draggedIdx = catProducts.findIndex(x=>x.id===draggedId);
+  const targetIdx = catProducts.findIndex(x=>x.id===targetId);
+  if(draggedIdx<0 || targetIdx<0) return;
+  const [moved] = catProducts.splice(draggedIdx,1);
+  catProducts.splice(targetIdx,0,moved);
+
+  // reconstruir PRODUCTS respetando el nuevo orden solo para esta categoría
+  const others = PRODUCTS.filter(x=>x.cat!==cat);
+  PRODUCTS.length = 0;
+  PRODUCTS.push(...others, ...catProducts);
+
+  const cfg = CATEGORY_CONFIG[cat];
+  await db.ref('productOrder/'+cfg.key).set(catProducts.map(x=>x.id));
+
+  const grid = document.getElementById('grid-'+cat.replace(/\s+/g,'_'));
+  const addCardEl = grid.querySelector('.add-card');
+  grid.innerHTML = '';
+  for(const cp of catProducts) grid.appendChild(await renderThumbCard(cp));
+  grid.appendChild(addCardEl);
+  showSaved();
+}
+
+async function deleteProduct(p){
+  if(!confirm(`¿Eliminar "${p.name}${p.variant ? ' – '+p.variant : ''}" del catálogo? Esta acción no se puede deshacer.`)) return false;
+  if(p.id.startsWith('custom_')){
+    await db.ref('customProducts/'+p.id).remove();
+  } else {
+    await db.ref('deletedProducts/'+p.id).set(true);
+  }
+  await db.ref('productPhotos/'+p.id).remove();
+  await db.ref('productOverrides/'+p.id).remove();
+  const idx = PRODUCTS.findIndex(x=>x.id===p.id);
+  if(idx>-1) PRODUCTS.splice(idx,1);
+  const el = document.getElementById('card-'+p.id);
+  if(el) el.remove();
+  if(currentProduct && currentProduct.id === p.id){
+    document.getElementById('productOverlay').classList.add('hidden');
+    currentProduct = null;
+  }
+  return true;
 }
 
 async function refreshThumbCard(id){
@@ -322,6 +771,8 @@ async function openProductModal(p){
   hasUnsavedChanges = false;
   document.getElementById('modalName').textContent = p.name;
   document.getElementById('modalVariant').textContent = p.variant || '';
+  document.getElementById('renameNameInput').value = p.name;
+  document.getElementById('renameVariantInput').value = p.variant || '';
   document.getElementById('undoBtn').disabled = !undoStore[p.id];
   document.getElementById('saveChangesBtn').disabled = true;
   document.getElementById('modalStatus').textContent = '';
@@ -343,6 +794,25 @@ document.getElementById('saveChangesBtn').addEventListener('click', async ()=>{
   hasUnsavedChanges = false;
   document.getElementById('saveChangesBtn').disabled = true;
   document.getElementById('modalStatus').textContent = 'Cambios guardados en el catálogo.';
+});
+
+document.getElementById('renameSaveBtn').addEventListener('click', async ()=>{
+  const newName = document.getElementById('renameNameInput').value.trim();
+  const newVariant = document.getElementById('renameVariantInput').value.trim();
+  if(!newName){ alert('El nombre no puede quedar vacío.'); return; }
+  await db.ref('productOverrides/'+currentProduct.id).set({ name:newName, variant:newVariant });
+  currentProduct.name = newName;
+  currentProduct.variant = newVariant;
+  document.getElementById('modalName').textContent = newName;
+  document.getElementById('modalVariant').textContent = newVariant;
+  document.getElementById('modalStatus').textContent = 'Nombre guardado.';
+  showSaved();
+  refreshThumbCard(currentProduct.id);
+});
+
+document.getElementById('deleteProductBtn').addEventListener('click', async ()=>{
+  const ok = await deleteProduct(currentProduct);
+  if(ok) currentProduct = null;
 });
 
 function renderModalContent(){

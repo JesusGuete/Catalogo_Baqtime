@@ -767,9 +767,33 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const productPhotosRef = firebase.database().ref('productPhotos');
+const customProductsRef = firebase.database().ref('customProducts');
+const deletedProductsRef = firebase.database().ref('deletedProducts');
 let firebasePhotosLoaded = false;
 
+async function applyFirebaseCustomProducts(){
+  try{
+    const snap = await customProductsRef.once('value');
+    const data = snap.val() || {};
+    Object.values(data).forEach(p=>{
+      if(!ALL_PRODUCTS.find(x=>x.id===p.id)) ALL_PRODUCTS.push(p);
+    });
+  }catch(e){
+    console.warn('No se pudieron cargar los productos nuevos', e);
+  }
+}
+
 async function applyFirebasePhotos(){
+  await applyFirebaseCustomProducts();
+  try{
+    const delSnap = await deletedProductsRef.once('value');
+    const deleted = delSnap.val() || {};
+    for(let i = ALL_PRODUCTS.length - 1; i >= 0; i--){
+      if(deleted[ALL_PRODUCTS[i].id]) ALL_PRODUCTS.splice(i,1);
+    }
+  }catch(e){
+    console.warn('No se pudieron cargar los productos eliminados', e);
+  }
   try{
     const snap = await productPhotosRef.once('value');
     const data = snap.val() || {};
@@ -782,6 +806,39 @@ async function applyFirebasePhotos(){
     });
   }catch(e){
     console.warn('No se pudieron cargar las fotos actualizadas', e);
+  }
+  try{
+    const overSnap = await firebase.database().ref('productOverrides').once('value');
+    const overrides = overSnap.val() || {};
+    ALL_PRODUCTS.forEach(p=>{
+      if(overrides[p.id]){
+        if(overrides[p.id].name) p.name = overrides[p.id].name;
+        if(overrides[p.id].variant !== undefined) p.variant = overrides[p.id].variant;
+      }
+    });
+  }catch(e){
+    console.warn('No se pudieron cargar los nombres actualizados', e);
+  }
+  try{
+    const orderSnap = await firebase.database().ref('productOrder').once('value');
+    const orders = orderSnap.val() || {};
+    const categoryKeys = [...new Set(ALL_PRODUCTS.map(p=>p.category))];
+    let sorted = [];
+    categoryKeys.forEach(catKey=>{
+      const inCat = ALL_PRODUCTS.filter(p=>p.category===catKey);
+      const order = orders[catKey];
+      if(order && order.length){
+        const known = inCat.filter(p=>order.includes(p.id)).sort((a,b)=>order.indexOf(a.id)-order.indexOf(b.id));
+        const unknown = inCat.filter(p=>!order.includes(p.id));
+        sorted = sorted.concat(known, unknown);
+      } else {
+        sorted = sorted.concat(inCat);
+      }
+    });
+    ALL_PRODUCTS.length = 0;
+    ALL_PRODUCTS.push(...sorted);
+  }catch(e){
+    console.warn('No se pudo aplicar el orden de productos', e);
   }
   firebasePhotosLoaded = true;
 }
