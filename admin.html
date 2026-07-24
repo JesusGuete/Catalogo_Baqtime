@@ -49,7 +49,6 @@
   .thumb-item img{ width:100%; height:100%; object-fit:cover; display:block; }
   .thumb-item .icons{ position:absolute; top:2px; right:2px; display:flex; gap:2px; }
   .thumb-item .icons button{ width:20px; height:20px; border:none; border-radius:50%; font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-  .thumb-item .icon-edit{ background:#fff; color:var(--ink); }
   .thumb-item .icon-del{ background:var(--danger); color:#fff; }
   .thumb-item .badge-main{ position:absolute; bottom:2px; left:2px; background:var(--mocha); color:#fff; font-size:8px; padding:1px 5px; border-radius:3px; }
   .add-thumb{ width:70px; height:70px; border-radius:6px; border:2px dashed var(--border); display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--ink-soft); cursor:pointer; }
@@ -60,21 +59,49 @@
   .btn-reset{ color:var(--ink-soft); }
   .btn-undo{ color:#8a6d3b; border-color:#e0c98f; background:#fdf6e7; }
   .btn-undo:disabled{ opacity:.4; cursor:default; }
+  #saveChangesBtn:disabled{ opacity:.35; cursor:default; }
   .status{ font-size:11px; color:var(--ink-soft); margin-top:8px; min-height:14px; }
   #saveMsg{ position:fixed; bottom:20px; right:20px; background:var(--ink); color:#fff; padding:10px 16px; border-radius:6px; font-size:13px; opacity:0; transition:opacity .3s; z-index:200; }
 
-  #cropStage{ position:relative; width:100%; max-width:340px; aspect-ratio:1; margin:0 auto 14px; overflow:hidden; border-radius:8px; background:#111; touch-action:none; }
+  #cropStage{ position:relative; width:100%; max-width:400px; aspect-ratio:1; margin:0 auto; overflow:hidden; background:#000; touch-action:none; }
   #cropStage img{ position:absolute; user-select:none; pointer-events:none; max-width:none; }
   .crop-grid{ position:absolute; pointer-events:none; background-image:
       linear-gradient(rgba(255,255,255,.6) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255,255,255,.6) 1px, transparent 1px);
     background-size:33.33% 33.33%; }
-  #cropBox{ position:absolute; border:2px solid #fff; box-sizing:border-box; cursor:move; }
-  .crop-handle{ position:absolute; width:16px; height:16px; background:#fff; border-radius:50%; border:2px solid var(--mocha); }
-  .crop-handle[data-h="tl"]{ top:-8px; left:-8px; cursor:nwse-resize; }
-  .crop-handle[data-h="tr"]{ top:-8px; right:-8px; cursor:nesw-resize; }
-  .crop-handle[data-h="bl"]{ bottom:-8px; left:-8px; cursor:nesw-resize; }
-  .crop-handle[data-h="br"]{ bottom:-8px; right:-8px; cursor:nwse-resize; }
+  #cropBox{ position:absolute; outline:1px solid rgba(255,255,255,.9); box-sizing:border-box; cursor:move; }
+  .crop-handle{ position:absolute; width:22px; height:22px; }
+  .crop-handle::before, .crop-handle::after{ content:''; position:absolute; background:#fff; }
+  .crop-handle::before{ width:100%; height:3px; }
+  .crop-handle::after{ width:3px; height:100%; }
+  .crop-handle[data-h="tl"]{ top:-2px; left:-2px; cursor:nwse-resize; }
+  .crop-handle[data-h="tl"]::before{ top:0; left:0; }
+  .crop-handle[data-h="tl"]::after{ top:0; left:0; }
+  .crop-handle[data-h="tr"]{ top:-2px; right:-2px; cursor:nesw-resize; }
+  .crop-handle[data-h="tr"]::before{ top:0; right:0; }
+  .crop-handle[data-h="tr"]::after{ top:0; right:0; }
+  .crop-handle[data-h="bl"]{ bottom:-2px; left:-2px; cursor:nesw-resize; }
+  .crop-handle[data-h="bl"]::before{ bottom:0; left:0; }
+  .crop-handle[data-h="bl"]::after{ bottom:0; left:0; }
+  .crop-handle[data-h="br"]{ bottom:-2px; right:-2px; cursor:nwse-resize; }
+  .crop-handle[data-h="br"]::before{ bottom:0; right:0; }
+  .crop-handle[data-h="br"]::after{ bottom:0; right:0; }
+  .crop-edge{ position:absolute; background:transparent; }
+  .crop-edge[data-h="t"]{ top:-6px; left:20%; width:60%; height:12px; cursor:ns-resize; }
+  .crop-edge[data-h="b"]{ bottom:-6px; left:20%; width:60%; height:12px; cursor:ns-resize; }
+  .crop-edge[data-h="l"]{ left:-6px; top:20%; height:60%; width:12px; cursor:ew-resize; }
+  .crop-edge[data-h="r"]{ right:-6px; top:20%; height:60%; width:12px; cursor:ew-resize; }
+
+  .crop-modal-dark{ background:#1a1a1a; width:100%; max-width:420px; margin:0 auto; border-radius:10px; overflow:hidden; padding-bottom:16px; }
+  .crop-topbar{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; }
+  .crop-icon-btn{ background:none; border:none; color:#ccc; font-size:16px; cursor:pointer; padding:4px 8px; }
+  .crop-rotate-row{ display:flex; align-items:center; gap:10px; padding:14px 20px 6px; }
+  .crop-rotate-row span{ color:#ccc; font-size:12px; min-width:32px; }
+  .crop-rotate-row input[type=range]{ flex:1; }
+  .crop-tools-row{ display:flex; justify-content:space-around; padding:10px 20px 0; }
+  .crop-tool-btn{ background:none; border:none; color:#eee; font-size:20px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .crop-tool-btn span{ font-size:18px; }
+  #aspectLabel{ font-size:12px; }
 </style>
 </head>
 <body>
@@ -104,6 +131,7 @@
     </div>
 
     <div class="main-photo-lg" id="modalMain"></div>
+    <button class="btn" id="cropCurrentBtn" style="width:100%;margin-bottom:14px;">✂ Recortar esta foto</button>
 
     <div class="thumbs-strip" id="modalThumbs"></div>
 
@@ -111,16 +139,19 @@
       <button class="btn btn-reset" id="resetBtn">↺ Restaurar fotos originales</button>
       <button class="btn btn-undo" id="undoBtn" disabled>Deshacer último cambio</button>
     </div>
+    <button class="btn" id="saveChangesBtn" disabled style="width:100%;margin-top:12px;background:var(--ink);color:#fff;border:none;">Guardar cambios</button>
     <div class="status" id="modalStatus"></div>
   </div>
 </div>
 
-<div class="overlay hidden" id="cropOverlay">
-  <div class="modal" style="max-width:400px;">
-    <div class="modal-head">
-      <h2 style="font-size:16px;">Recortar foto</h2>
-      <button class="close-x" onclick="closeCropModal()">×</button>
+<div class="overlay hidden" id="cropOverlay" style="background:#000;">
+  <div class="crop-modal-dark">
+    <div class="crop-topbar">
+      <button class="crop-icon-btn" onclick="closeCropModal()" title="Cancelar">✕</button>
+      <span style="font-size:13px;color:#fff;">Recortar foto</span>
+      <button class="crop-icon-btn" onclick="saveCrop()" title="Guardar" style="color:#fff;font-weight:600;">Listo</button>
     </div>
+
     <div id="cropStage">
       <img id="cropImg" src="">
       <div class="crop-grid" id="cropGrid"></div>
@@ -129,12 +160,23 @@
         <div class="crop-handle" data-h="tr"></div>
         <div class="crop-handle" data-h="bl"></div>
         <div class="crop-handle" data-h="br"></div>
+        <div class="crop-edge" data-h="t"></div>
+        <div class="crop-edge" data-h="b"></div>
+        <div class="crop-edge" data-h="l"></div>
+        <div class="crop-edge" data-h="r"></div>
       </div>
     </div>
-    <p style="font-size:11px;color:var(--ink-soft);margin-bottom:12px;">Arrastra las esquinas para cambiar el tamaño del recorte, o el centro para moverlo. Solo lo que quede dentro del recuadro se verá en el catálogo.</p>
-    <div class="action-row">
-      <button class="btn" style="background:var(--ink);color:#fff;border:none;" onclick="saveCrop()">Guardar</button>
-      <button class="btn" onclick="closeCropModal()">Cancelar</button>
+
+    <div class="crop-rotate-row">
+      <span id="rotateVal">0°</span>
+      <input type="range" id="rotateRange" min="-45" max="45" value="0">
+      <button class="crop-icon-btn" id="resetRotateBtn" title="Restablecer">↺</button>
+    </div>
+
+    <div class="crop-tools-row">
+      <button class="crop-tool-btn" id="rotateLeftBtn" title="Girar 90°"><span>⟲</span></button>
+      <button class="crop-tool-btn" id="flipBtn" title="Voltear"><span>⇄</span></button>
+      <button class="crop-tool-btn" id="aspectBtn" title="Relación de aspecto"><span id="aspectLabel">Libre</span></button>
     </div>
   </div>
 </div>
@@ -216,16 +258,19 @@ async function getPhotos(id){
   if(val && val.length) return val;
   return DEFAULT_PHOTOS[id] ? [...DEFAULT_PHOTOS[id]] : [];
 }
-async function setPhotos(id, arr, pushUndo=true){
-  if(pushUndo){
-    const prev = await getPhotos(id);
-    undoStore[id] = prev;
-  }
+async function commitPhotos(id, arr){
   await db.ref('productPhotos/'+id).set(arr);
   showSaved();
 }
 
 const undoStore = {};
+let workingPhotos = [];   // borrador local del producto abierto (sin guardar aún)
+let hasUnsavedChanges = false;
+
+function markDirty(){
+  hasUnsavedChanges = true;
+  document.getElementById('saveChangesBtn').disabled = false;
+}
 
 async function initPanel(){
   const groupsEl = document.getElementById('groups');
@@ -269,24 +314,40 @@ async function refreshThumbCard(id){
 
 let currentProduct = null;
 let dragIndex = null;
+let currentPreviewIdx = 0;
 
 async function openProductModal(p){
   currentProduct = p;
+  workingPhotos = await getPhotos(p.id);
+  hasUnsavedChanges = false;
   document.getElementById('modalName').textContent = p.name;
   document.getElementById('modalVariant').textContent = p.variant || '';
   document.getElementById('undoBtn').disabled = !undoStore[p.id];
+  document.getElementById('saveChangesBtn').disabled = true;
   document.getElementById('modalStatus').textContent = '';
-  await renderModalContent(p.id);
+  renderModalContent();
   document.getElementById('productOverlay').classList.remove('hidden');
 }
 function closeProductModal(){
+  if(hasUnsavedChanges){
+    if(!confirm('Tienes cambios sin guardar en este producto. ¿Cerrar de todas formas y perderlos?')) return;
+  }
   document.getElementById('productOverlay').classList.add('hidden');
   refreshThumbCard(currentProduct.id);
   currentProduct = null;
 }
 
-async function renderModalContent(id){
-  const photos = await getPhotos(id);
+document.getElementById('saveChangesBtn').addEventListener('click', async ()=>{
+  const id = currentProduct.id;
+  await commitPhotos(id, workingPhotos);
+  hasUnsavedChanges = false;
+  document.getElementById('saveChangesBtn').disabled = true;
+  document.getElementById('modalStatus').textContent = 'Cambios guardados en el catálogo.';
+});
+
+function renderModalContent(){
+  const photos = workingPhotos;
+  currentPreviewIdx = 0;
   const mainEl = document.getElementById('modalMain');
   mainEl.innerHTML = photos[0] ? `<img src="${photos[0]}">` : '<div class="empty">Sin foto todavía</div>';
 
@@ -300,22 +361,21 @@ async function renderModalContent(id){
     item.innerHTML = `
       <img src="${ph}">
       <div class="icons">
-        <button class="icon-edit" title="Ajustar">✎</button>
         <button class="icon-del" title="Eliminar">×</button>
       </div>
       ${idx===0 ? '<div class="badge-main">Principal</div>' : ''}
     `;
-    item.querySelector('.icon-edit').addEventListener('click', (e)=>{ e.stopPropagation(); openCropModal(id, idx, ph); });
-    item.querySelector('.icon-del').addEventListener('click', async (e)=>{
+    item.querySelector('.icon-del').addEventListener('click', (e)=>{
       e.stopPropagation();
-      const current = await getPhotos(id);
-      current.splice(idx,1);
-      await setPhotos(id, current);
-      await renderModalContent(id);
+      undoStore[currentProduct.id] = [...workingPhotos];
+      workingPhotos.splice(idx,1);
+      renderModalContent();
       document.getElementById('undoBtn').disabled = false;
+      markDirty();
     });
     item.querySelector('img').addEventListener('click', (e)=>{
       e.stopPropagation();
+      currentPreviewIdx = idx;
       document.getElementById('modalMain').innerHTML = `<img src="${ph}">`;
       stripEl.querySelectorAll('.thumb-item').forEach(t=>t.classList.remove('previewing'));
       item.classList.add('previewing');
@@ -324,17 +384,17 @@ async function renderModalContent(id){
     item.addEventListener('dragend', ()=>{ item.classList.remove('dragging'); });
     item.addEventListener('dragover', (e)=>{ e.preventDefault(); item.classList.add('drop-target'); });
     item.addEventListener('dragleave', ()=>{ item.classList.remove('drop-target'); });
-    item.addEventListener('drop', async (e)=>{
+    item.addEventListener('drop', (e)=>{
       e.preventDefault();
       item.classList.remove('drop-target');
       const dropIdx = idx;
       if(dragIndex===null || dragIndex===dropIdx) return;
-      const current = await getPhotos(id);
-      const moved = current.splice(dragIndex,1)[0];
-      current.splice(dropIdx,0,moved);
-      await setPhotos(id, current);
-      await renderModalContent(id);
+      undoStore[currentProduct.id] = [...workingPhotos];
+      const moved = workingPhotos.splice(dragIndex,1)[0];
+      workingPhotos.splice(dropIdx,0,moved);
+      renderModalContent();
       document.getElementById('undoBtn').disabled = false;
+      markDirty();
       dragIndex = null;
     });
     stripEl.appendChild(item);
@@ -347,44 +407,70 @@ async function renderModalContent(id){
     const file = e.target.files[0];
     if(!file) return;
     const reader = new FileReader();
-    reader.onload = ()=>{ openCropModalForNew(id, reader.result); };
+    reader.onload = ()=>{ openCropModalForNew(currentProduct.id, reader.result); };
     reader.readAsDataURL(file);
   });
   stripEl.appendChild(addBtn);
 }
 
-document.getElementById('resetBtn').addEventListener('click', async ()=>{
-  const id = currentProduct.id;
-  if(!confirm('¿Restaurar las fotos originales de este producto?')) return;
-  const before = await getPhotos(id);
-  undoStore[id] = before;
-  await db.ref('productPhotos/'+id).remove();
-  await renderModalContent(id);
-  document.getElementById('undoBtn').disabled = false;
-  document.getElementById('modalStatus').textContent = 'Fotos originales restauradas.';
+document.getElementById('cropCurrentBtn').addEventListener('click', ()=>{
+  if(!workingPhotos.length){ alert('Este producto no tiene fotos todavía.'); return; }
+  openCropModal(currentProduct.id, currentPreviewIdx, workingPhotos[currentPreviewIdx]);
 });
 
-document.getElementById('undoBtn').addEventListener('click', async ()=>{
-  const id = currentProduct.id;
-  const prev = undoStore[id];
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(!confirm('¿Restaurar las fotos originales de este producto? (deberás darle Guardar cambios para que quede así en el catálogo)')) return;
+  undoStore[currentProduct.id] = [...workingPhotos];
+  workingPhotos = DEFAULT_PHOTOS[currentProduct.id] ? [...DEFAULT_PHOTOS[currentProduct.id]] : [];
+  renderModalContent();
+  document.getElementById('undoBtn').disabled = false;
+  document.getElementById('modalStatus').textContent = 'Fotos originales cargadas. Dale "Guardar cambios" para confirmar.';
+  markDirty();
+});
+
+document.getElementById('undoBtn').addEventListener('click', ()=>{
+  const prev = undoStore[currentProduct.id];
   if(!prev) return;
-  await setPhotos(id, prev, false);
-  delete undoStore[id];
-  await renderModalContent(id);
+  workingPhotos = prev;
+  delete undoStore[currentProduct.id];
+  renderModalContent();
   document.getElementById('undoBtn').disabled = true;
-  document.getElementById('modalStatus').textContent = 'Cambio deshecho.';
+  document.getElementById('modalStatus').textContent = 'Cambio deshecho. Dale "Guardar cambios" para confirmar.';
+  markDirty();
 });
 
 let cropTargetId = null, cropTargetIdx = null, cropIsNew = false;
-let cropImgNaturalSrc = null;
-let cropImgBox = {left:0, top:0, width:0, height:0}; // límites del área de la imagen dentro del stage
-let cropBoxState = {x:0, y:0, size:0}; // recuadro de recorte actual
+let cropImgNaturalSrc = null; // fuente original sin tocar
+let cropWorkingSrc = null;    // fuente después de rotar/voltear
+let cropImgBox = {left:0, top:0, width:0, height:0};
+let cropBoxState = {x:0, y:0, w:0, h:0};
+let rotationDeg = 0;
+let flipH = false;
+let aspectMode = 'libre'; // 'libre' | 'cuadrado'
 const MIN_CROP = 40;
 
-function openCropModalCommon(dataUrl){
-  cropImgNaturalSrc = dataUrl;
+function rebuildWorkingImage(cb){
+  const src = new Image();
+  src.onload = ()=>{
+    const rad = rotationDeg * Math.PI/180;
+    const w = src.naturalWidth, h = src.naturalHeight;
+    const bw = Math.abs(w*Math.cos(rad)) + Math.abs(h*Math.sin(rad));
+    const bh = Math.abs(w*Math.sin(rad)) + Math.abs(h*Math.cos(rad));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bw); canvas.height = Math.round(bh);
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width/2, canvas.height/2);
+    ctx.rotate(rad);
+    ctx.scale(flipH ? -1 : 1, 1);
+    ctx.drawImage(src, -w/2, -h/2);
+    cropWorkingSrc = canvas.toDataURL('image/jpeg', 0.92);
+    cb();
+  };
+  src.src = cropImgNaturalSrc;
+}
+
+function layoutImageAndDefaultBox(){
   const img = document.getElementById('cropImg');
-  img.src = dataUrl;
   img.onload = ()=>{
     const stage = document.getElementById('cropStage');
     const S = stage.clientWidth;
@@ -403,10 +489,20 @@ function openCropModalCommon(dataUrl){
     cropBoxState = {
       x: left + (dispW-initSize)/2,
       y: top + (dispH-initSize)/2,
-      size: initSize
+      w: initSize, h: initSize
     };
     updateCropBoxEl();
   };
+  img.src = cropWorkingSrc;
+}
+
+function openCropModalCommon(dataUrl){
+  cropImgNaturalSrc = dataUrl;
+  rotationDeg = 0; flipH = false; aspectMode = 'libre';
+  document.getElementById('rotateRange').value = 0;
+  document.getElementById('rotateVal').textContent = '0°';
+  document.getElementById('aspectLabel').textContent = 'Libre';
+  rebuildWorkingImage(layoutImageAndDefaultBox);
   document.getElementById('cropOverlay').classList.remove('hidden');
 }
 function openCropModal(id, idx, dataUrl){
@@ -425,26 +521,25 @@ function updateCropBoxEl(){
   const box = document.getElementById('cropBox');
   box.style.left = cropBoxState.x+'px';
   box.style.top = cropBoxState.y+'px';
-  box.style.width = cropBoxState.size+'px';
-  box.style.height = cropBoxState.size+'px';
+  box.style.width = cropBoxState.w+'px';
+  box.style.height = cropBoxState.h+'px';
+  const showEdges = aspectMode === 'libre';
+  document.querySelectorAll('.crop-edge').forEach(el=> el.style.display = showEdges ? 'block' : 'none');
 }
 
 function clampCropBox(){
   const b = cropImgBox;
-  cropBoxState.size = Math.max(MIN_CROP, Math.min(cropBoxState.size, Math.min(b.width, b.height)));
-  cropBoxState.x = Math.max(b.left, Math.min(cropBoxState.x, b.left + b.width - cropBoxState.size));
-  cropBoxState.y = Math.max(b.top, Math.min(cropBoxState.y, b.top + b.height - cropBoxState.size));
+  cropBoxState.w = Math.max(MIN_CROP, Math.min(cropBoxState.w, b.width));
+  cropBoxState.h = Math.max(MIN_CROP, Math.min(cropBoxState.h, b.height));
+  cropBoxState.x = Math.max(b.left, Math.min(cropBoxState.x, b.left + b.width - cropBoxState.w));
+  cropBoxState.y = Math.max(b.top, Math.min(cropBoxState.y, b.top + b.height - cropBoxState.h));
 }
 
-let cropInteraction = null; // {mode:'move'|'resize', handle, startX, startY, start:{x,y,size}}
+let cropInteraction = null;
 
 function pointerDown(e, mode, handle){
   const point = e.touches ? e.touches[0] : e;
-  cropInteraction = {
-    mode, handle,
-    startX: point.clientX, startY: point.clientY,
-    start: {...cropBoxState}
-  };
+  cropInteraction = { mode, handle, startX: point.clientX, startY: point.clientY, start: {...cropBoxState} };
   e.stopPropagation();
   e.preventDefault();
 }
@@ -454,33 +549,42 @@ function pointerMove(e){
   const point = e.touches ? e.touches[0] : e;
   const dx = point.clientX - cropInteraction.startX;
   const dy = point.clientY - cropInteraction.startY;
-  const b = cropImgBox;
+  const s0 = cropInteraction.start;
+  const square = aspectMode === 'cuadrado';
 
   if(cropInteraction.mode === 'move'){
-    cropBoxState.x = cropInteraction.start.x + dx;
-    cropBoxState.y = cropInteraction.start.y + dy;
-  } else {
-    // resize manteniendo cuadrado, según la esquina arrastrada
-    const s0 = cropInteraction.start;
-    let delta;
-    if(cropInteraction.handle === 'br') delta = Math.max(dx, dy);
-    else if(cropInteraction.handle === 'tl') delta = -Math.max(dx, dy);
-    else if(cropInteraction.handle === 'tr') delta = Math.max(dx, -dy);
-    else delta = Math.max(-dx, dy); // bl
-
-    let newSize = s0.size + delta;
-    newSize = Math.max(MIN_CROP, Math.min(newSize, Math.min(b.width, b.height)));
-    const grow = newSize - s0.size;
-
-    if(cropInteraction.handle === 'br'){
-      cropBoxState.x = s0.x; cropBoxState.y = s0.y; cropBoxState.size = newSize;
-    } else if(cropInteraction.handle === 'tl'){
-      cropBoxState.x = s0.x - grow; cropBoxState.y = s0.y - grow; cropBoxState.size = newSize;
-    } else if(cropInteraction.handle === 'tr'){
-      cropBoxState.x = s0.x; cropBoxState.y = s0.y - grow; cropBoxState.size = newSize;
+    cropBoxState.x = s0.x + dx;
+    cropBoxState.y = s0.y + dy;
+  } else if(cropInteraction.mode === 'resize'){
+    const h = cropInteraction.handle;
+    let nx=s0.x, ny=s0.y, nw=s0.w, nh=s0.h;
+    if(square){
+      let delta;
+      if(h==='br') delta = Math.max(dx,dy);
+      else if(h==='tl') delta = -Math.max(dx,dy);
+      else if(h==='tr') delta = Math.max(dx,-dy);
+      else delta = Math.max(-dx,dy);
+      const newSize = Math.max(MIN_CROP, s0.w + delta);
+      const grow = newSize - s0.w;
+      if(h==='br'){ nw=newSize; nh=newSize; }
+      else if(h==='tl'){ nx=s0.x-grow; ny=s0.y-grow; nw=newSize; nh=newSize; }
+      else if(h==='tr'){ ny=s0.y-grow; nw=newSize; nh=newSize; }
+      else { nx=s0.x-grow; nw=newSize; nh=newSize; }
     } else {
-      cropBoxState.x = s0.x - grow; cropBoxState.y = s0.y; cropBoxState.size = newSize;
+      if(h.includes('l')){ nx = s0.x+dx; nw = s0.w-dx; }
+      if(h.includes('r')){ nw = s0.w+dx; }
+      if(h.includes('t')){ ny = s0.y+dy; nh = s0.h-dy; }
+      if(h.includes('b')){ nh = s0.h+dy; }
     }
+    cropBoxState = {x:nx, y:ny, w:Math.max(MIN_CROP,nw), h:Math.max(MIN_CROP,nh)};
+  } else if(cropInteraction.mode === 'edge'){
+    const h = cropInteraction.handle;
+    let nx=s0.x, ny=s0.y, nw=s0.w, nh=s0.h;
+    if(h==='l'){ nx = s0.x+dx; nw = s0.w-dx; }
+    if(h==='r'){ nw = s0.w+dx; }
+    if(h==='t'){ ny = s0.y+dy; nh = s0.h-dy; }
+    if(h==='b'){ nh = s0.h+dy; }
+    cropBoxState = {x:nx, y:ny, w:Math.max(MIN_CROP,nw), h:Math.max(MIN_CROP,nh)};
   }
   clampCropBox();
   updateCropBoxEl();
@@ -495,41 +599,81 @@ document.addEventListener('DOMContentLoaded', ()=>{
     h.addEventListener('mousedown', (e)=>pointerDown(e,'resize',h.dataset.h));
     h.addEventListener('touchstart', (e)=>pointerDown(e,'resize',h.dataset.h), {passive:false});
   });
+  box.querySelectorAll('.crop-edge').forEach(h=>{
+    h.addEventListener('mousedown', (e)=>pointerDown(e,'edge',h.dataset.h));
+    h.addEventListener('touchstart', (e)=>pointerDown(e,'edge',h.dataset.h), {passive:false});
+  });
   window.addEventListener('mousemove', pointerMove);
   window.addEventListener('touchmove', pointerMove, {passive:false});
   window.addEventListener('mouseup', pointerUp);
   window.addEventListener('touchend', pointerUp);
+
+  document.getElementById('rotateRange').addEventListener('input', (e)=>{
+    rotationDeg = parseInt(e.target.value);
+    document.getElementById('rotateVal').textContent = rotationDeg+'°';
+    rebuildWorkingImage(layoutImageAndDefaultBox);
+  });
+  document.getElementById('resetRotateBtn').addEventListener('click', ()=>{
+    rotationDeg = 0; flipH = false;
+    document.getElementById('rotateRange').value = 0;
+    document.getElementById('rotateVal').textContent = '0°';
+    rebuildWorkingImage(layoutImageAndDefaultBox);
+  });
+  document.getElementById('rotateLeftBtn').addEventListener('click', ()=>{
+    rotationDeg = ((rotationDeg - 90) % 360);
+    if(rotationDeg <= -180) rotationDeg += 360;
+    document.getElementById('rotateRange').value = Math.max(-45, Math.min(45, rotationDeg));
+    document.getElementById('rotateVal').textContent = rotationDeg+'°';
+    rebuildWorkingImage(layoutImageAndDefaultBox);
+  });
+  document.getElementById('flipBtn').addEventListener('click', ()=>{
+    flipH = !flipH;
+    rebuildWorkingImage(layoutImageAndDefaultBox);
+  });
+  document.getElementById('aspectBtn').addEventListener('click', ()=>{
+    aspectMode = aspectMode === 'libre' ? 'cuadrado' : 'libre';
+    document.getElementById('aspectLabel').textContent = aspectMode === 'libre' ? 'Libre' : 'Cuadrado';
+    if(aspectMode === 'cuadrado'){
+      const size = Math.min(cropBoxState.w, cropBoxState.h);
+      cropBoxState.w = size; cropBoxState.h = size;
+      clampCropBox();
+      updateCropBoxEl();
+    } else {
+      updateCropBoxEl();
+    }
+  });
 });
 
 async function saveCrop(){
-  const outputSize = 800;
+  const outputW = 800, outputH = 800;
   const b = cropImgBox;
   const img = document.getElementById('cropImg');
-  const scale = img.naturalWidth / b.width; // px reales por px mostrado
+  const scaleX = img.naturalWidth / b.width;
+  const scaleY = img.naturalHeight / b.height;
 
-  const relX = (cropBoxState.x - b.left) * scale;
-  const relY = (cropBoxState.y - b.top) * scale;
-  const relSize = cropBoxState.size * scale;
+  const relX = (cropBoxState.x - b.left) * scaleX;
+  const relY = (cropBoxState.y - b.top) * scaleY;
+  const relW = cropBoxState.w * scaleX;
+  const relH = cropBoxState.h * scaleY;
 
   const canvas = document.createElement('canvas');
-  canvas.width = outputSize; canvas.height = outputSize;
+  canvas.width = outputW; canvas.height = outputH;
   const ctx = canvas.getContext('2d');
   const tempImg = new Image();
-  await new Promise(res=>{ tempImg.onload=res; tempImg.src = cropImgNaturalSrc; });
-  ctx.drawImage(tempImg, relX, relY, relSize, relSize, 0, 0, outputSize, outputSize);
+  await new Promise(res=>{ tempImg.onload=res; tempImg.src = cropWorkingSrc; });
+  ctx.drawImage(tempImg, relX, relY, relW, relH, 0, 0, outputW, outputH);
   const finalUrl = canvas.toDataURL('image/jpeg', 0.85);
 
-  const id = cropTargetId;
-  const current = await getPhotos(id);
+  undoStore[currentProduct.id] = [...workingPhotos];
   if(cropIsNew){
-    current.unshift(finalUrl);
+    workingPhotos.unshift(finalUrl);
   } else {
-    current[cropTargetIdx] = finalUrl;
+    workingPhotos[cropTargetIdx] = finalUrl;
   }
-  await setPhotos(id, current);
   closeCropModal();
-  await renderModalContent(id);
+  renderModalContent();
   document.getElementById('undoBtn').disabled = false;
+  markDirty();
 }
 </script>
 </body>
