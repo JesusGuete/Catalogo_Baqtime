@@ -495,6 +495,8 @@
     .grid{ grid-template-columns:1fr; }
   }
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -753,6 +755,37 @@ const PRODUCTS_MAKEUP = [
 
 const ALL_PRODUCTS = [...PRODUCTS_TOTE, ...PRODUCTS_TOTE_LUXURY, ...PRODUCTS_LUMIERE, ...PRODUCTS_NECESER, ...PRODUCTS_COSMETIQUERA, ...PRODUCTS_MAKEUP];
 
+// ===== Fotos administradas por la clienta (Firebase) =====
+const firebaseConfig = {
+  apiKey: "AIzaSyB9wJvA0Wz2tD7Ia19sDiO0gXiK19ESp80",
+  authDomain: "baqtimecatalogo.firebaseapp.com",
+  databaseURL: "https://baqtimecatalogo-default-rtdb.firebaseio.com",
+  projectId: "baqtimecatalogo",
+  storageBucket: "baqtimecatalogo.firebasestorage.app",
+  messagingSenderId: "119191612833",
+  appId: "1:119191612833:web:341137d315a8c74fdaafe0"
+};
+firebase.initializeApp(firebaseConfig);
+const productPhotosRef = firebase.database().ref('productPhotos');
+let firebasePhotosLoaded = false;
+
+async function applyFirebasePhotos(){
+  try{
+    const snap = await productPhotosRef.once('value');
+    const data = snap.val() || {};
+    ALL_PRODUCTS.forEach(p=>{
+      const photos = data[p.id];
+      if(photos && photos.length){
+        p.img = photos[0];
+        p.gallery = photos.length > 1 ? photos : undefined;
+      }
+    });
+  }catch(e){
+    console.warn('No se pudieron cargar las fotos actualizadas', e);
+  }
+  firebasePhotosLoaded = true;
+}
+
 const CATEGORY_LABELS = { tote:"Tote Personalizado", "tote-luxury":"Tote Bag Luxury", lumiere:"Bag Lumiere", neceser:"Neceser", cosmetiquera:"Cosmetiquera", "makeup-bag":"Makeup Bag" };
 const IMPORTED_CATEGORIES = ["makeup-bag"]; // productos importados con tiempo de entrega mayor
 
@@ -872,8 +905,10 @@ function renderGrid(){
       gridEl.appendChild(card);
   });
 }
-renderColorFilters();
-renderGrid();
+applyFirebasePhotos().then(()=>{
+  renderColorFilters();
+  renderGrid();
+});
 
 /* ===================== MODAL ===================== */
 const modalOverlay = document.getElementById('modalOverlay');
