@@ -332,6 +332,9 @@ const CATEGORY_CONFIG = {
   "Makeup Bag":      { key:"makeup-bag",   price:70000,  personalizable:true,  maxInitials:3, hasVariant:false },
 };
 
+// Mismo orden en que aparecen las categorías en el catálogo público
+const CATEGORY_ORDER = ["Tote Bag", "Tote Bag Luxury", "Bag Lumiere", "Neceser", "Cosmetiquera", "Makeup Bag"];
+
 // Paleta amplia de colores para elegir el color de referencia de un modelo nuevo
 const COLOR_PALETTE = [
   {name:"Beige",  hex:"#EDE6D6"},
@@ -437,7 +440,7 @@ async function initPanel(){
   await applyStoredNames();
   await applyStoredOrder();
   const groupsEl = document.getElementById('groups');
-  const cats = [...new Set(PRODUCTS.map(p=>p.cat))];
+  const cats = CATEGORY_ORDER.filter(c=>PRODUCTS.some(p=>p.cat===c));
   for(const cat of cats){
     const group = document.createElement('div');
     group.className = 'cat-group';
