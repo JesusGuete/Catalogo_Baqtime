@@ -122,8 +122,30 @@
 
 <div id="panel" style="display:none;">
   <h1>Panel de fotos — Baqtime</h1>
-  <p class="sub">Da clic en un producto para ver, agregar, ajustar, eliminar o reordenar sus fotos. Los cambios se reflejan solos en el catálogo.</p>
+  <p class="sub">Da clic en un producto para ver, agregar, ajustar, eliminar o reordenar sus fotos. Los cambios quedan pendientes hasta que le des "Confirmar cambios".</p>
+
+  <div id="confirmBar" style="position:sticky;top:0;z-index:50;background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <span style="font-size:13px;color:var(--ink-soft);">Los cambios que hagas aquí no se ven en la página todavía. Cuando termines, confírmalos para actualizar el catálogo real.</span>
+    <button class="btn" id="confirmChangesBtn" style="background:var(--mocha);color:#fff;border:none;white-space:nowrap;">✓ Confirmar cambios</button>
+  </div>
+
   <div id="groups"></div>
+</div>
+
+<div class="overlay hidden" id="confirmPasswordOverlay">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-head">
+      <h2 style="font-size:16px;">Confirmar cambios</h2>
+      <button class="close-x" onclick="closeConfirmPasswordModal()">×</button>
+    </div>
+    <p style="font-size:13px;color:var(--ink-soft);margin-top:-6px;">Esto va a actualizar el catálogo que ven tus clientes. Escribe la clave para confirmar.</p>
+    <input type="password" id="confirmPasswordInput" placeholder="Clave" style="width:100%;padding:8px;margin-bottom:8px;border:1px solid var(--border);border-radius:4px;font-size:14px;">
+    <p id="confirmPasswordError" style="color:var(--danger);font-size:12px;min-height:14px;"></p>
+    <div class="action-row">
+      <button class="btn" style="background:var(--mocha);color:#fff;border:none;" onclick="publishChanges()">Confirmar y actualizar</button>
+      <button class="btn" onclick="closeConfirmPasswordModal()">Cancelar</button>
+    </div>
+  </div>
 </div>
 
 <div class="overlay hidden" id="productOverlay">
@@ -145,7 +167,7 @@
     </div>
 
     <div class="main-photo-lg" id="modalMain"></div>
-    <button class="btn" id="cropCurrentBtn" style="width:100%;margin-bottom:14px;">✂ Recortar esta foto</button>
+    <button class="btn" id="cropCurrentBtn" style="width:100%;margin-bottom:14px;">✂ Editar Imagen</button>
 
     <div class="thumbs-strip" id="modalThumbs"></div>
 
@@ -275,6 +297,44 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const PANEL_PASSWORD = "baqtime2026";
+const CONFIRM_PASSWORD = "sharithyjesus";
+
+const DRAFT_NODES = ["productPhotos", "customProducts", "deletedProducts", "productOverrides", "productOrder"];
+
+document.getElementById('confirmChangesBtn').addEventListener('click', ()=>{
+  if(!confirm('¿Quieres confirmar todos los cambios pendientes y actualizar el catálogo real ahora?')) return;
+  document.getElementById('confirmPasswordInput').value = '';
+  document.getElementById('confirmPasswordError').textContent = '';
+  document.getElementById('confirmPasswordOverlay').classList.remove('hidden');
+});
+function closeConfirmPasswordModal(){
+  document.getElementById('confirmPasswordOverlay').classList.add('hidden');
+}
+
+async function publishChanges(){
+  const val = document.getElementById('confirmPasswordInput').value;
+  if(val !== CONFIRM_PASSWORD){
+    document.getElementById('confirmPasswordError').textContent = 'Clave incorrecta.';
+    return;
+  }
+  const btn = document.getElementById('confirmChangesBtn');
+  btn.disabled = true;
+  btn.textContent = 'Actualizando...';
+  try{
+    for(const node of DRAFT_NODES){
+      const snap = await db.ref(node+'_draft').once('value');
+      const val = snap.val();
+      await db.ref(node).set(val || null);
+    }
+    closeConfirmPasswordModal();
+    alert('Listo, el catálogo ya quedó actualizado con tus cambios.');
+  }catch(e){
+    alert('Hubo un problema al actualizar. Intenta de nuevo.');
+    console.error(e);
+  }
+  btn.disabled = false;
+  btn.textContent = '✓ Confirmar cambios';
+}
 function tryLogin(){
   const val = document.getElementById('pw').value;
   if(val === PANEL_PASSWORD){
@@ -351,7 +411,7 @@ let customProductCounter = 0;
 
 async function loadCustomProducts(){
   try{
-    const snap = await db.ref('customProducts').once('value');
+    const snap = await db.ref('customProducts_draft').once('value');
     const data = snap.val() || {};
     Object.values(data).forEach(p=>{
       if(!PRODUCTS.find(x=>x.id===p.id)){
@@ -361,7 +421,7 @@ async function loadCustomProducts(){
   }catch(e){ console.warn('No se pudieron cargar los modelos nuevos', e); }
 
   try{
-    const delSnap = await db.ref('deletedProducts').once('value');
+    const delSnap = await db.ref('deletedProducts_draft').once('value');
     const deleted = delSnap.val() || {};
     for(let i = PRODUCTS.length - 1; i >= 0; i--){
       if(deleted[PRODUCTS[i].id]) PRODUCTS.splice(i,1);
@@ -380,13 +440,13 @@ function showSaved(){
 }
 
 async function getPhotos(id){
-  const snap = await db.ref('productPhotos/'+id).once('value');
+  const snap = await db.ref('productPhotos_draft/'+id).once('value');
   const val = snap.val();
   if(val && val.length) return val;
   return DEFAULT_PHOTOS[id] ? [...DEFAULT_PHOTOS[id]] : [];
 }
 async function commitPhotos(id, arr){
-  await db.ref('productPhotos/'+id).set(arr);
+  await db.ref('productPhotos_draft/'+id).set(arr);
   showSaved();
 }
 
@@ -405,7 +465,7 @@ async function applyStoredOrder(){
     const cfg = CATEGORY_CONFIG[cat];
     if(!cfg) continue;
     try{
-      const snap = await db.ref('productOrder/'+cfg.key).once('value');
+      const snap = await db.ref('productOrder_draft/'+cfg.key).once('value');
       const order = snap.val();
       if(!order || !order.length) continue;
       const catProducts = PRODUCTS.filter(x=>x.cat===cat);
@@ -424,7 +484,7 @@ async function applyStoredOrder(){
 
 async function applyStoredNames(){
   try{
-    const snap = await db.ref('productOverrides').once('value');
+    const snap = await db.ref('productOverrides_draft').once('value');
     const data = snap.val() || {};
     PRODUCTS.forEach(p=>{
       if(data[p.id]){
@@ -435,7 +495,21 @@ async function applyStoredNames(){
   }catch(e){ console.warn('No se pudieron cargar los nombres personalizados', e); }
 }
 
+async function ensureDraftSeeded(){
+  for(const node of DRAFT_NODES){
+    try{
+      const draftSnap = await db.ref(node+'_draft').once('value');
+      if(draftSnap.val() === null){
+        const liveSnap = await db.ref(node).once('value');
+        const liveVal = liveSnap.val();
+        if(liveVal !== null) await db.ref(node+'_draft').set(liveVal);
+      }
+    }catch(e){ console.warn('No se pudo preparar el borrador de', node, e); }
+  }
+}
+
 async function initPanel(){
+  await ensureDraftSeeded();
   await loadCustomProducts();
   await applyStoredNames();
   await applyStoredOrder();
@@ -529,7 +603,7 @@ async function createNewProduct(){
   if(cfg.hasVariant) productData.variant = variantName;
   if(cfg.maxInitials) productData.maxInitials = cfg.maxInitials;
 
-  await db.ref('customProducts/'+id).set(productData);
+  await db.ref('customProducts_draft/'+id).set(productData);
 
   const p = { id, cat: newProductCat, name, variant: variantName };
   PRODUCTS.push(p);
@@ -726,7 +800,7 @@ async function reorderProduct(cat, draggedId, targetId){
   PRODUCTS.push(...others, ...catProducts);
 
   const cfg = CATEGORY_CONFIG[cat];
-  await db.ref('productOrder/'+cfg.key).set(catProducts.map(x=>x.id));
+  await db.ref('productOrder_draft/'+cfg.key).set(catProducts.map(x=>x.id));
 
   const grid = document.getElementById('grid-'+cat.replace(/\s+/g,'_'));
   const addCardEl = grid.querySelector('.add-card');
@@ -739,12 +813,12 @@ async function reorderProduct(cat, draggedId, targetId){
 async function deleteProduct(p){
   if(!confirm(`¿Eliminar "${p.name}${p.variant ? ' – '+p.variant : ''}" del catálogo? Esta acción no se puede deshacer.`)) return false;
   if(p.id.startsWith('custom_')){
-    await db.ref('customProducts/'+p.id).remove();
+    await db.ref('customProducts_draft/'+p.id).remove();
   } else {
-    await db.ref('deletedProducts/'+p.id).set(true);
+    await db.ref('deletedProducts_draft/'+p.id).set(true);
   }
-  await db.ref('productPhotos/'+p.id).remove();
-  await db.ref('productOverrides/'+p.id).remove();
+  await db.ref('productPhotos_draft/'+p.id).remove();
+  await db.ref('productOverrides_draft/'+p.id).remove();
   const idx = PRODUCTS.findIndex(x=>x.id===p.id);
   if(idx>-1) PRODUCTS.splice(idx,1);
   const el = document.getElementById('card-'+p.id);
@@ -803,7 +877,7 @@ document.getElementById('renameSaveBtn').addEventListener('click', async ()=>{
   const newName = document.getElementById('renameNameInput').value.trim();
   const newVariant = document.getElementById('renameVariantInput').value.trim();
   if(!newName){ alert('El nombre no puede quedar vacío.'); return; }
-  await db.ref('productOverrides/'+currentProduct.id).set({ name:newName, variant:newVariant });
+  await db.ref('productOverrides_draft/'+currentProduct.id).set({ name:newName, variant:newVariant });
   currentProduct.name = newName;
   currentProduct.variant = newVariant;
   document.getElementById('modalName').textContent = newName;
