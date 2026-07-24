@@ -124,8 +124,7 @@
   <h1>Panel de fotos — Baqtime</h1>
   <p class="sub">Da clic en un producto para ver, agregar, ajustar, eliminar o reordenar sus fotos. Los cambios quedan pendientes hasta que le des "Confirmar cambios".</p>
 
-  <div id="confirmBar" style="position:sticky;top:0;z-index:50;background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-    <span style="font-size:13px;color:var(--ink-soft);">Los cambios que hagas aquí no se ven en la página todavía. Cuando termines, confírmalos para actualizar el catálogo real.</span>
+  <div id="confirmBar" style="position:sticky;top:0;z-index:50;padding:6px 0 18px;display:flex;align-items:center;justify-content:flex-end;">
     <button class="btn" id="confirmChangesBtn" style="background:var(--mocha);color:#fff;border:none;white-space:nowrap;">✓ Confirmar cambios</button>
   </div>
 
@@ -409,24 +408,62 @@ const COLOR_PALETTE = [
 
 let customProductCounter = 0;
 
-async function loadCustomProducts(){
-  try{
-    const snap = await db.ref('customProducts_draft').once('value');
-    const data = snap.val() || {};
-    Object.values(data).forEach(p=>{
-      if(!PRODUCTS.find(x=>x.id===p.id)){
-        PRODUCTS.push({ id:p.id, cat:categoryKeyToLabel(p.category), name:p.name, variant:p.variant||'' });
-      }
-    });
-  }catch(e){ console.warn('No se pudieron cargar los modelos nuevos', e); }
+// ===== Caché en memoria (evita 1 consulta a Firebase por producto) =====
+let photosCache = {};
+let orderCache = {};
+let overridesCache = {};
+let customProductsCache = {};
+let deletedProductsCache = {};
 
+async function loadAllDraftData(){
+  const [photosSnap, orderSnap, overridesSnap, customSnap, deletedSnap] = await Promise.all([
+    db.ref('productPhotos_draft').once('value'),
+    db.ref('productOrder_draft').once('value'),
+    db.ref('productOverrides_draft').once('value'),
+    db.ref('customProducts_draft').once('value'),
+    db.ref('deletedProducts_draft').once('value'),
+  ]);
+  photosCache = photosSnap.val() || {};
+  orderCache = orderSnap.val() || {};
+  overridesCache = overridesSnap.val() || {};
+  customProductsCache = customSnap.val() || {};
+  deletedProductsCache = deletedSnap.val() || {};
+}
+
+async function ensureDraftSeeded(){
+  // Solo la primerísima vez (si TODOS los nodos de borrador están vacíos) migramos
+  // lo publicado hacia el borrador, en un solo lote paralelo.
+  const cacheByNode = {
+    productPhotos: photosCache, productOrder: orderCache, productOverrides: overridesCache,
+    customProducts: customProductsCache, deletedProducts: deletedProductsCache
+  };
+  const needsSeed = DRAFT_NODES.filter(n => Object.keys(cacheByNode[n]).length === 0);
+  if(!needsSeed.length) return;
   try{
-    const delSnap = await db.ref('deletedProducts_draft').once('value');
-    const deleted = delSnap.val() || {};
-    for(let i = PRODUCTS.length - 1; i >= 0; i--){
-      if(deleted[PRODUCTS[i].id]) PRODUCTS.splice(i,1);
+    const liveSnaps = await Promise.all(needsSeed.map(n=>db.ref(n).once('value')));
+    await Promise.all(needsSeed.map((n,i)=>{
+      const val = liveSnaps[i].val();
+      if(val === null) return Promise.resolve();
+      cacheByNode[n] = val;
+      if(n==='productPhotos') photosCache = val;
+      if(n==='productOrder') orderCache = val;
+      if(n==='productOverrides') overridesCache = val;
+      if(n==='customProducts') customProductsCache = val;
+      if(n==='deletedProducts') deletedProductsCache = val;
+      return db.ref(n+'_draft').set(val);
+    }));
+  }catch(e){ console.warn('No se pudo preparar el borrador inicial', e); }
+}
+
+function applyCustomProductsAndDeletions(){
+  Object.values(customProductsCache).forEach(p=>{
+    if(!PRODUCTS.find(x=>x.id===p.id)){
+      PRODUCTS.push({ id:p.id, cat:categoryKeyToLabel(p.category), name:p.name, variant:p.variant||'' });
     }
-  }catch(e){ console.warn('No se pudieron cargar los productos eliminados', e); }
+  });
+  for(let i = PRODUCTS.length - 1; i >= 0; i--){
+    if(deletedProductsCache[PRODUCTS[i].id]) PRODUCTS.splice(i,1);
+  }
 }
 function categoryKeyToLabel(key){
   const found = Object.entries(CATEGORY_CONFIG).find(([label,cfg])=>cfg.key===key);
@@ -439,14 +476,14 @@ function showSaved(){
   setTimeout(()=>{ el.style.opacity = '0'; }, 1500);
 }
 
-async function getPhotos(id){
-  const snap = await db.ref('productPhotos_draft/'+id).once('value');
-  const val = snap.val();
-  if(val && val.length) return val;
+function getPhotos(id){
+  const val = photosCache[id];
+  if(val && val.length) return [...val];
   return DEFAULT_PHOTOS[id] ? [...DEFAULT_PHOTOS[id]] : [];
 }
 async function commitPhotos(id, arr){
   await db.ref('productPhotos_draft/'+id).set(arr);
+  photosCache[id] = arr;
   showSaved();
 }
 
@@ -459,60 +496,39 @@ function markDirty(){
   document.getElementById('saveChangesBtn').disabled = false;
 }
 
-async function applyStoredOrder(){
+function applyStoredOrder(){
   const cats = [...new Set(PRODUCTS.map(p=>p.cat))];
   for(const cat of cats){
     const cfg = CATEGORY_CONFIG[cat];
     if(!cfg) continue;
-    try{
-      const snap = await db.ref('productOrder_draft/'+cfg.key).once('value');
-      const order = snap.val();
-      if(!order || !order.length) continue;
-      const catProducts = PRODUCTS.filter(x=>x.cat===cat);
-      const others = PRODUCTS.filter(x=>x.cat!==cat);
-      catProducts.sort((a,b)=> order.indexOf(a.id) - order.indexOf(b.id) || 0);
-      // los que no estén en el orden guardado (ids nuevos) quedan al final, en su posición original
-      const known = catProducts.filter(x=>order.includes(x.id));
-      const unknown = catProducts.filter(x=>!order.includes(x.id));
-      known.sort((a,b)=> order.indexOf(a.id) - order.indexOf(b.id));
-      const sorted = [...known, ...unknown];
-      PRODUCTS.length = 0;
-      PRODUCTS.push(...others, ...sorted);
-    }catch(e){ console.warn('No se pudo aplicar el orden guardado de', cat, e); }
+    const order = orderCache[cfg.key];
+    if(!order || !order.length) continue;
+    const catProducts = PRODUCTS.filter(x=>x.cat===cat);
+    const others = PRODUCTS.filter(x=>x.cat!==cat);
+    const known = catProducts.filter(x=>order.includes(x.id));
+    const unknown = catProducts.filter(x=>!order.includes(x.id));
+    known.sort((a,b)=> order.indexOf(a.id) - order.indexOf(b.id));
+    const sorted = [...known, ...unknown];
+    PRODUCTS.length = 0;
+    PRODUCTS.push(...others, ...sorted);
   }
 }
 
-async function applyStoredNames(){
-  try{
-    const snap = await db.ref('productOverrides_draft').once('value');
-    const data = snap.val() || {};
-    PRODUCTS.forEach(p=>{
-      if(data[p.id]){
-        if(data[p.id].name) p.name = data[p.id].name;
-        if(data[p.id].variant !== undefined) p.variant = data[p.id].variant;
-      }
-    });
-  }catch(e){ console.warn('No se pudieron cargar los nombres personalizados', e); }
-}
-
-async function ensureDraftSeeded(){
-  for(const node of DRAFT_NODES){
-    try{
-      const draftSnap = await db.ref(node+'_draft').once('value');
-      if(draftSnap.val() === null){
-        const liveSnap = await db.ref(node).once('value');
-        const liveVal = liveSnap.val();
-        if(liveVal !== null) await db.ref(node+'_draft').set(liveVal);
-      }
-    }catch(e){ console.warn('No se pudo preparar el borrador de', node, e); }
-  }
+function applyStoredNames(){
+  PRODUCTS.forEach(p=>{
+    if(overridesCache[p.id]){
+      if(overridesCache[p.id].name) p.name = overridesCache[p.id].name;
+      if(overridesCache[p.id].variant !== undefined) p.variant = overridesCache[p.id].variant;
+    }
+  });
 }
 
 async function initPanel(){
+  await loadAllDraftData();
   await ensureDraftSeeded();
-  await loadCustomProducts();
-  await applyStoredNames();
-  await applyStoredOrder();
+  applyCustomProductsAndDeletions();
+  applyStoredNames();
+  applyStoredOrder();
   const groupsEl = document.getElementById('groups');
   const cats = CATEGORY_ORDER.filter(c=>PRODUCTS.some(p=>p.cat===c));
   for(const cat of cats){
@@ -525,7 +541,7 @@ async function initPanel(){
     group.appendChild(grid);
     groupsEl.appendChild(group);
     for(const p of PRODUCTS.filter(x=>x.cat===cat)){
-      grid.appendChild(await renderThumbCard(p));
+      grid.appendChild(renderThumbCard(p));
     }
     grid.appendChild(renderAddCard(cat));
   }
@@ -604,12 +620,13 @@ async function createNewProduct(){
   if(cfg.maxInitials) productData.maxInitials = cfg.maxInitials;
 
   await db.ref('customProducts_draft/'+id).set(productData);
+  customProductsCache[id] = productData;
 
   const p = { id, cat: newProductCat, name, variant: variantName };
   PRODUCTS.push(p);
   const grid = document.getElementById('grid-'+newProductCat.replace(/\s+/g,'_'));
   const addCardEl = grid.querySelector('.add-card');
-  const newCard = await renderThumbCard(p);
+  const newCard = renderThumbCard(p);
   grid.insertBefore(newCard, addCardEl);
 
   closeNewProductModal();
@@ -745,8 +762,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
 });
 
-async function renderThumbCard(p){
-  const photos = await getPhotos(p.id);
+function renderThumbCard(p){
+  const photos = getPhotos(p.id);
   const card = document.createElement('div');
   card.className = 'thumb-card';
   card.id = 'card-'+p.id;
@@ -800,12 +817,14 @@ async function reorderProduct(cat, draggedId, targetId){
   PRODUCTS.push(...others, ...catProducts);
 
   const cfg = CATEGORY_CONFIG[cat];
-  await db.ref('productOrder_draft/'+cfg.key).set(catProducts.map(x=>x.id));
+  const newOrder = catProducts.map(x=>x.id);
+  orderCache[cfg.key] = newOrder;
+  await db.ref('productOrder_draft/'+cfg.key).set(newOrder);
 
   const grid = document.getElementById('grid-'+cat.replace(/\s+/g,'_'));
   const addCardEl = grid.querySelector('.add-card');
   grid.innerHTML = '';
-  for(const cp of catProducts) grid.appendChild(await renderThumbCard(cp));
+  for(const cp of catProducts) grid.appendChild(renderThumbCard(cp));
   grid.appendChild(addCardEl);
   showSaved();
 }
@@ -814,11 +833,15 @@ async function deleteProduct(p){
   if(!confirm(`¿Eliminar "${p.name}${p.variant ? ' – '+p.variant : ''}" del catálogo? Esta acción no se puede deshacer.`)) return false;
   if(p.id.startsWith('custom_')){
     await db.ref('customProducts_draft/'+p.id).remove();
+    delete customProductsCache[p.id];
   } else {
     await db.ref('deletedProducts_draft/'+p.id).set(true);
+    deletedProductsCache[p.id] = true;
   }
   await db.ref('productPhotos_draft/'+p.id).remove();
   await db.ref('productOverrides_draft/'+p.id).remove();
+  delete photosCache[p.id];
+  delete overridesCache[p.id];
   const idx = PRODUCTS.findIndex(x=>x.id===p.id);
   if(idx>-1) PRODUCTS.splice(idx,1);
   const el = document.getElementById('card-'+p.id);
@@ -834,7 +857,7 @@ async function refreshThumbCard(id){
   const p = PRODUCTS.find(x=>x.id===id);
   const el = document.getElementById('card-'+id);
   if(!el || !p) return;
-  const newCard = await renderThumbCard(p);
+  const newCard = renderThumbCard(p);
   el.replaceWith(newCard);
 }
 
@@ -878,6 +901,7 @@ document.getElementById('renameSaveBtn').addEventListener('click', async ()=>{
   const newVariant = document.getElementById('renameVariantInput').value.trim();
   if(!newName){ alert('El nombre no puede quedar vacío.'); return; }
   await db.ref('productOverrides_draft/'+currentProduct.id).set({ name:newName, variant:newVariant });
+  overridesCache[currentProduct.id] = { name:newName, variant:newVariant };
   currentProduct.name = newName;
   currentProduct.variant = newVariant;
   document.getElementById('modalName').textContent = newName;
