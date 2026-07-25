@@ -285,6 +285,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
 const firebaseConfig = {
@@ -299,6 +300,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
+const storage = firebase.storage();
 
 const DRAFT_NODES = ["productPhotos", "customProducts", "deletedProducts", "productOverrides", "productOrder"];
 
@@ -1285,7 +1287,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 });
 
 async function saveCrop(){
-  const outputW = 800, outputH = 800;
+  const outputW = 1000, outputH = 1000;
   const b = cropImgBox;
   const img = document.getElementById('cropImg');
   const scaleX = img.naturalWidth / b.width;
@@ -1302,13 +1304,36 @@ async function saveCrop(){
   const tempImg = new Image();
   await new Promise(res=>{ tempImg.onload=res; tempImg.src = cropWorkingSrc; });
   ctx.drawImage(tempImg, relX, relY, relW, relH, 0, 0, outputW, outputH);
-  const finalUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+  // Convierte el recorte a WebP (calidad 0.80) como Blob, en vez de Base64
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/webp', 0.80));
+  if(!blob){
+    alert('No se pudo procesar la imagen. Intenta de nuevo.');
+    return;
+  }
+
+  const doneBtn = document.querySelector('#cropOverlay .crop-topbar button[onclick="saveCrop()"]');
+  if(doneBtn) doneBtn.textContent = 'Subiendo...';
+
+  let downloadUrl;
+  try{
+    const path = `product-images/${currentProduct.id}/${Date.now()}.webp`;
+    const fileRef = storage.ref(path);
+    await fileRef.put(blob, { contentType: 'image/webp' });
+    downloadUrl = await fileRef.getDownloadURL();
+  }catch(e){
+    console.error(e);
+    alert('No se pudo subir la foto a Firebase Storage. Revisa tu conexión e intenta de nuevo.');
+    if(doneBtn) doneBtn.textContent = 'Listo';
+    return;
+  }
+  if(doneBtn) doneBtn.textContent = 'Listo';
 
   undoStore[currentProduct.id] = [...workingPhotos];
   if(cropIsNew){
-    workingPhotos.unshift(finalUrl);
+    workingPhotos.unshift(downloadUrl);
   } else {
-    workingPhotos[cropTargetIdx] = finalUrl;
+    workingPhotos[cropTargetIdx] = downloadUrl;
   }
   closeCropModal();
   renderModalContent();
