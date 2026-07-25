@@ -174,7 +174,7 @@
     <div class="thumbs-strip" id="modalThumbs"></div>
 
     <div class="action-row">
-      <button class="btn btn-reset" id="resetBtn">↺ Restaurar fotos originales</button>
+      <button class="btn btn-reset" id="discardChangesBtn">↺ Deshacer cambios</button>
       <button class="btn btn-undo" id="undoBtn" disabled>Deshacer último cambio</button>
     </div>
     <button class="btn" id="saveChangesBtn" disabled style="width:100%;margin-top:12px;background:var(--ink);color:#fff;border:none;">Guardar cambios</button>
@@ -346,6 +346,14 @@ async function publishChanges(){
 
     // Una única escritura atómica: o se publican los 5 nodos, o no se publica ninguno
     await db.ref().update(updates);
+
+    // Si hay un producto abierto, su referencia pasa a ser el valor recién publicado
+    // (tomado de "updates", nunca de workingPhotos genérico, que podría ser de otro producto)
+    if(currentProduct && updates['productPhotos'] && updates['productPhotos'][currentProduct.id] !== undefined){
+      referencePhotos = [...(updates['productPhotos'][currentProduct.id] || [])];
+      updateDiscardButtonState();
+    }
+
     closeConfirmPasswordModal();
     alert('Listo, el catálogo ya quedó actualizado con tus cambios.');
   }catch(e){
@@ -549,11 +557,18 @@ async function commitPhotos(id, arr){
 
 const undoStore = {};
 let workingPhotos = [];   // borrador local del producto abierto (sin guardar aún)
+let referencePhotos = []; // estado del producto al iniciar esta sesión de edición (para "Deshacer cambios")
 let hasUnsavedChanges = false;
 
+function updateDiscardButtonState(){
+  const btn = document.getElementById('discardChangesBtn');
+  if(!btn) return;
+  btn.disabled = (JSON.stringify(workingPhotos) === JSON.stringify(referencePhotos));
+}
 function markDirty(){
   hasUnsavedChanges = true;
   document.getElementById('saveChangesBtn').disabled = false;
+  updateDiscardButtonState();
 }
 
 function applyStoredOrder(){
@@ -939,6 +954,7 @@ let currentPreviewIdx = 0;
 async function openProductModal(p){
   currentProduct = p;
   workingPhotos = await getPhotos(p.id);
+  referencePhotos = [...workingPhotos];
   hasUnsavedChanges = false;
   document.getElementById('modalName').textContent = p.name;
   document.getElementById('modalVariant').textContent = p.variant || '';
@@ -946,6 +962,7 @@ async function openProductModal(p){
   document.getElementById('renameVariantInput').value = p.variant || '';
   document.getElementById('undoBtn').disabled = !undoStore[p.id];
   document.getElementById('saveChangesBtn').disabled = true;
+  updateDiscardButtonState();
   document.getElementById('modalStatus').textContent = '';
   renderModalContent();
   document.getElementById('productOverlay').classList.remove('hidden');
@@ -1060,14 +1077,25 @@ document.getElementById('cropCurrentBtn').addEventListener('click', ()=>{
   openCropModal(currentProduct.id, currentPreviewIdx, workingPhotos[currentPreviewIdx]);
 });
 
-document.getElementById('resetBtn').addEventListener('click', ()=>{
-  if(!confirm('¿Restaurar las fotos originales de este producto? (deberás darle Guardar cambios para que quede así en el catálogo)')) return;
-  undoStore[currentProduct.id] = [...workingPhotos];
-  workingPhotos = DEFAULT_PHOTOS[currentProduct.id] ? [...DEFAULT_PHOTOS[currentProduct.id]] : [];
+document.getElementById('discardChangesBtn').addEventListener('click', async ()=>{
+  if(JSON.stringify(workingPhotos) === JSON.stringify(referencePhotos)) return;
+  if(!confirm('¿Deshacer todos los cambios de esta sesión de edición?')) return;
+
+  workingPhotos = [...referencePhotos];
   renderModalContent();
-  document.getElementById('undoBtn').disabled = false;
-  document.getElementById('modalStatus').textContent = 'Fotos originales cargadas. Dale "Guardar cambios" para confirmar.';
-  markDirty();
+  updateDiscardButtonState();
+  document.getElementById('modalStatus').textContent = 'Deshaciendo...';
+
+  try{
+    // Sincroniza el borrador en Firebase para que refleje exactamente lo que se ve
+    await commitPhotos(currentProduct.id, workingPhotos);
+    hasUnsavedChanges = false;
+    document.getElementById('saveChangesBtn').disabled = true;
+    document.getElementById('modalStatus').textContent = 'Cambios de esta sesión deshechos.';
+  }catch(e){
+    console.error(e);
+    document.getElementById('modalStatus').textContent = 'No se pudo sincronizar el borrador. Intenta de nuevo.';
+  }
 });
 
 document.getElementById('undoBtn').addEventListener('click', ()=>{
