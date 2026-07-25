@@ -331,11 +331,19 @@ async function publishChanges(){
     const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
     await user.reauthenticateWithCredential(credential);
 
-    for(const node of DRAFT_NODES){
-      const snap = await db.ref(node+'_draft').once('value');
-      const val = snap.val();
-      await db.ref(node).set(val || null);
-    }
+    // Lectura paralela de los 5 nodos _draft
+    const snaps = await Promise.all(
+      DRAFT_NODES.map(node => db.ref(node + '_draft').once('value'))
+    );
+
+    // Construcción del objeto de actualización multi-ruta (5 nodos publicados)
+    const updates = {};
+    DRAFT_NODES.forEach((node, i) => {
+      updates[node] = snaps[i].val() || null;
+    });
+
+    // Una única escritura atómica: o se publican los 5 nodos, o no se publica ninguno
+    await db.ref().update(updates);
     closeConfirmPasswordModal();
     alert('Listo, el catálogo ya quedó actualizado con tus cambios.');
   }catch(e){
@@ -812,6 +820,17 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
 });
 
+// Escapa caracteres especiales antes de insertar texto de usuario en innerHTML (previene XSS)
+function escapeHtml(str){
+  if(str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function renderThumbCard(p){
   const photos = getPhotos(p.id);
   const card = document.createElement('div');
@@ -823,8 +842,8 @@ function renderThumbCard(p){
   card.style.position = 'relative';
   card.innerHTML = `
     <button class="delete-product-btn" title="Eliminar producto" data-id="${p.id}">🗑</button>
-    <div class="name">${p.name}</div>
-    <div class="variant">${p.variant||''}</div>
+    <div class="name">${escapeHtml(p.name)}</div>
+    <div class="variant">${escapeHtml(p.variant||'')}</div>
     <div class="thumb">${photos[0] ? `<img src="${photos[0]}">` : '<div class="empty">Sin foto</div>'}</div>
     <div class="count">${photos.length} foto${photos.length!==1?'s':''}</div>
   `;
