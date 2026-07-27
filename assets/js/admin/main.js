@@ -2,6 +2,7 @@
 // Loaded as an ES module, so nothing here leaks to the global scope and every control
 // is wired explicitly below instead of through inline onclick attributes.
 import { DEFAULT_PHOTOS } from './default-photos.js';
+import { escapeHtml } from '../shared/escape.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyB9wJvA0Wz2tD7Ia19sDiO0gXiK19ESp80",
@@ -607,17 +608,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
 });
 
-// Escapa caracteres especiales antes de insertar texto de usuario en innerHTML (previene XSS)
-function escapeHtml(str){
-  if(str === null || str === undefined) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 function renderThumbCard(p){
   const photos = getPhotos(p.id);
   const card = document.createElement('div');
@@ -628,10 +618,10 @@ function renderThumbCard(p){
   card.draggable = true;
   card.style.position = 'relative';
   card.innerHTML = `
-    <button class="delete-product-btn" title="Eliminar producto" data-id="${p.id}">🗑</button>
+    <button class="delete-product-btn" title="Eliminar producto" data-id="${escapeHtml(p.id)}">🗑</button>
     <div class="name">${escapeHtml(p.name)}</div>
     <div class="variant">${escapeHtml(p.variant||'')}</div>
-    <div class="thumb">${photos[0] ? `<img src="${photos[0]}">` : '<div class="empty">Sin foto</div>'}</div>
+    <div class="thumb">${photos[0] ? `<img src="${escapeHtml(photos[0])}" alt="">` : '<div class="empty">Sin foto</div>'}</div>
     <div class="count">${photos.length} foto${photos.length!==1?'s':''}</div>
   `;
   card.addEventListener('click', ()=>openProductModal(p));
@@ -808,7 +798,7 @@ function renderModalContent(){
   const photos = workingPhotos;
   currentPreviewIdx = 0;
   const mainEl = document.getElementById('modalMain');
-  mainEl.innerHTML = photos[0] ? `<img src="${photos[0]}">` : '<div class="empty">Sin foto todavía</div>';
+  mainEl.innerHTML = photos[0] ? `<img src="${escapeHtml(photos[0])}" alt="">` : '<div class="empty">Sin foto todavía</div>';
 
   const stripEl = document.getElementById('modalThumbs');
   stripEl.innerHTML = '';
@@ -818,7 +808,7 @@ function renderModalContent(){
     item.draggable = true;
     item.dataset.idx = idx;
     item.innerHTML = `
-      <img src="${ph}">
+      <img src="${escapeHtml(ph)}" alt="">
       <div class="icons">
         <button class="icon-del" title="Eliminar">×</button>
       </div>
@@ -835,7 +825,7 @@ function renderModalContent(){
     item.querySelector('img').addEventListener('click', (e)=>{
       e.stopPropagation();
       currentPreviewIdx = idx;
-      document.getElementById('modalMain').innerHTML = `<img src="${ph}">`;
+      document.getElementById('modalMain').innerHTML = `<img src="${escapeHtml(ph)}" alt="">`;
       stripEl.querySelectorAll('.thumb-item').forEach(t=>t.classList.remove('previewing'));
       item.classList.add('previewing');
     });
