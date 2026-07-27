@@ -333,6 +333,11 @@ async function publishChanges(){
     const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
     await user.reauthenticateWithCredential(credential);
 
+    // Estado publicado actual de productPhotos, ANTES de sobreescribir (para poder
+    // detectar después qué fotos quedaron huérfanas en Storage tras esta publicación)
+    const photosBeforeSnap = await db.ref('productPhotos').once('value');
+    const photosBefore = photosBeforeSnap.val() || {};
+
     // Lectura paralela de los 5 nodos _draft
     const snaps = await Promise.all(
       DRAFT_NODES.map(node => db.ref(node + '_draft').once('value'))
@@ -356,6 +361,10 @@ async function publishChanges(){
 
     closeConfirmPasswordModal();
     alert('Listo, el catálogo ya quedó actualizado con tus cambios.');
+
+    // Limpieza de imágenes huérfanas en Storage: se ejecuta solo aquí, después de que
+    // la publicación ya se completó con éxito, nunca durante la edición de borradores.
+    cleanupOrphanedStorage(photosBefore, updates['productPhotos'] || {});
   }catch(e){
     if(e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential'){
       document.getElementById('confirmPasswordError').textContent = 'Contraseña incorrecta.';
@@ -366,6 +375,31 @@ async function publishChanges(){
   }
   btn.disabled = false;
   btn.textContent = '✓ Confirmar cambios';
+}
+
+// Borra de Firebase Storage las fotos que quedaron huérfanas tras una publicación:
+// cualquier URL que existía en el productPhotos publicado ANTERIOR y ya no aparece
+// en el productPhotos recién publicado (ya sea porque se reemplazó una foto, se
+// eliminó una foto puntual, o se eliminó el producto completo). Se ejecuta únicamente
+// después de una publicación exitosa; nunca durante la edición de borradores, para no
+// afectar "Deshacer cambios" ni "Deshacer último cambio".
+async function cleanupOrphanedStorage(photosBefore, photosAfter){
+  for(const id of Object.keys(photosBefore)){
+    const before = photosBefore[id] || [];
+    const after = photosAfter[id] || [];
+    const afterSet = new Set(after);
+    for(const url of before){
+      if(!afterSet.has(url)){
+        try{
+          const path = decodeURIComponent(url.split('/o/')[1].split('?')[0]);
+          await firebase.storage().ref(path).delete();
+          console.log('🧹 Imagen huérfana eliminada de Storage:', path);
+        }catch(e){
+          console.warn('No se pudo borrar una imagen huérfana de Storage:', url, e);
+        }
+      }
+    }
+  }
 }
 
 let panelInitialized = false;
