@@ -1,0 +1,11 @@
+# Local AI tooling — not part of the storefront.
+# These are generated or machine-local and should never ship with the site.
+.codegraph/
+.atl/
+.agents/
+.claude/
+skills-lock.json
+
+# OS noise
+.DS_Store
+Thumbs.db
