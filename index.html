@@ -737,10 +737,10 @@ const customProductsRef = firebase.database().ref('customProducts');
 const deletedProductsRef = firebase.database().ref('deletedProducts');
 let firebasePhotosLoaded = false;
 
-async function applyFirebaseCustomProducts(){
+async function applyFirebaseCustomProducts(customSnap){
   try{
-    const snap = await customProductsRef.once('value');
-    const data = snap.val() || {};
+    if(customSnap.status !== 'fulfilled') throw customSnap.reason;
+    const data = customSnap.value.val() || {};
     Object.values(data).forEach(p=>{
       if(!ALL_PRODUCTS.find(x=>x.id===p.id)) ALL_PRODUCTS.push(p);
     });
@@ -750,10 +750,17 @@ async function applyFirebaseCustomProducts(){
 }
 
 async function applyFirebasePhotos(){
-  await applyFirebaseCustomProducts();
+  const [customSnap, delSnap, photosSnap, overridesSnap, orderSnap] = await Promise.allSettled([
+    customProductsRef.once('value'),
+    deletedProductsRef.once('value'),
+    productPhotosRef.once('value'),
+    firebase.database().ref('productOverrides').once('value'),
+    firebase.database().ref('productOrder').once('value'),
+  ]);
+  await applyFirebaseCustomProducts(customSnap);
   try{
-    const delSnap = await deletedProductsRef.once('value');
-    const deleted = delSnap.val() || {};
+    if(delSnap.status !== 'fulfilled') throw delSnap.reason;
+    const deleted = delSnap.value.val() || {};
     for(let i = ALL_PRODUCTS.length - 1; i >= 0; i--){
       if(deleted[ALL_PRODUCTS[i].id]) ALL_PRODUCTS.splice(i,1);
     }
@@ -761,8 +768,8 @@ async function applyFirebasePhotos(){
     console.warn('No se pudieron cargar los productos eliminados', e);
   }
   try{
-    const snap = await productPhotosRef.once('value');
-    const data = snap.val() || {};
+    if(photosSnap.status !== 'fulfilled') throw photosSnap.reason;
+    const data = photosSnap.value.val() || {};
     ALL_PRODUCTS.forEach(p=>{
       const photos = data[p.id];
       if(photos && photos.length){
@@ -774,8 +781,8 @@ async function applyFirebasePhotos(){
     console.warn('No se pudieron cargar las fotos actualizadas', e);
   }
   try{
-    const overSnap = await firebase.database().ref('productOverrides').once('value');
-    const overrides = overSnap.val() || {};
+    if(overridesSnap.status !== 'fulfilled') throw overridesSnap.reason;
+    const overrides = overridesSnap.value.val() || {};
     ALL_PRODUCTS.forEach(p=>{
       if(overrides[p.id]){
         if(overrides[p.id].name) p.name = overrides[p.id].name;
@@ -786,8 +793,8 @@ async function applyFirebasePhotos(){
     console.warn('No se pudieron cargar los nombres actualizados', e);
   }
   try{
-    const orderSnap = await firebase.database().ref('productOrder').once('value');
-    const orders = orderSnap.val() || {};
+    if(orderSnap.status !== 'fulfilled') throw orderSnap.reason;
+    const orders = orderSnap.value.val() || {};
     const categoryKeys = [...new Set(ALL_PRODUCTS.map(p=>p.category))];
     let sorted = [];
     categoryKeys.forEach(catKey=>{
