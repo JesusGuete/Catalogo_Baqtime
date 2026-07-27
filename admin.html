@@ -1212,6 +1212,7 @@ const MIN_CROP = 40;
 
 function rebuildWorkingImage(cb){
   const src = new Image();
+  src.crossOrigin = 'anonymous'; // necesario para leer imágenes de Firebase Storage en el canvas
   src.onload = ()=>{
     const rad = rotationDeg * Math.PI/180;
     const w = src.naturalWidth, h = src.naturalHeight;
@@ -1224,8 +1225,20 @@ function rebuildWorkingImage(cb){
     ctx.rotate(rad);
     ctx.scale(flipH ? -1 : 1, 1);
     ctx.drawImage(src, -w/2, -h/2);
-    cropWorkingSrc = canvas.toDataURL('image/jpeg', 0.92);
+    try{
+      cropWorkingSrc = canvas.toDataURL('image/jpeg', 0.92);
+    }catch(e){
+      console.error('No se pudo leer la imagen para recortarla (posible falta de CORS en Firebase Storage):', e);
+      alert('No se pudo abrir esta foto para recortar. Si el problema persiste, revisa la configuración CORS de Firebase Storage.');
+      closeCropModal();
+      return;
+    }
     cb();
+  };
+  src.onerror = (e)=>{
+    console.error('No se pudo cargar la imagen para recortar:', e);
+    alert('No se pudo cargar la imagen. Revisa tu conexión e intenta de nuevo.');
+    closeCropModal();
   };
   src.src = cropImgNaturalSrc;
 }
