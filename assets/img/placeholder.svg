@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
+<title>Foto próximamente — Baqtime</title>
+<rect width="400" height="400" fill="#F1EAE0"/>
+<rect x="115" y="115" width="170" height="170" rx="4" fill="none" stroke="#5A4133" stroke-width="3"/>
+<circle cx="163" cy="163" r="15" fill="none" stroke="#5A4133" stroke-width="3"/>
+<path d="M115 250 L178 190 L218 222 L258 168 L285 250 Z" fill="#5A4133" opacity="0.35"/>
+<text x="200" y="322" font-family="Georgia,'Times New Roman',serif" font-size="22" fill="#26221D" text-anchor="middle">Baqtime</text>
+</svg>
