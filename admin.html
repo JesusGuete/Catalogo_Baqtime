@@ -131,6 +131,11 @@
     <button class="btn" id="confirmChangesBtn" style="background:var(--mocha);color:#fff;border:none;white-space:nowrap;">✓ Confirmar cambios</button>
   </div>
 
+  <div id="loadStatus" style="padding:40px 0;text-align:center;color:var(--ink-soft);font-size:13px;">Cargando productos...</div>
+  <div id="loadError" class="hidden" style="padding:20px;background:#fdf0ee;border:1px solid #f0c9c2;border-radius:8px;margin-bottom:16px;color:var(--danger);font-size:13px;">
+    No se pudieron cargar los productos. Revisa tu conexión e intenta de nuevo.
+    <button class="btn" id="retryLoadBtn" style="margin-left:10px;">Reintentar</button>
+  </div>
   <div id="groups"></div>
 </div>
 
@@ -633,12 +638,29 @@ function applyStoredNames(){
 }
 
 async function initPanel(){
-  await loadAllDraftData();
-  await ensureDraftSeeded();
-  applyCustomProductsAndDeletions();
-  applyStoredNames();
-  applyStoredOrder();
+  const loadStatus = document.getElementById('loadStatus');
+  const loadError = document.getElementById('loadError');
+  loadStatus.classList.remove('hidden');
+  loadStatus.style.display = 'block';
+  loadError.classList.add('hidden');
+
+  try{
+    await loadAllDraftData();
+    await ensureDraftSeeded();
+    applyCustomProductsAndDeletions();
+    applyStoredNames();
+    applyStoredOrder();
+  }catch(e){
+    console.error('No se pudieron cargar los productos:', e);
+    loadStatus.style.display = 'none';
+    loadError.classList.remove('hidden');
+    panelInitialized = false; // permite reintentar desde el botón
+    return;
+  }
+  loadStatus.style.display = 'none';
+
   const groupsEl = document.getElementById('groups');
+  groupsEl.innerHTML = '';
   const cats = CATEGORY_ORDER.filter(c=>PRODUCTS.some(p=>p.cat===c));
   for(const cat of cats){
     const group = document.createElement('div');
@@ -655,6 +677,11 @@ async function initPanel(){
     grid.appendChild(renderAddCard(cat));
   }
 }
+
+document.getElementById('retryLoadBtn').addEventListener('click', ()=>{
+  panelInitialized = true;
+  initPanel();
+});
 
 function renderAddCard(cat){
   const addCard = document.createElement('div');
@@ -951,15 +978,21 @@ async function reorderProduct(cat, draggedId, targetId){
 
 async function deleteProduct(p){
   if(!confirm(`¿Eliminar "${p.name}${p.variant ? ' – '+p.variant : ''}" del catálogo? Esta acción no se puede deshacer.`)) return false;
-  if(p.id.startsWith('custom_')){
-    await db.ref('customProducts_draft/'+p.id).remove();
-    delete customProductsCache[p.id];
-  } else {
-    await db.ref('deletedProducts_draft/'+p.id).set(true);
-    deletedProductsCache[p.id] = true;
+  try{
+    if(p.id.startsWith('custom_')){
+      await db.ref('customProducts_draft/'+p.id).remove();
+      delete customProductsCache[p.id];
+    } else {
+      await db.ref('deletedProducts_draft/'+p.id).set(true);
+      deletedProductsCache[p.id] = true;
+    }
+    await db.ref('productPhotos_draft/'+p.id).remove();
+    await db.ref('productOverrides_draft/'+p.id).remove();
+  }catch(e){
+    console.error('No se pudo eliminar el producto:', e);
+    alert('No se pudo eliminar el producto. Revisa tu conexión e intenta de nuevo.');
+    return false;
   }
-  await db.ref('productPhotos_draft/'+p.id).remove();
-  await db.ref('productOverrides_draft/'+p.id).remove();
   delete photosCache[p.id];
   delete overridesCache[p.id];
   const idx = PRODUCTS.findIndex(x=>x.id===p.id);
@@ -1012,25 +1045,49 @@ function closeProductModal(){
 
 document.getElementById('saveChangesBtn').addEventListener('click', async ()=>{
   const id = currentProduct.id;
-  await commitPhotos(id, workingPhotos);
-  hasUnsavedChanges = false;
-  document.getElementById('saveChangesBtn').disabled = true;
-  document.getElementById('modalStatus').textContent = 'Cambios guardados en el catálogo.';
+  const btn = document.getElementById('saveChangesBtn');
+  const statusEl = document.getElementById('modalStatus');
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = 'Guardando...';
+  statusEl.textContent = '';
+  try{
+    await commitPhotos(id, workingPhotos);
+    hasUnsavedChanges = false;
+    statusEl.textContent = 'Cambios guardados en el catálogo.';
+  }catch(e){
+    console.error('No se pudo guardar el borrador de fotos:', e);
+    statusEl.textContent = 'No se pudo guardar. Revisa tu conexión e intenta de nuevo.';
+    btn.disabled = false; // deja reintentar
+  }
+  btn.textContent = originalText;
 });
 
 document.getElementById('renameSaveBtn').addEventListener('click', async ()=>{
   const newName = document.getElementById('renameNameInput').value.trim();
   const newVariant = document.getElementById('renameVariantInput').value.trim();
   if(!newName){ alert('El nombre no puede quedar vacío.'); return; }
-  await db.ref('productOverrides_draft/'+currentProduct.id).set({ name:newName, variant:newVariant });
-  overridesCache[currentProduct.id] = { name:newName, variant:newVariant };
-  currentProduct.name = newName;
-  currentProduct.variant = newVariant;
-  document.getElementById('modalName').textContent = newName;
-  document.getElementById('modalVariant').textContent = newVariant;
-  document.getElementById('modalStatus').textContent = 'Nombre guardado.';
-  showSaved();
-  refreshThumbCard(currentProduct.id);
+  const btn = document.getElementById('renameSaveBtn');
+  const statusEl = document.getElementById('modalStatus');
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = 'Guardando...';
+  try{
+    await db.ref('productOverrides_draft/'+currentProduct.id).set({ name:newName, variant:newVariant });
+    overridesCache[currentProduct.id] = { name:newName, variant:newVariant };
+    currentProduct.name = newName;
+    currentProduct.variant = newVariant;
+    document.getElementById('modalName').textContent = newName;
+    document.getElementById('modalVariant').textContent = newVariant;
+    statusEl.textContent = 'Nombre guardado.';
+    showSaved();
+    refreshThumbCard(currentProduct.id);
+  }catch(e){
+    console.error('No se pudo guardar el nombre/variante:', e);
+    statusEl.textContent = 'No se pudo guardar el nombre. Revisa tu conexión e intenta de nuevo.';
+  }
+  btn.disabled = false;
+  btn.textContent = originalText;
 });
 
 document.getElementById('deleteProductBtn').addEventListener('click', async ()=>{
