@@ -344,23 +344,19 @@
 
   /* ===== MODAL ===== */
   .modal-overlay{
-    position:fixed; inset:0; background:rgba(38,34,29,0.55);
-    display:none; align-items:flex-start; justify-content:center;
-    z-index:100; padding:24px 16px; overflow-y:auto;
-    backdrop-filter: blur(2px);
+    position:fixed; inset:0; background:var(--cream);
+    display:none; z-index:100; overflow-y:auto;
   }
-  .modal-overlay.open{ display:flex; }
+  .modal-overlay.open{ display:block; }
   .modal{
     background:var(--cream);
-    max-width:980px; width:100%;
-    border-radius:4px;
-    margin-top:24px;
+    max-width:1180px; width:100%; margin:0 auto;
+    min-height:100vh;
     display:grid; grid-template-columns:1fr 1fr;
-    overflow:hidden;
     position:relative;
   }
   @media (max-width:820px){
-    .modal{ grid-template-columns:1fr; margin-top:8px; }
+    .modal{ grid-template-columns:1fr; }
   }
   .modal-close{
     position:absolute; top:14px; right:14px; z-index:5;
@@ -446,13 +442,29 @@
     padding:14px 16px; font-size:13px; line-height:1.55; margin-bottom:22px; border-radius:0 2px 2px 0;
   }
 
-  /* ===== PRODUCTOS RELACIONADOS (dentro del modal) ===== */
+  /* ===== PRODUCTOS RELACIONADOS (dentro del modal) — carrusel, mismo formato que
+     "Nuestras colecciones": scroll nativo con scroll-snap, no un grid apretado ===== */
   .related-products{ margin-bottom:22px; }
   .related-products label{
     display:block; font-size:11px; color:var(--ink-soft); margin-bottom:10px;
     font-family:'JetBrains Mono', monospace; text-transform:uppercase; letter-spacing:.03em;
   }
-  .related-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+  .related-carousel{ display:flex; align-items:center; gap:8px; }
+  .related-viewport{
+    flex:1; overflow-x:auto; overflow-y:hidden;
+    scroll-snap-type:x mandatory; scroll-behavior:smooth;
+    -webkit-overflow-scrolling:touch; scrollbar-width:none;
+  }
+  .related-viewport::-webkit-scrollbar{ display:none; }
+  .related-grid{ display:flex; gap:12px; }
+  .related-grid .card{ scroll-snap-align:start; flex:0 0 150px; }
+  .related-arrow{
+    flex:0 0 auto; width:30px; height:30px; border-radius:50%;
+    border:1px solid var(--line); background:var(--white-card); color:var(--ink);
+    font-size:16px; line-height:1; cursor:pointer; transition:.15s;
+  }
+  .related-arrow:hover:not(:disabled){ background:var(--ink); color:var(--cream); border-color:var(--ink); }
+  .related-arrow:disabled{ opacity:.35; cursor:default; }
 
   .shipping-fields{ display:grid; gap:12px; margin-bottom:6px; }
   .shipping-fields input{
@@ -563,8 +575,6 @@
     .card-sub{ font-size:11px; margin-bottom:8px; }
     .card-price{ font-size:13px; }
 
-    .modal-overlay{ padding:0; }
-    .modal{ margin-top:0; border-radius:0; min-height:100vh; }
     .modal-gallery{ padding:18px; }
     .modal-info{ padding:22px 18px 26px; }
     .modal-info h2{ font-size:20px; }
