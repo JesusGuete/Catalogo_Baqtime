@@ -52,10 +52,11 @@ function lineDetail(item){
 }
 
 function renderCartBadge(){
-  const badge = document.getElementById('cartCount');
   const count = getCartCount();
-  badge.textContent = count;
-  badge.classList.toggle('hidden', count===0);
+  document.querySelectorAll('.cart-count').forEach(badge=>{
+    badge.textContent = count;
+    badge.classList.toggle('hidden', count===0);
+  });
 }
 
 function renderCartUI(){
@@ -88,6 +89,8 @@ function renderCartUI(){
 export function initCart(){
   renderCartUI();
   const panel = document.getElementById('cartPanel');
-  document.getElementById('cartIconBtn').addEventListener('click', ()=> panel.classList.toggle('hidden'));
+  document.querySelectorAll('.cart-icon-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> panel.classList.toggle('hidden'));
+  });
   document.getElementById('cartCloseBtn').addEventListener('click', ()=> panel.classList.add('hidden'));
 }
