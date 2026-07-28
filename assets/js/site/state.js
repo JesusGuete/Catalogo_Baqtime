@@ -6,5 +6,6 @@ export const state = {
   currentCategory: null,      // null = "Todos"
   currentColorFilter: null,
   searchQuery: '',
+  sortBy: '',                 // '' = relevancia (orden natural del catálogo)
   firebasePhotosLoaded: false,
 };
