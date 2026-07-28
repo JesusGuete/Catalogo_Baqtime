@@ -360,6 +360,16 @@ function applyStoredNames(){
   });
 }
 
+// Precio efectivo de un producto: el override guardado por la clienta tiene prioridad;
+// si no hay override, se usa el precio base (el de customProducts para productos nuevos,
+// o el de la categoría para los productos originales del catálogo).
+function getEffectivePrice(p){
+  if(overridesCache[p.id] && overridesCache[p.id].price !== undefined) return overridesCache[p.id].price;
+  if(customProductsCache[p.id] && customProductsCache[p.id].price !== undefined) return customProductsCache[p.id].price;
+  const cfg = CATEGORY_CONFIG[p.cat];
+  return cfg ? cfg.price : 0;
+}
+
 async function initPanel(){
   const loadStatus = document.getElementById('loadStatus');
   const loadError = document.getElementById('loadError');
@@ -743,6 +753,8 @@ async function openProductModal(p){
   document.getElementById('modalVariant').textContent = p.variant || '';
   document.getElementById('renameNameInput').value = p.name;
   document.getElementById('renameVariantInput').value = p.variant || '';
+  document.getElementById('renamePriceInput').value = getEffectivePrice(p);
+  document.getElementById('renamePriceError').textContent = '';
   document.getElementById('undoBtn').disabled = !undoStore[p.id];
   document.getElementById('saveChangesBtn').disabled = true;
   updateDiscardButtonState();
@@ -784,25 +796,33 @@ document.getElementById('saveChangesBtn').addEventListener('click', async ()=>{
 document.getElementById('renameSaveBtn').addEventListener('click', async ()=>{
   const newName = document.getElementById('renameNameInput').value.trim();
   const newVariant = document.getElementById('renameVariantInput').value.trim();
+  const priceRaw = document.getElementById('renamePriceInput').value;
+  const priceErrorEl = document.getElementById('renamePriceError');
+  priceErrorEl.textContent = '';
   if(!newName){ alert('El nombre no puede quedar vacío.'); return; }
+  const newPrice = Number(priceRaw);
+  if(priceRaw === '' || isNaN(newPrice) || newPrice < 0){
+    priceErrorEl.textContent = 'Escribe un precio válido (número mayor o igual a 0).';
+    return;
+  }
   const btn = document.getElementById('renameSaveBtn');
   const statusEl = document.getElementById('modalStatus');
   btn.disabled = true;
   const originalText = btn.textContent;
   btn.textContent = 'Guardando...';
   try{
-    await db.ref('productOverrides_draft/'+currentProduct.id).set({ name:newName, variant:newVariant });
-    overridesCache[currentProduct.id] = { name:newName, variant:newVariant };
+    await db.ref('productOverrides_draft/'+currentProduct.id).set({ name:newName, variant:newVariant, price:newPrice });
+    overridesCache[currentProduct.id] = { name:newName, variant:newVariant, price:newPrice };
     currentProduct.name = newName;
     currentProduct.variant = newVariant;
     document.getElementById('modalName').textContent = newName;
     document.getElementById('modalVariant').textContent = newVariant;
-    statusEl.textContent = 'Nombre guardado.';
+    statusEl.textContent = 'Cambios guardados.';
     showSaved();
     refreshThumbCard(currentProduct.id);
   }catch(e){
-    console.error('No se pudo guardar el nombre/variante:', e);
-    statusEl.textContent = 'No se pudo guardar el nombre. Revisa tu conexión e intenta de nuevo.';
+    console.error('No se pudo guardar el nombre/variante/precio:', e);
+    statusEl.textContent = 'No se pudo guardar. Revisa tu conexión e intenta de nuevo.';
   }
   btn.disabled = false;
   btn.textContent = originalText;
