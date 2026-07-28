@@ -211,8 +211,8 @@
   <img id="zoomImg" src="" alt="">
 </div>
 
-<!-- CARRITO — Fase 1: lista simple para probar que agregar/quitar/guardar funciona.
-     La Fase 2 le agrega fotos, mejor diseño, y el formulario de envío aquí dentro. -->
+<!-- CARRITO — Fase 2/3: fotos por línea, datos de envío una sola vez, y un solo
+     mensaje de WhatsApp con todos los productos del carrito. -->
 <div class="cart-panel hidden" id="cartPanel">
   <div class="cart-panel-head">
     <h3>Tu carrito</h3>
@@ -220,9 +220,37 @@
   </div>
   <div class="cart-items" id="cartItemsList"></div>
   <div class="cart-total-row">
+    <span>Subtotal</span>
+    <span class="mono" id="cartSubtotal">$0</span>
+  </div>
+  <div class="cart-total-row cart-total-row-sub">
+    <span>Envío</span>
+    <span class="mono" id="cartShipping">$0</span>
+  </div>
+  <div class="cart-total-row cart-total-row-final">
     <span>Total</span>
     <span class="mono" id="cartTotal">$0</span>
   </div>
+
+  <div class="field cart-shipping-field" id="cartShippingSection">
+    <label>Datos de envío</label>
+    <div class="shipping-fields">
+      <input type="text" id="shipName" placeholder="Nombre completo">
+      <div class="field-error" id="shipNameErr"></div>
+      <input type="text" id="shipCity" placeholder="Ciudad">
+      <div class="field-error" id="shipCityErr"></div>
+      <input type="text" id="shipAddress" placeholder="Dirección exacta">
+      <div class="field-error" id="shipAddressErr"></div>
+      <input type="tel" id="shipPhone" placeholder="Número de teléfono" inputmode="numeric" maxlength="10">
+      <div class="field-error" id="shipPhoneErr"></div>
+      <input type="text" id="shipDoc" placeholder="Número de documento (opcional)" inputmode="numeric" maxlength="20">
+      <div class="field-error" id="shipDocErr"></div>
+      <div class="doc-hint">Este dato solo es necesario para envíos fuera de Barranquilla.</div>
+    </div>
+  </div>
+
+  <button class="whatsapp-btn" id="sendCartBtn">Enviar pedido por WhatsApp</button>
+  <div class="req-note" id="reqNote"></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
