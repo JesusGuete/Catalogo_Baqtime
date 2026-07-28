@@ -3,6 +3,7 @@
 // is wired explicitly below instead of through inline onclick attributes.
 import { DEFAULT_PHOTOS } from './default-photos.js';
 import { escapeHtml } from '../shared/escape.js';
+import { CATALOG_SEED } from '../shared/catalog-seed.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyB9wJvA0Wz2tD7Ia19sDiO0gXiK19ESp80",
@@ -178,38 +179,10 @@ document.getElementById('logoutBtn').addEventListener('click', ()=>{
 });
 
 
-const PRODUCTS = [
-  {id:"t1", cat:"Tote Bag", name:"Tote Bag Beige", variant:"Cordones Negros"},
-  {id:"t2", cat:"Tote Bag", name:"Tote Bag Beige", variant:"Cordones Beige"},
-  {id:"t3", cat:"Tote Bag", name:"Tote Bag Beige", variant:"Cordones Café"},
-  {id:"t4", cat:"Tote Bag", name:"Tote Bag Blanco", variant:"Cordones Negros"},
-  {id:"t5", cat:"Tote Bag", name:"Tote Bag Mocca", variant:"Cordones Café"},
-  {id:"t6", cat:"Tote Bag", name:"Tote Bag Mocca", variant:"Cordones Negros"},
-  {id:"t7", cat:"Tote Bag", name:"Tote Bag Negro", variant:"Cordones Negros"},
-  {id:"t8", cat:"Tote Bag", name:"Tote Bag Rosado", variant:"Cordones Negros"},
-  {id:"t9", cat:"Tote Bag", name:"Tote Bag Rosado", variant:"Cordones Rosado"},
-  {id:"t10", cat:"Tote Bag", name:"Tote Bag Verde", variant:"Cordones Negros"},
-  {id:"t11", cat:"Tote Bag", name:"Tote Bag Vino", variant:"Cordones Negros"},
-  {id:"n1", cat:"Neceser", name:"Neceser Azul"},
-  {id:"n2", cat:"Neceser", name:"Neceser Beige"},
-  {id:"n3", cat:"Neceser", name:"Neceser Mocca"},
-  {id:"n4", cat:"Neceser", name:"Neceser Negro"},
-  {id:"n5", cat:"Neceser", name:"Neceser Verde"},
-  {id:"n6", cat:"Neceser", name:"Neceser Vino"},
-  {id:"l1", cat:"Bag Lumiere", name:"Bag Lumiere Beige"},
-  {id:"l2", cat:"Bag Lumiere", name:"Bag Lumiere Negro"},
-  {id:"l3", cat:"Bag Lumiere", name:"Bag Lumiere Vino"},
-  {id:"tl1", cat:"Tote Bag Luxury", name:"Tote Bag Luxury Beige"},
-  {id:"tl2", cat:"Tote Bag Luxury", name:"Tote Bag Luxury Mocca"},
-  {id:"tl3", cat:"Tote Bag Luxury", name:"Tote Bag Luxury Negro"},
-  {id:"c1", cat:"Cosmetiquera", name:"Cosmetiquera Beige"},
-  {id:"c2", cat:"Cosmetiquera", name:"Cosmetiquera Negra"},
-  {id:"c3", cat:"Cosmetiquera", name:"Cosmetiquera Rosada"},
-  {id:"m1", cat:"Makeup Bag", name:"Makeup Bag Mocca"},
-  {id:"m2", cat:"Makeup Bag", name:"Makeup Bag Negra"},
-  {id:"m3", cat:"Makeup Bag", name:"Makeup Bag Rosada"},
-  {id:"m4", cat:"Makeup Bag", name:"Makeup Bag Vino"},
-];
+// El catálogo base (los 30 productos "de fábrica") vive en assets/js/shared/catalog-seed.js,
+// la misma fuente que usa el sitio público — ver ese archivo para agregar/quitar/renombrar
+// un producto de fábrica. PRODUCTS solo necesita id/cat/name/variant; el resto de los datos
+// (precio, color, etc.) los maneja el sitio o CATEGORY_CONFIG más abajo.
 
 // Configuración por categoría para poder crear modelos nuevos
 const CATEGORY_CONFIG = {
@@ -220,6 +193,13 @@ const CATEGORY_CONFIG = {
   "Cosmetiquera":    { key:"cosmetiquera", price:50000,  personalizable:true,  maxInitials:2, hasVariant:false },
   "Makeup Bag":      { key:"makeup-bag",   price:70000,  personalizable:true,  maxInitials:3, hasVariant:false },
 };
+
+function categoryKeyToLabel(key){
+  const found = Object.entries(CATEGORY_CONFIG).find(([label,cfg])=>cfg.key===key);
+  return found ? found[0] : key;
+}
+
+const PRODUCTS = CATALOG_SEED.map(p => ({ id:p.id, cat:categoryKeyToLabel(p.category), name:p.name, variant:p.variant||'' }));
 
 // Mismo orden en que aparecen las categorías en el catálogo público
 const CATEGORY_ORDER = ["Tote Bag", "Tote Bag Luxury", "Bag Lumiere", "Neceser", "Cosmetiquera", "Makeup Bag"];
@@ -294,10 +274,6 @@ function applyCustomProductsAndDeletions(){
   for(let i = PRODUCTS.length - 1; i >= 0; i--){
     if(deletedProductsCache[PRODUCTS[i].id]) PRODUCTS.splice(i,1);
   }
-}
-function categoryKeyToLabel(key){
-  const found = Object.entries(CATEGORY_CONFIG).find(([label,cfg])=>cfg.key===key);
-  return found ? found[0] : key;
 }
 
 function showSaved(){
