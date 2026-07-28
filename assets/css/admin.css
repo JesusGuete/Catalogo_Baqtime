@@ -1,4 +1,4 @@
-  :root{
+:root{
     --cream:#faf6ef; --ink:#26221d; --ink-soft:#6b6259; --mocha:#5a4133;
     --panel:#fff; --border:#e7e1d6; --danger:#c0392b;
   }
@@ -101,3 +101,9 @@
   .crop-tool-btn{ background:none; border:none; color:#eee; font-size:20px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; }
   .crop-tool-btn span{ font-size:18px; }
   #aspectLabel{ font-size:12px; }
+
+  /* Indicador de foco visible al navegar con teclado (no afecta el uso con mouse/touch) */
+  a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--mocha);
+    outline-offset: 2px;
+  }
