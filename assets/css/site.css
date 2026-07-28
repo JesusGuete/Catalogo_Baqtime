@@ -512,7 +512,14 @@
 
     .section-title{ padding:0 16px; margin-bottom:18px; }
     .section-title h2{ font-size:22px; }
-    .thread-strip{ padding:0 16px 18px; }
+    .thread-strip{ padding:0 16px 18px; position:relative; }
+    /* Pista visual de que hay más categorías deslizando a la derecha (se desvanece
+       hacia el color de fondo de la página, justo antes del margen exterior) */
+    .thread-strip::after{
+      content:''; position:absolute; top:0; right:16px; bottom:18px; width:32px;
+      background:linear-gradient(to right, rgba(250,246,239,0), var(--cream));
+      pointer-events:none;
+    }
 
     /* Pestañas de categoría: una sola fila deslizable, en vez de 3 filas apiladas */
     .cat-tabs{ flex-wrap:nowrap; overflow-x:auto; gap:6px; padding-bottom:4px; -webkit-overflow-scrolling:touch; }
