@@ -28,6 +28,9 @@
 <header>
   <div class="brand">Baqtime</div>
   <div class="cart-note">Barranquilla y Cartagena, Colombia</div>
+  <button type="button" id="cartIconBtn" class="cart-icon-btn" aria-label="Ver carrito">
+    🛒 <span id="cartCount" class="cart-count hidden">0</span>
+  </button>
 </header>
 
 <section class="hero">
@@ -194,25 +197,8 @@
         </div>
       </div>
 
-      <div class="field">
-        <label>Datos de envío</label>
-        <div class="shipping-fields">
-          <input type="text" id="shipName" placeholder="Nombre completo">
-          <div class="field-error" id="shipNameErr"></div>
-          <input type="text" id="shipCity" placeholder="Ciudad">
-          <div class="field-error" id="shipCityErr"></div>
-          <input type="text" id="shipAddress" placeholder="Dirección exacta">
-          <div class="field-error" id="shipAddressErr"></div>
-          <input type="tel" id="shipPhone" placeholder="Número de teléfono" inputmode="numeric" maxlength="10">
-          <div class="field-error" id="shipPhoneErr"></div>
-          <input type="text" id="shipDoc" placeholder="Número de documento (opcional)" inputmode="numeric" maxlength="20">
-          <div class="field-error" id="shipDocErr"></div>
-          <div class="doc-hint">Este dato solo es necesario para envíos fuera de Barranquilla.</div>
-        </div>
-      </div>
-
-      <button class="whatsapp-btn" id="whatsappBtn">Agendar mi pedido por WhatsApp</button>
-      <div class="req-note" id="reqNote"></div>
+      <button class="whatsapp-btn" id="addToCartBtn">Agregar al carrito</button>
+      <div class="req-note" id="cartAddMsg"></div>
     </div>
   </div>
 </div>
@@ -220,6 +206,20 @@
 <div class="zoom-overlay" id="zoomOverlay">
   <button class="zoom-close" id="zoomCloseBtn">✕</button>
   <img id="zoomImg" src="" alt="">
+</div>
+
+<!-- CARRITO — Fase 1: lista simple para probar que agregar/quitar/guardar funciona.
+     La Fase 2 le agrega fotos, mejor diseño, y el formulario de envío aquí dentro. -->
+<div class="cart-panel hidden" id="cartPanel">
+  <div class="cart-panel-head">
+    <h3>Tu carrito</h3>
+    <button type="button" class="modal-close" id="cartCloseBtn">✕</button>
+  </div>
+  <div class="cart-items" id="cartItemsList"></div>
+  <div class="cart-total-row">
+    <span>Total</span>
+    <span class="mono" id="cartTotal">$0</span>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
