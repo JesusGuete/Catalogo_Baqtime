@@ -24,11 +24,24 @@ document.getElementById('confirmChangesBtn').addEventListener('click', ()=>{
   if(!confirm('¿Quieres confirmar todos los cambios pendientes y actualizar el catálogo real ahora?')) return;
   document.getElementById('confirmPasswordInput').value = '';
   document.getElementById('confirmPasswordError').textContent = '';
-  document.getElementById('confirmPasswordOverlay').classList.remove('hidden');
+  const overlay = document.getElementById('confirmPasswordOverlay');
+  overlay.classList.remove('hidden');
+  overlay.querySelector('.modal').focus();
 });
 function closeConfirmPasswordModal(){
   document.getElementById('confirmPasswordOverlay').classList.add('hidden');
 }
+
+// Cierra con Escape el modal que esté visible en ese momento (el "más encima" primero,
+// ya que el recortador y el selector de color avanzado pueden abrirse sobre otro modal)
+document.addEventListener('keydown', (e)=>{
+  if(e.key !== 'Escape') return;
+  if(!document.getElementById('cropOverlay').classList.contains('hidden')){ closeCropModal(); return; }
+  if(!document.getElementById('colorPickerOverlay').classList.contains('hidden')){ closeColorPicker(); return; }
+  if(!document.getElementById('newProductOverlay').classList.contains('hidden')){ closeNewProductModal(); return; }
+  if(!document.getElementById('confirmPasswordOverlay').classList.contains('hidden')){ closeConfirmPasswordModal(); return; }
+  if(!document.getElementById('productOverlay').classList.contains('hidden')){ closeProductModal(); return; }
+});
 
 async function publishChanges(){
   const password = document.getElementById('confirmPasswordInput').value;
@@ -441,7 +454,9 @@ function openNewProductModal(cat){
   selectedColor = COLOR_PALETTE[2].hex;
   document.getElementById('selectedColorPreview').style.background = selectedColor;
   renderColorPalette();
-  document.getElementById('newProductOverlay').classList.remove('hidden');
+  const overlay = document.getElementById('newProductOverlay');
+  overlay.classList.remove('hidden');
+  overlay.querySelector('.modal').focus();
 }
 function closeNewProductModal(){
   document.getElementById('newProductOverlay').classList.add('hidden');
@@ -566,7 +581,9 @@ function huePointerHandler(e){
 document.getElementById('moreColorsBtn').addEventListener('click', ()=>{
   const hsv = hexToHsv(selectedColor);
   pickerHue = hsv.h; pickerSat = hsv.s; pickerVal = hsv.v;
-  document.getElementById('colorPickerOverlay').classList.remove('hidden');
+  const overlay = document.getElementById('colorPickerOverlay');
+  overlay.classList.remove('hidden');
+  overlay.querySelector('.modal').focus();
   setTimeout(()=>{ drawSvCanvas(); drawHueCanvas(); updatePickerFromState(); }, 0);
 });
 function closeColorPicker(){
@@ -618,10 +635,10 @@ function renderThumbCard(p){
   card.draggable = true;
   card.style.position = 'relative';
   card.innerHTML = `
-    <button class="delete-product-btn" title="Eliminar producto" data-id="${escapeHtml(p.id)}">🗑</button>
+    <button class="delete-product-btn" title="Eliminar producto" aria-label="Eliminar ${escapeHtml(p.name)}" data-id="${escapeHtml(p.id)}">🗑</button>
     <div class="name">${escapeHtml(p.name)}</div>
     <div class="variant">${escapeHtml(p.variant||'')}</div>
-    <div class="thumb">${photos[0] ? `<img src="${escapeHtml(photos[0])}" alt="">` : '<div class="empty">Sin foto</div>'}</div>
+    <div class="thumb">${photos[0] ? `<img src="${escapeHtml(photos[0])}" alt="Foto de ${escapeHtml(p.name)}">` : '<div class="empty">Sin foto</div>'}</div>
     <div class="count">${photos.length} foto${photos.length!==1?'s':''}</div>
   `;
   card.addEventListener('click', ()=>openProductModal(p));
@@ -731,7 +748,9 @@ async function openProductModal(p){
   updateDiscardButtonState();
   document.getElementById('modalStatus').textContent = '';
   renderModalContent();
-  document.getElementById('productOverlay').classList.remove('hidden');
+  const overlay = document.getElementById('productOverlay');
+  overlay.classList.remove('hidden');
+  overlay.querySelector('.modal').focus();
 }
 function closeProductModal(){
   if(hasUnsavedChanges){
@@ -797,8 +816,9 @@ document.getElementById('deleteProductBtn').addEventListener('click', async ()=>
 function renderModalContent(){
   const photos = workingPhotos;
   currentPreviewIdx = 0;
+  const productLabel = escapeHtml(currentProduct.name);
   const mainEl = document.getElementById('modalMain');
-  mainEl.innerHTML = photos[0] ? `<img src="${escapeHtml(photos[0])}" alt="">` : '<div class="empty">Sin foto todavía</div>';
+  mainEl.innerHTML = photos[0] ? `<img src="${escapeHtml(photos[0])}" alt="Foto principal de ${productLabel}">` : '<div class="empty">Sin foto todavía</div>';
 
   const stripEl = document.getElementById('modalThumbs');
   stripEl.innerHTML = '';
@@ -808,9 +828,9 @@ function renderModalContent(){
     item.draggable = true;
     item.dataset.idx = idx;
     item.innerHTML = `
-      <img src="${escapeHtml(ph)}" alt="">
+      <img src="${escapeHtml(ph)}" alt="Foto ${idx+1} de ${productLabel}">
       <div class="icons">
-        <button class="icon-del" title="Eliminar">×</button>
+        <button class="icon-del" title="Eliminar" aria-label="Eliminar foto ${idx+1} de ${productLabel}">×</button>
       </div>
       ${idx===0 ? '<div class="badge-main">Principal</div>' : ''}
     `;
@@ -825,7 +845,7 @@ function renderModalContent(){
     item.querySelector('img').addEventListener('click', (e)=>{
       e.stopPropagation();
       currentPreviewIdx = idx;
-      document.getElementById('modalMain').innerHTML = `<img src="${escapeHtml(ph)}" alt="">`;
+      document.getElementById('modalMain').innerHTML = `<img src="${escapeHtml(ph)}" alt="Foto ${idx+1} de ${productLabel}">`;
       stripEl.querySelectorAll('.thumb-item').forEach(t=>t.classList.remove('previewing'));
       item.classList.add('previewing');
     });
@@ -851,6 +871,7 @@ function renderModalContent(){
 
   const addBtn = document.createElement('label');
   addBtn.className = 'add-thumb';
+  addBtn.setAttribute('aria-label', 'Agregar foto');
   addBtn.innerHTML = `+ <input type="file" accept="image/*">`;
   addBtn.querySelector('input').addEventListener('change', (e)=>{
     const file = e.target.files[0];
@@ -976,7 +997,9 @@ function openCropModalCommon(dataUrl){
   document.getElementById('rotateVal').textContent = '0°';
   document.getElementById('aspectLabel').textContent = 'Libre';
   rebuildWorkingImage(layoutImageAndDefaultBox);
-  document.getElementById('cropOverlay').classList.remove('hidden');
+  const overlay = document.getElementById('cropOverlay');
+  overlay.classList.remove('hidden');
+  overlay.querySelector('.crop-modal-dark').focus();
 }
 function openCropModal(id, idx, dataUrl){
   cropTargetId = id; cropTargetIdx = idx; cropIsNew = false;
