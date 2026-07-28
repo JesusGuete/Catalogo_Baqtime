@@ -158,6 +158,7 @@ function renderRelatedProducts(product){
   const related = ALL_PRODUCTS.filter(p=> p.groupKey===product.groupKey && p.category!==product.category);
   const section = document.getElementById('relatedProducts');
   const grid = document.getElementById('relatedGrid');
+  const viewport = document.getElementById('relatedViewport');
   grid.innerHTML = '';
   if(!related.length){ section.classList.add('hidden'); return; }
   section.classList.remove('hidden');
@@ -173,6 +174,24 @@ function renderRelatedProducts(product){
       </div>`;
     grid.appendChild(card);
   });
+  viewport.scrollLeft = 0; // el producto cambió: empieza siempre desde la primera tarjeta
+  updateRelatedArrows();
+}
+
+function relatedCardStep(){
+  const grid = document.getElementById('relatedGrid');
+  const first = grid.firstElementChild;
+  if(!first) return 0;
+  const gap = parseFloat(getComputedStyle(grid).gap) || 0;
+  return first.getBoundingClientRect().width + gap;
+}
+
+function updateRelatedArrows(){
+  const viewport = document.getElementById('relatedViewport');
+  const grid = document.getElementById('relatedGrid');
+  const maxScroll = grid.scrollWidth - viewport.clientWidth;
+  document.getElementById('relatedPrevBtn').disabled = viewport.scrollLeft <= 1;
+  document.getElementById('relatedNextBtn').disabled = viewport.scrollLeft >= maxScroll - 1;
 }
 
 export function closeModal({ updateUrl = true } = {}){
@@ -245,6 +264,16 @@ export function initModal(){
       closeModal({ updateUrl:false });
     }
   });
+
+  // Flechas del carrusel de "También te puede interesar" (mismo mecanismo de scroll
+  // nativo que el carrusel de colecciones — ver collections-carousel.js).
+  document.getElementById('relatedPrevBtn').addEventListener('click', ()=>{
+    document.getElementById('relatedViewport').scrollBy({ left: -relatedCardStep(), behavior: 'smooth' });
+  });
+  document.getElementById('relatedNextBtn').addEventListener('click', ()=>{
+    document.getElementById('relatedViewport').scrollBy({ left: relatedCardStep(), behavior: 'smooth' });
+  });
+  document.getElementById('relatedViewport').addEventListener('scroll', updateRelatedArrows);
 
   const initialsInput = document.getElementById('initialsInput');
   initialsInput.addEventListener('input', ()=>{
