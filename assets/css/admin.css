@@ -107,3 +107,13 @@
     outline: 2px solid var(--mocha);
     outline-offset: 2px;
   }
+
+  /* Ajustes para pantallas angostas (celular). No cambia nada en desktop/tablet. */
+  @media (max-width: 480px){
+    body{ padding:12px; }
+    #loginBox{ margin:40px auto; }
+    .overlay{ padding:10px; }
+    .modal{ padding:14px; }
+    .crop-rotate-row{ padding-left:10px; padding-right:10px; }
+    .crop-tools-row{ padding-left:10px; padding-right:10px; }
+  }
