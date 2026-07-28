@@ -178,14 +178,16 @@
 
   /* ===== BUSCADOR ===== */
   .search-box{
-    display:flex; align-items:center; gap:6px;
-    border:1px solid var(--line); border-radius:20px; padding:6px 14px;
+    display:flex; align-items:center; gap:0;
+    border:1px solid var(--line); border-radius:20px; padding:8px;
   }
   .search-icon-btn{ background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1; }
   .search-box input{
-    border:none; outline:none; background:transparent;
-    font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--ink); width:170px;
+    display:none; border:none; outline:none; background:transparent;
+    font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--ink); width:0;
   }
+  .search-box.expanded{ gap:6px; padding:6px 14px; }
+  .search-box.expanded input{ display:block; width:170px; }
   .search-box input::placeholder{ color:var(--ink-soft); }
 
   @media (max-width:860px){
@@ -486,8 +488,8 @@
     .portada-body p{ font-size:12.5px; }
 
     .section-title{ flex-wrap:wrap; }
-    .search-box{ flex:1 0 100%; margin-top:8px; }
-    .search-box input{ width:100%; }
+    .search-box.expanded{ flex:1 0 100%; margin-top:8px; }
+    .search-box.expanded input{ width:100%; }
 
     .section-title{ padding:0 16px; margin-bottom:18px; }
     .section-title h2{ font-size:22px; }
