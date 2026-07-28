@@ -5,5 +5,6 @@ export const state = {
   currentInitialsColor: null, // set by main.js to INITIALS_COLORS[0]
   currentCategory: null,      // null = "Todos"
   currentColorFilter: null,
+  searchQuery: '',
   firebasePhotosLoaded: false,
 };
