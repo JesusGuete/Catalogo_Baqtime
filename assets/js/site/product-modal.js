@@ -4,6 +4,7 @@ import { INITIALS_COLORS, initialsColorsFor } from './initials.js';
 import { PRICE_EXTRA_INITIALS, PRICE_SHIP, fmt, getAdvance } from './pricing.js';
 import { resolveProductImage, resolveImageUrl } from './site-images.js';
 import { escapeHtml } from '../shared/escape.js';
+import { addToCart } from './cart.js';
 
 const modalOverlay = document.getElementById('modalOverlay');
 const zoomOverlay = document.getElementById('zoomOverlay');
@@ -157,19 +158,7 @@ export function openModal(product, { updateUrl = true } = {}){
     swEl.appendChild(sw);
   });
 
-  document.getElementById('shipName').value='';
-  document.getElementById('shipCity').value='';
-  document.getElementById('shipAddress').value='';
-  document.getElementById('shipPhone').value='';
-  document.getElementById('shipDoc').value='';
-  document.getElementById('reqNote').textContent='';
-  ['shipNameErr','shipCityErr','shipPhoneErr','shipDocErr','shipAddressErr'].forEach(function(id){
-    const el = document.getElementById(id);
-    if(el) el.textContent='';
-  });
-
-  const whatsappBtn = document.getElementById('whatsappBtn');
-  whatsappBtn.textContent = product.category==='lumiere' ? 'Comprar este Bag Lumiere por WhatsApp' : 'Agendar mi pedido por WhatsApp';
+  document.getElementById('cartAddMsg').textContent = '';
 
   renderRelatedProducts(product);
   if(updateUrl) setProductUrl(product.id);
@@ -261,6 +250,34 @@ export function updatePreview(){
   document.getElementById('advanceNote').innerHTML =
     `Para reservar tu pedido se requiere un anticipo de <strong>${fmt(getAdvance(p))}</strong>. Una vez confirmado el pago, comenzamos a preparar tu pedido. El saldo restante se paga al recibir el pedido.` +
     (IMPORTED_CATEGORIES.includes(p.category) ? ` <strong>Este producto es importado y su entrega tarda entre 15 y 20 días.</strong>` : '');
+}
+
+// Agrega el producto tal como está configurado ahora mismo (color, iniciales) como una
+// nueva línea del carrito. No junta líneas repetidas: cada clic agrega una línea nueva,
+// aunque sea la misma configuración (ej. el mismo tote con iniciales distintas para dos
+// personas). El envío y el anticipo se calculan una sola vez sobre todo el carrito
+// (Fase 2/3), por eso aquí no se guarda PRICE_SHIP por línea.
+export function addCurrentProductToCart(){
+  const p = state.currentProduct;
+  if(!p) return;
+  const initialsInput = document.getElementById('initialsInput');
+  const initials = p.personalizable ? initialsInput.value : '';
+  const extra = (p.category==='tote' && initials.length>3) ? PRICE_EXTRA_INITIALS : 0;
+  addToCart({
+    productId: p.id,
+    name: p.name,
+    category: p.category,
+    color: p.color,
+    variant: p.variant,
+    initials,
+    initialsColorName: state.currentInitialsColor ? state.currentInitialsColor.name : '',
+    price: p.price,
+    extra,
+  });
+  const msgEl = document.getElementById('cartAddMsg');
+  msgEl.textContent = 'Agregado al carrito ✓';
+  clearTimeout(addCurrentProductToCart._t);
+  addCurrentProductToCart._t = setTimeout(()=>{ msgEl.textContent = ''; }, 2500);
 }
 
 export function openZoom(){
