@@ -5,7 +5,7 @@ import { initHero } from './hero.js';
 import { injectStructuredData } from './structured-data.js';
 import { initFilters, filterByCategory, renderColorFilters, reconcileColorFilter } from './catalog-filters.js';
 import { renderGrid } from './catalog-grid.js';
-import { initModal, closeModal, openZoom, closeZoom } from './product-modal.js';
+import { initModal, closeModal, openZoom, closeZoom, openProductFromUrl } from './product-modal.js';
 import { sendWhatsapp } from './whatsapp-order.js';
 import { applyFirebasePhotos } from './firebase-catalog.js';
 import { initSearch } from './search.js';
@@ -61,4 +61,7 @@ applyFirebasePhotos()
     reconcileColorFilter();
     renderColorFilters();
     renderGrid();
+    // Si la página cargó con ?producto=xxx (link compartido), se abre recién aquí,
+    // con los datos ya frescos de Firebase (foto/precio reales), no la versión estática.
+    openProductFromUrl();
   });
