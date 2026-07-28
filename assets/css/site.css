@@ -116,6 +116,18 @@
   }
   .cart-shipping-field{ margin-top:20px; }
 
+  /* ===== PÁGINA "FINALIZAR COMPRA" (dentro de .modal-overlay, mismo formato de
+     página completa que un producto — una sola columna, no la grilla de 2 columnas) ===== */
+  .checkout-page{
+    position:relative;
+    max-width:700px; width:100%; margin:0 auto;
+    min-height:100vh;
+    padding:70px 30px 40px;
+  }
+  .checkout-page h2{ font-family:'Fraunces',serif; font-size:26px; margin:0 0 24px; }
+  .checkout-page .cart-items{ margin-bottom:8px; }
+  .checkout-page .cart-line-img{ width:64px; height:64px; }
+
   /* ===== HERO ===== */
   .hero{
     padding:56px 20px 40px;
