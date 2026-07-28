@@ -82,6 +82,7 @@ export async function applyFirebasePhotos(){
       if(overrides[p.id]){
         if(overrides[p.id].name) p.name = overrides[p.id].name;
         if(overrides[p.id].variant !== undefined) p.variant = overrides[p.id].variant;
+        if(overrides[p.id].price !== undefined) p.price = overrides[p.id].price;
       }
     });
   }catch(e){
