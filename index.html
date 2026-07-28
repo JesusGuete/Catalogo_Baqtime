@@ -118,8 +118,20 @@
   <div class="cat-tabs" id="catTabs"></div>
 </div>
 <div class="section-title tight">
-  <div></div>
-  <div class="filters" id="filters"></div>
+  <div class="sort-box">
+    <label for="sortSelect" class="sort-label">Ordenar por</label>
+    <select id="sortSelect">
+      <option value="">Relevancia</option>
+      <option value="price-desc">Precio: mayor a menor</option>
+      <option value="price-asc">Precio: menor a mayor</option>
+      <option value="name-asc">Nombre, ascendente</option>
+      <option value="name-desc">Nombre, descendente</option>
+    </select>
+  </div>
+  <div class="filter-dropdown" id="filterDropdown">
+    <button type="button" class="btn btn-ghost" id="filterTriggerBtn">Filtrar ▾</button>
+    <div class="filters hidden" id="filters"></div>
+  </div>
 </div>
 </div>
 
