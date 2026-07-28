@@ -9,9 +9,11 @@ import { openModal } from './product-modal.js';
 const gridEl = document.getElementById('grid');
 export function renderGrid(){
   gridEl.innerHTML = '';
+  const query = state.searchQuery.trim().toLowerCase();
   ALL_PRODUCTS
     .filter(p=> !state.currentCategory || p.category===state.currentCategory)
     .filter(p=> !state.currentColorFilter || p.groupKey===state.currentColorFilter)
+    .filter(p=> !query || `${p.name} ${p.variant||''} ${p.color}`.toLowerCase().includes(query))
     .forEach(p=>{
       const card = document.createElement('div');
       card.className='card';
