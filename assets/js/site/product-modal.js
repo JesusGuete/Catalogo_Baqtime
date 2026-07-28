@@ -8,12 +8,40 @@ import { escapeHtml } from '../shared/escape.js';
 const modalOverlay = document.getElementById('modalOverlay');
 const zoomOverlay = document.getElementById('zoomOverlay');
 
+// ===== URL del producto abierto (deep-link compartible, ver §Fase C) =====
+// No es una página aparte: sigue siendo el mismo modal de siempre, pero ahora la URL
+// refleja qué producto está abierto, así que se puede copiar el link, compartirlo, o
+// abrirlo en una pestaña nueva (clic derecho) y llega directo a ese producto.
+function getProductIdFromUrl(){
+  return new URLSearchParams(window.location.search).get('producto');
+}
+function setProductUrl(id, replace){
+  const url = `${window.location.pathname}?producto=${encodeURIComponent(id)}`;
+  if(replace) history.replaceState({}, '', url);
+  else history.pushState({}, '', url);
+}
+function clearProductUrl(replace){
+  const url = window.location.pathname;
+  if(replace) history.replaceState({}, '', url);
+  else history.pushState({}, '', url);
+}
+
+// Si la página cargó con ?producto=xxx en la URL, abre ese producto. Se llama desde
+// main.js después de que Firebase ya enriqueció ALL_PRODUCTS (fotos/precio reales),
+// para no mostrarle a quien abre un link compartido una versión desactualizada.
+export function openProductFromUrl(){
+  const id = getProductIdFromUrl();
+  if(!id) return;
+  const product = ALL_PRODUCTS.find(p=>p.id===id);
+  if(product) openModal(product, { updateUrl:false });
+}
+
 export function galleryFor(product){
   if(product.gallery) return product.gallery.map(img=>({img, product}));
   return [{img:product.img, product}];
 }
 
-export function openModal(product){
+export function openModal(product, { updateUrl = true } = {}){
   state.currentProduct = product;
   state.currentInitialsColor = INITIALS_COLORS[0];
   const sub = product.category==='tote' ? ` – ${product.variant}` : '';
@@ -116,14 +144,41 @@ export function openModal(product){
   const whatsappBtn = document.getElementById('whatsappBtn');
   whatsappBtn.textContent = product.category==='lumiere' ? 'Comprar este Bag Lumiere por WhatsApp' : 'Agendar mi pedido por WhatsApp';
 
+  renderRelatedProducts(product);
+  if(updateUrl) setProductUrl(product.id);
+
   updatePreview();
   modalOverlay.classList.add('open');
   document.body.style.overflow='hidden';
 }
 
-export function closeModal(){
+// Productos que "combinan" con el que se está viendo: mismo color, categoría distinta
+// (ej. viendo un Tote Vino, sugiere el Neceser Vino, la Cosmetiquera Vino, etc.).
+function renderRelatedProducts(product){
+  const related = ALL_PRODUCTS.filter(p=> p.groupKey===product.groupKey && p.category!==product.category);
+  const section = document.getElementById('relatedProducts');
+  const grid = document.getElementById('relatedGrid');
+  grid.innerHTML = '';
+  if(!related.length){ section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+  related.forEach(p=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.onclick = ()=> openModal(p);
+    card.innerHTML = `
+      <div class="card-img"><img src="${escapeHtml(resolveProductImage(p))}" alt="${escapeHtml(p.name)}" loading="lazy"></div>
+      <div class="card-body">
+        <p class="card-name">${escapeHtml(p.name)}</p>
+        <p class="card-price mono">${fmt(p.price)}</p>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+export function closeModal({ updateUrl = true } = {}){
   modalOverlay.classList.remove('open');
   document.body.style.overflow='';
+  if(updateUrl) clearProductUrl();
 }
 
 export function updatePreview(){
@@ -178,6 +233,18 @@ export function closeZoom(e){
 export function initModal(){
   modalOverlay.addEventListener('click', (e)=>{ if(e.target===modalOverlay) closeModal(); });
   document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ closeModal(); closeZoom(); }});
+
+  // Mantiene el modal en sync con el botón atrás/adelante del navegador, ya que ahora
+  // la URL cambia según el producto abierto (ver openModal/closeModal más arriba).
+  window.addEventListener('popstate', ()=>{
+    const id = getProductIdFromUrl();
+    if(id){
+      const product = ALL_PRODUCTS.find(p=>p.id===id);
+      if(product) openModal(product, { updateUrl:false });
+    } else {
+      closeModal({ updateUrl:false });
+    }
+  });
 
   const initialsInput = document.getElementById('initialsInput');
   initialsInput.addEventListener('input', ()=>{
