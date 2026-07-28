@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { ALL_PRODUCTS, IMPORTED_CATEGORIES } from './catalog-data.js';
 import { INITIALS_COLORS, initialsColorsFor } from './initials.js';
-import { PRICE_EXTRA_INITIALS, PRICE_SHIP, fmt, getAdvance } from './pricing.js';
+import { PRICE_EXTRA_INITIALS, PRICE_SHIP, fmt } from './pricing.js';
 import { resolveProductImage, resolveImageUrl } from './site-images.js';
 import { escapeHtml } from '../shared/escape.js';
 import { addToCart } from './cart.js';
@@ -247,16 +247,21 @@ export function updatePreview(){
     <div class="price-row total"><span>Total</span><span>${fmt(total)}</span></div>
   `;
 
-  document.getElementById('advanceNote').innerHTML =
-    `Para reservar tu pedido se requiere un anticipo de <strong>${fmt(getAdvance(p))}</strong>. Una vez confirmado el pago, comenzamos a preparar tu pedido. El saldo restante se paga al recibir el pedido.` +
-    (IMPORTED_CATEGORIES.includes(p.category) ? ` <strong>Este producto es importado y su entrega tarda entre 15 y 20 días.</strong>` : '');
+  const advanceNoteEl = document.getElementById('advanceNote');
+  if(IMPORTED_CATEGORIES.includes(p.category)){
+    advanceNoteEl.innerHTML = `<strong>Este producto es importado y su entrega tarda entre 15 y 20 días.</strong>`;
+    advanceNoteEl.classList.remove('hidden');
+  } else {
+    advanceNoteEl.innerHTML = '';
+    advanceNoteEl.classList.add('hidden');
+  }
 }
 
 // Agrega el producto tal como está configurado ahora mismo (color, iniciales) como una
 // nueva línea del carrito. No junta líneas repetidas: cada clic agrega una línea nueva,
 // aunque sea la misma configuración (ej. el mismo tote con iniciales distintas para dos
-// personas). El envío y el anticipo se calculan una sola vez sobre todo el carrito
-// (Fase 2/3), por eso aquí no se guarda PRICE_SHIP por línea.
+// personas). El envío se calcula una sola vez sobre todo el carrito, por eso aquí no
+// se guarda PRICE_SHIP por línea.
 export function addCurrentProductToCart(){
   const p = state.currentProduct;
   if(!p) return;
