@@ -147,7 +147,7 @@ export function updatePreview(){
   // Precio
   const extra = (p.category==='tote' && count>3) ? PRICE_EXTRA_INITIALS : 0;
   const total = p.price + extra + PRICE_SHIP;
-  document.getElementById('priceLive').textContent = fmt(total);
+  document.getElementById('priceLive').textContent = fmt(p.price);
 
   const bd = document.getElementById('priceBreakdown');
   bd.innerHTML = `
