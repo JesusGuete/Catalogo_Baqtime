@@ -49,36 +49,70 @@
 </section>
 
 <h2 class="portada-heading">Nuestras colecciones</h2>
-<div class="portada">
-  <div class="portada-card">
-    <div class="portada-img"><img id="portadaTote" src="" alt="Tote Bag personalizado" width="785" height="785"></div>
-    <div class="portada-body">
-      <h3>Tote Personalizado</h3>
-      <p>Bolso tote bordado con tus iniciales. Perfecto para el día a día.</p>
-      <a href="#catalogo" id="portadaToteLink" class="btn btn-ghost">Ver colección</a>
+<div class="portada-carousel">
+  <button type="button" class="portada-arrow portada-arrow-left" id="portadaPrevBtn" aria-label="Ver colecciones anteriores">‹</button>
+  <div class="portada-viewport">
+    <div class="portada" id="portadaTrack">
+      <div class="portada-card">
+        <div class="portada-img"><img id="portadaTote" src="" alt="Tote Bag personalizado" width="785" height="785"></div>
+        <div class="portada-body">
+          <h3>Tote Personalizado</h3>
+          <p>Bolso tote bordado con tus iniciales. Perfecto para el día a día.</p>
+          <a href="#catalogo" id="portadaToteLink" class="btn btn-ghost">Ver colección</a>
+        </div>
+      </div>
+      <div class="portada-card">
+        <div class="portada-img"><img id="portadaLuxury" src="assets/img/placeholder.svg" alt="Tote Bag Luxury" width="785" height="785"></div>
+        <div class="portada-body">
+          <h3>Tote Bag Luxury</h3>
+          <p>La versión premium del tote, en acabados más finos. Personalizable con hasta 2 iniciales.</p>
+          <a href="#catalogo" id="portadaLuxuryLink" class="btn btn-ghost">Ver colección</a>
+        </div>
+      </div>
+      <div class="portada-card">
+        <div class="portada-img"><img id="portadaNeceser" src="" alt="Neceser personalizado" width="900" height="900"></div>
+        <div class="portada-body">
+          <h3>Neceser</h3>
+          <p>Neceser de cuero vegano personalizable con máximo 2 letras. Ideal para viajes y el día a día.</p>
+          <a href="#catalogo" id="portadaNeceserLink" class="btn btn-ghost">Ver colección</a>
+        </div>
+      </div>
+      <div class="portada-card">
+        <div class="portada-img"><img id="portadaCosmetiquera" src="assets/img/placeholder.svg" alt="Cosmetiquera personalizada" width="900" height="900"></div>
+        <div class="portada-body">
+          <h3>Cosmetiquera</h3>
+          <p>Cosmetiquera personalizable con hasta 2 iniciales, del tamaño justo para tus básicos de maquillaje.</p>
+          <a href="#catalogo" id="portadaCosmetiqueraLink" class="btn btn-ghost">Ver colección</a>
+        </div>
+      </div>
+      <div class="portada-card">
+        <div class="portada-img"><img id="portadaLumiere" src="" alt="Bag Lumiere" width="900" height="1200"></div>
+        <div class="portada-body">
+          <h3>Bag Lumiere</h3>
+          <p>Bolso tipo hobo, elegante y listo para usar, sin personalización. Un básico versátil para cualquier look.</p>
+          <a href="#catalogo" id="portadaLumiereLink" class="btn btn-ghost">Ver colección</a>
+        </div>
+      </div>
+      <div class="portada-card">
+        <div class="portada-img"><img id="portadaMakeup" src="assets/img/placeholder.svg" alt="Makeup Bag personalizada" width="900" height="900"></div>
+        <div class="portada-body">
+          <h3>Makeup Bag</h3>
+          <p>Makeup bag personalizable con hasta 3 iniciales, pensada para organizar tus productos de belleza con estilo.</p>
+          <a href="#catalogo" id="portadaMakeupLink" class="btn btn-ghost">Ver colección</a>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="portada-card">
-    <div class="portada-img"><img id="portadaNeceser" src="" alt="Neceser personalizado" width="900" height="900"></div>
-    <div class="portada-body">
-      <h3>Neceser</h3>
-      <p>Neceser de cuero vegano personalizable con máximo 2 letras. Ideal para viajes y el día a día.</p>
-      <a href="#catalogo" id="portadaNeceserLink" class="btn btn-ghost">Ver colección</a>
-    </div>
-  </div>
-  <div class="portada-card">
-    <div class="portada-img"><img id="portadaLumiere" src="" alt="Bag Lumiere" width="900" height="1200"></div>
-    <div class="portada-body">
-      <h3>Bag Lumiere</h3>
-      <p>Bolso tipo hobo, elegante y listo para usar, sin personalización. Un básico versátil para cualquier look.</p>
-      <a href="#catalogo" id="portadaLumiereLink" class="btn btn-ghost">Ver colección</a>
-    </div>
-  </div>
+  <button type="button" class="portada-arrow portada-arrow-right" id="portadaNextBtn" aria-label="Ver más colecciones">›</button>
 </div>
 
 <div class="cat-bg-wrap" id="catBgWrap">
 <div class="section-title" id="catalogo">
   <h2>Catálogo</h2>
+  <div class="search-box">
+    <button type="button" class="search-icon-btn" id="searchIconBtn" aria-label="Buscar">🔍</button>
+    <input type="search" id="searchInput" placeholder="Buscar productos..." aria-label="Buscar productos">
+  </div>
 </div>
 <div class="thread-strip">
   <div class="cat-tabs" id="catTabs"></div>
