@@ -446,6 +446,14 @@
     padding:14px 16px; font-size:13px; line-height:1.55; margin-bottom:22px; border-radius:0 2px 2px 0;
   }
 
+  /* ===== PRODUCTOS RELACIONADOS (dentro del modal) ===== */
+  .related-products{ margin-bottom:22px; }
+  .related-products label{
+    display:block; font-size:11px; color:var(--ink-soft); margin-bottom:10px;
+    font-family:'JetBrains Mono', monospace; text-transform:uppercase; letter-spacing:.03em;
+  }
+  .related-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+
   .shipping-fields{ display:grid; gap:12px; margin-bottom:6px; }
   .shipping-fields input{
     padding:11px 13px; border:1px solid var(--line); border-radius:2px;
