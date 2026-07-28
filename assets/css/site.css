@@ -513,14 +513,23 @@
     .section-title{ padding:0 16px; margin-bottom:18px; }
     .section-title h2{ font-size:22px; }
     .thread-strip{ padding:0 16px 18px; }
-    .cat-tabs{ gap:6px; }
-    .cat-tab{ padding:8px 14px; font-size:11px; }
+
+    /* Pestañas de categoría: una sola fila deslizable, en vez de 3 filas apiladas */
+    .cat-tabs{ flex-wrap:nowrap; overflow-x:auto; gap:6px; padding-bottom:4px; -webkit-overflow-scrolling:touch; }
+    .cat-tab{ flex:0 0 auto; white-space:nowrap; padding:8px 14px; font-size:11px; }
+
     .filters{ gap:6px; }
     .filter-btn{ padding:7px 12px; }
-    .section-title.tight{ flex-wrap:wrap; gap:10px; }
-    .sort-box{ flex:1 0 100%; }
-    #sortSelect{ flex:1; }
-    .filter-dropdown .filters{ right:auto; left:0; min-width:calc(100vw - 32px); }
+
+    /* "Ordenar por" y "Filtrar" en la misma fila (el label se oculta: el select ya es
+       descriptivo por sí solo, y así cede espacio al lado angosto de la pantalla) */
+    .section-title.tight{ flex-wrap:nowrap; gap:10px; }
+    .sort-box{ flex:1; min-width:0; }
+    .sort-label{ display:none; }
+    #sortSelect{ width:100%; }
+    .filter-dropdown{ flex:0 0 auto; }
+    #filterTriggerBtn{ white-space:nowrap; }
+    .filter-dropdown .filters{ max-width:calc(100vw - 32px); }
 
     .grid{ grid-template-columns:repeat(2, 1fr); gap:14px; padding:0 16px; margin-bottom:50px; }
     .card-body{ padding:12px 12px 14px; }
