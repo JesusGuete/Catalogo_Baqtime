@@ -11,6 +11,11 @@ import { WHATSAPP_NUMBER } from './whatsapp-order.js';
 // producto, color/variante, iniciales, color de iniciales, precio.
 // No hay "cantidad": agregar el mismo producto dos veces crea dos líneas separadas
 // (por ejemplo, el mismo Tote Bag pero con iniciales distintas para dos personas).
+//
+// Hay dos vistas sobre los mismos datos:
+// - El panel lateral (#cartPanel): vistazo rápido, solo lista + total + "Finalizar compra".
+// - La página de checkout (#checkoutOverlay): página completa (igual formato que un
+//   producto), con la lista otra vez, el total, y los datos de envío.
 const STORAGE_KEY = 'baqtime_cart';
 
 function loadCart(){
@@ -37,22 +42,22 @@ export function getCartSubtotal(){ return cart.reduce((sum, item)=> sum + item.p
 export function addToCart(item){
   cart.push({ id: 'line_' + Date.now() + '_' + Math.random().toString(36).slice(2), ...item });
   saveCart();
-  renderCartUI();
+  renderAll();
 }
 
 export function removeFromCart(lineId){
   cart = cart.filter(item => item.id !== lineId);
   saveCart();
-  renderCartUI();
+  renderAll();
 }
 
 function clearCart(){
   cart = [];
   saveCart();
-  renderCartUI();
+  renderAll();
 }
 
-// Detalle legible de una línea, para mostrarla en el panel (color/variante + iniciales).
+// Detalle legible de una línea (color/variante + iniciales), usado en ambas vistas.
 function lineDetail(item){
   const parts = [];
   if(item.variant) parts.push(item.variant);
@@ -66,6 +71,24 @@ function lineImage(item){
   return product ? resolveProductImage(product) : 'assets/img/placeholder.svg';
 }
 
+// Arma el elemento <div class="cart-line"> de una línea (con su foto), reutilizado
+// tanto por el panel lateral como por la página de checkout.
+function buildCartLineElement(item){
+  const row = document.createElement('div');
+  row.className = 'cart-line';
+  row.innerHTML = `
+    <img class="cart-line-img" src="${escapeHtml(lineImage(item))}" alt="${escapeHtml(item.name)}">
+    <div class="cart-line-body">
+      <p class="cart-line-name">${escapeHtml(item.name)}</p>
+      <p class="cart-line-detail">${escapeHtml(lineDetail(item))}</p>
+      <p class="cart-line-price mono">${fmt(item.price + item.extra)}</p>
+    </div>
+    <button type="button" class="cart-line-remove" data-id="${item.id}" aria-label="Quitar del carrito">×</button>
+  `;
+  row.querySelector('.cart-line-remove').addEventListener('click', ()=> removeFromCart(item.id));
+  return row;
+}
+
 function renderCartBadge(){
   const count = getCartCount();
   document.querySelectorAll('.cart-count').forEach(badge=>{
@@ -74,44 +97,31 @@ function renderCartBadge(){
   });
 }
 
-function renderCartUI(){
-  renderCartBadge();
-  const listEl = document.getElementById('cartItemsList');
-  const shippingSection = document.getElementById('cartShippingSection');
-  const sendBtn = document.getElementById('sendCartBtn');
+// Llena un contenedor de líneas + sus 3 totales (subtotal/envío/total), usando los
+// ids que correspondan a esa vista (el panel lateral y el checkout tienen ids propios).
+function renderInto(listId, subtotalId, shippingId, totalId){
+  const listEl = document.getElementById(listId);
   listEl.innerHTML = '';
-
   if(!cart.length){
     listEl.innerHTML = '<p class="cart-empty">Tu carrito está vacío.</p>';
-    shippingSection.classList.add('hidden');
-    sendBtn.classList.add('hidden');
   } else {
-    shippingSection.classList.remove('hidden');
-    sendBtn.classList.remove('hidden');
-    cart.forEach(item=>{
-      const row = document.createElement('div');
-      row.className = 'cart-line';
-      row.innerHTML = `
-        <img class="cart-line-img" src="${escapeHtml(lineImage(item))}" alt="${escapeHtml(item.name)}">
-        <div class="cart-line-body">
-          <p class="cart-line-name">${escapeHtml(item.name)}</p>
-          <p class="cart-line-detail">${escapeHtml(lineDetail(item))}</p>
-          <p class="cart-line-price mono">${fmt(item.price + item.extra)}</p>
-        </div>
-        <button type="button" class="cart-line-remove" data-id="${item.id}" aria-label="Quitar del carrito">×</button>
-      `;
-      listEl.appendChild(row);
-    });
-    listEl.querySelectorAll('.cart-line-remove').forEach(btn=>{
-      btn.addEventListener('click', ()=> removeFromCart(btn.dataset.id));
-    });
+    cart.forEach(item=> listEl.appendChild(buildCartLineElement(item)));
   }
-
   const subtotal = getCartSubtotal();
   const shipping = cart.length ? PRICE_SHIP : 0;
-  document.getElementById('cartSubtotal').textContent = fmt(subtotal);
-  document.getElementById('cartShipping').textContent = fmt(shipping);
-  document.getElementById('cartTotal').textContent = fmt(subtotal + shipping);
+  document.getElementById(subtotalId).textContent = fmt(subtotal);
+  document.getElementById(shippingId).textContent = fmt(shipping);
+  document.getElementById(totalId).textContent = fmt(subtotal + shipping);
+}
+
+function renderAll(){
+  renderCartBadge();
+  renderInto('cartItemsList', 'cartSubtotal', 'cartShipping', 'cartTotal');
+  document.getElementById('checkoutBtn').classList.toggle('hidden', cart.length===0);
+  // El checkout solo se re-renderiza si ya está abierto (si no, se renderiza fresco
+  // justo antes de abrirlo, ver el click de checkoutBtn más abajo).
+  if(!document.getElementById('checkoutOverlay').classList.contains('open')) return;
+  renderInto('checkoutItemsList', 'checkoutSubtotal', 'checkoutShipping', 'checkoutTotal');
 }
 
 // Líneas del mensaje de WhatsApp para un producto del carrito (mismo formato por
@@ -188,13 +198,34 @@ function sendCartWhatsapp(){
   clearCart();
 }
 
+function openCheckout(){
+  const cartPanel = document.getElementById('cartPanel');
+  const checkoutOverlay = document.getElementById('checkoutOverlay');
+  cartPanel.classList.add('hidden');
+  renderInto('checkoutItemsList', 'checkoutSubtotal', 'checkoutShipping', 'checkoutTotal');
+  checkoutOverlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCheckout(){
+  document.getElementById('checkoutOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
 export function initCart(){
-  renderCartUI();
-  const panel = document.getElementById('cartPanel');
+  renderAll();
+  const cartPanel = document.getElementById('cartPanel');
+  const checkoutOverlay = document.getElementById('checkoutOverlay');
+
   document.querySelectorAll('.cart-icon-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=> panel.classList.toggle('hidden'));
+    btn.addEventListener('click', ()=> cartPanel.classList.toggle('hidden'));
   });
-  document.getElementById('cartCloseBtn').addEventListener('click', ()=> panel.classList.add('hidden'));
+  document.getElementById('cartCloseBtn').addEventListener('click', ()=> cartPanel.classList.add('hidden'));
+  document.getElementById('checkoutBtn').addEventListener('click', openCheckout);
+  document.getElementById('checkoutCloseBtn').addEventListener('click', closeCheckout);
+  checkoutOverlay.addEventListener('click', (e)=>{ if(e.target===checkoutOverlay) closeCheckout(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && checkoutOverlay.classList.contains('open')) closeCheckout(); });
+
   document.getElementById('sendCartBtn').addEventListener('click', sendCartWhatsapp);
 
   filterDigitsInput('shipPhone', 10);
