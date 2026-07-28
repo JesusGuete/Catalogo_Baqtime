@@ -1,15 +1,14 @@
 import { state } from './state.js';
 import { INITIALS_COLORS } from './initials.js';
-import { filterDigitsInput, filterNameCityInput } from './shipping-form.js';
 import { initHero } from './hero.js';
 import { injectStructuredData } from './structured-data.js';
 import { initFilters, filterByCategory, renderColorFilters, reconcileColorFilter } from './catalog-filters.js';
 import { renderGrid } from './catalog-grid.js';
-import { initModal, closeModal, openZoom, closeZoom, openProductFromUrl } from './product-modal.js';
-import { sendWhatsapp } from './whatsapp-order.js';
+import { initModal, closeModal, openZoom, closeZoom, openProductFromUrl, addCurrentProductToCart } from './product-modal.js';
 import { applyFirebasePhotos } from './firebase-catalog.js';
 import { initSearch } from './search.js';
 import { initCollectionsCarousel } from './collections-carousel.js';
+import { initCart } from './cart.js';
 
 // Wires a DOM listener by id and throws loudly if the element is missing, instead of
 // producing a silently dead control (see design §G risk 1 — a mis-wired handler
@@ -35,12 +34,9 @@ renderGrid();
 initSearch({ onSearch: renderGrid });
 initCollectionsCarousel();
 
-// 4. Modal, shipping form, WhatsApp button, and all remaining markup controls.
+// 4. Modal, carrito, y todos los demás controles del markup.
 initModal();
-filterDigitsInput('shipPhone', 10);
-filterDigitsInput('shipDoc', 20);
-filterNameCityInput('shipName');
-filterNameCityInput('shipCity');
+initCart();
 
 on('portadaToteLink', 'click', (e)=>{ e.preventDefault(); filterByCategory('tote'); document.getElementById('catalogo').scrollIntoView(); });
 on('portadaLuxuryLink', 'click', (e)=>{ e.preventDefault(); filterByCategory('tote-luxury'); document.getElementById('catalogo').scrollIntoView(); });
@@ -50,7 +46,7 @@ on('portadaLumiereLink', 'click', (e)=>{ e.preventDefault(); filterByCategory('l
 on('portadaMakeupLink', 'click', (e)=>{ e.preventDefault(); filterByCategory('makeup-bag'); document.getElementById('catalogo').scrollIntoView(); });
 on('modalCloseBtn', 'click', ()=>closeModal());
 on('galleryMain', 'click', ()=>openZoom());
-on('whatsappBtn', 'click', ()=>sendWhatsapp());
+on('addToCartBtn', 'click', ()=>addCurrentProductToCart());
 on('zoomOverlay', 'click', ()=>closeZoom());
 on('zoomCloseBtn', 'click', (e)=>closeZoom(e));
 
