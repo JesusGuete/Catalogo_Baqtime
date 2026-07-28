@@ -517,11 +517,15 @@
     .section-title{ padding:0 16px; margin-bottom:18px; }
     .section-title h2{ font-size:22px; }
     .thread-strip{ padding:0 16px 18px; position:relative; }
-    /* Pista visual de que hay más categorías deslizando a la derecha (se desvanece
-       hacia el color de fondo de la página, justo antes del margen exterior) */
+    /* Pista visual de que hay más categorías deslizando a la derecha: degradado más
+       ancho y opaco (llega a color sólido a mitad de camino, no al final) + una
+       flechita, para que se note claramente en vez de perderse contra el fondo. */
     .thread-strip::after{
-      content:''; position:absolute; top:0; right:16px; bottom:18px; width:32px;
-      background:linear-gradient(to right, rgba(250,246,239,0), var(--cream));
+      content:'›';
+      position:absolute; top:0; right:0; bottom:18px; width:52px;
+      display:flex; align-items:center; justify-content:flex-end;
+      font-size:22px; font-weight:700; color:var(--ink-soft);
+      background:linear-gradient(to right, rgba(250,246,239,0) 0%, var(--cream) 55%, var(--cream) 100%);
       pointer-events:none;
     }
 
