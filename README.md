@@ -32,20 +32,22 @@ Production (GitHub Pages, `https://baqtime.store`) is unaffected by this restric
     ├── css/                 site.css, admin.css — one stylesheet per page
     ├── img/                 first-party fallback assets (e.g. placeholder.svg)
     └── js/
-        ├── shared/           escape.js — used by both pages
+        ├── shared/           escape.js, catalog-seed.js — used by both pages
         ├── site/             storefront ES modules (state, catalog data, rendering, etc.)
         └── admin/            admin panel ES modules (draft store, product cards, crop editor, etc.)
 ```
 
 ## Firebase is an enrichment layer, not a hard dependency
 
-The storefront renders the full catalog synchronously from static data in `assets/js/site/catalog-data.js` on first paint. Firebase Realtime Database is only consulted afterward to apply photo/name/order overrides and any admin-managed additions or deletions. If Firebase is blocked, slow, or unreachable, the catalog still renders — only the enrichment step is skipped.
+The storefront renders the full catalog synchronously from static data in `assets/js/site/catalog-data.js` on first paint. Firebase Realtime Database is only consulted afterward to apply photo/name/price/order overrides and any admin-managed additions or deletions. If Firebase is blocked, slow, or unreachable, the catalog still renders — only the enrichment step is skipped.
 
 There is intentionally no `images/` folder in this repository. Static product image paths resolve through `resolveProductImage()` (`assets/js/site/site-images.js`), which falls back to a local, same-origin `assets/img/placeholder.svg` for any product without a real (Firebase-hosted) photo yet, instead of a broken image icon.
 
 ## JSON-LD staleness note
 
-Structured data (`Product`/`ItemList` JSON-LD) is generated at runtime from the same static arrays in `catalog-data.js`, not from Firebase. This is deliberate — Firebase-sourced data (via the currently open RTDB write rules) could otherwise be used to inject arbitrary structured data by an anonymous party. Consequences: a custom product created only in the admin panel never appears in structured data, and an admin rename of an existing product will not be reflected in JSON-LD until `catalog-data.js` is edited in the repository. Prices never drift, since Firebase never writes `price`.
+Structured data (`Product`/`ItemList` JSON-LD) is generated at runtime from the same static arrays in `catalog-data.js`, not from Firebase. This is deliberate — Firebase-sourced data (via the currently open RTDB write rules) could otherwise be used to inject arbitrary structured data by an anonymous party. Consequences: a custom product created only in the admin panel never appears in structured data, and an admin rename of an existing product will not be reflected in JSON-LD until `catalog-data.js` is edited in the repository.
+
+**Update:** the admin panel now supports per-product price overrides (`productOverrides.price`, applied to the live storefront the same way `name`/`variant` already were). Structured data is still generated *before* the Firebase enrichment step (same security reasoning as above), so **prices can now drift**: an admin price change is reflected instantly on the storefront (grid + modal) but not in the JSON-LD `Offer.price` search engines read, until `catalog-seed.js` is edited directly. This is a known, accepted limitation rather than a bug — fixing it properly would mean making structured data Firebase-aware, which reopens the injection risk described above. Revisit only after closing public self-registration in Firebase Auth.
 
 ## Category placeholder images
 
