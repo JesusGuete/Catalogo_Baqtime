@@ -27,6 +27,16 @@ export const CATALOG_SEED = [
   { id:"t10", category:"tote", name:"Tote Bag Verde", color:"Verde", variant:"Cordones Negros", hex:"#5C6B4A", price:130000, personalizable:true, maxInitials:7, groupKey:"Verde" },
   { id:"t11", category:"tote", name:"Tote Bag Vino", color:"Vino", variant:"Cordones Negros", hex:"#6E1F2A", price:130000, personalizable:true, maxInitials:7, groupKey:"Vino" },
 
+  // ---- Tote Bag Luxury ----
+  { id:"tl1", category:"tote-luxury", name:"Tote Bag Luxury Beige", color:"Beige", hex:"#EFE9DD", price:130000, personalizable:true, maxInitials:2, groupKey:"Beige" },
+  { id:"tl2", category:"tote-luxury", name:"Tote Bag Luxury Mocca", color:"Mocca", hex:"#6B4A38", price:130000, personalizable:true, maxInitials:2, groupKey:"Mocca" },
+  { id:"tl3", category:"tote-luxury", name:"Tote Bag Luxury Negro", color:"Negro", hex:"#1A1A1A", price:130000, personalizable:true, maxInitials:2, groupKey:"Negro" },
+
+  // ---- Bag Lumiere ----
+  { id:"l1", category:"lumiere", name:"Bag Lumiere Beige", color:"Beige", hex:"#F2EEDD", price:140000, personalizable:false, groupKey:"Beige" },
+  { id:"l2", category:"lumiere", name:"Bag Lumiere Negro", color:"Negro", hex:"#1A1A1A", price:140000, personalizable:false, groupKey:"Negro" },
+  { id:"l3", category:"lumiere", name:"Bag Lumiere Vino", color:"Vino", hex:"#6E1F2A", price:140000, personalizable:false, groupKey:"Vino" },
+
   // ---- Neceser ----
   { id:"n1", category:"neceser", name:"Neceser Azul", color:"Azul", hex:"#25324A", price:60000, personalizable:true, maxInitials:2, groupKey:"Azul" },
   { id:"n2", category:"neceser", name:"Neceser Beige", color:"Beige", hex:"#EDE6D6", price:60000, personalizable:true, maxInitials:2, groupKey:"Beige" },
@@ -34,16 +44,6 @@ export const CATALOG_SEED = [
   { id:"n4", category:"neceser", name:"Neceser Negro", color:"Negro", hex:"#1A1A1A", price:60000, personalizable:true, maxInitials:2, groupKey:"Negro" },
   { id:"n5", category:"neceser", name:"Neceser Verde", color:"Verde", hex:"#3B4A34", price:60000, personalizable:true, maxInitials:2, groupKey:"Verde" },
   { id:"n6", category:"neceser", name:"Neceser Vino", color:"Vino", hex:"#4A1D25", price:60000, personalizable:true, maxInitials:2, groupKey:"Vino" },
-
-  // ---- Bag Lumiere ----
-  { id:"l1", category:"lumiere", name:"Bag Lumiere Beige", color:"Beige", hex:"#F2EEDD", price:140000, personalizable:false, groupKey:"Beige" },
-  { id:"l2", category:"lumiere", name:"Bag Lumiere Negro", color:"Negro", hex:"#1A1A1A", price:140000, personalizable:false, groupKey:"Negro" },
-  { id:"l3", category:"lumiere", name:"Bag Lumiere Vino", color:"Vino", hex:"#6E1F2A", price:140000, personalizable:false, groupKey:"Vino" },
-
-  // ---- Tote Bag Luxury ----
-  { id:"tl1", category:"tote-luxury", name:"Tote Bag Luxury Beige", color:"Beige", hex:"#EFE9DD", price:130000, personalizable:true, maxInitials:2, groupKey:"Beige" },
-  { id:"tl2", category:"tote-luxury", name:"Tote Bag Luxury Mocca", color:"Mocca", hex:"#6B4A38", price:130000, personalizable:true, maxInitials:2, groupKey:"Mocca" },
-  { id:"tl3", category:"tote-luxury", name:"Tote Bag Luxury Negro", color:"Negro", hex:"#1A1A1A", price:130000, personalizable:true, maxInitials:2, groupKey:"Negro" },
 
   // ---- Cosmetiquera ----
   { id:"c1", category:"cosmetiquera", name:"Cosmetiquera Beige", color:"Beige", hex:"#EDE6D6", price:50000, personalizable:true, maxInitials:2, groupKey:"Beige" },
