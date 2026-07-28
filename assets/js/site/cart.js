@@ -1,4 +1,4 @@
-import { PRICE_SHIP, getAdvance, fmt } from './pricing.js';
+import { PRICE_SHIP, fmt } from './pricing.js';
 import { escapeHtml } from '../shared/escape.js';
 import { ALL_PRODUCTS } from './catalog-data.js';
 import { resolveProductImage } from './site-images.js';
@@ -167,7 +167,6 @@ function sendCartWhatsapp(){
   const doc = document.getElementById('shipDoc').value.trim();
 
   const subtotal = getCartSubtotal();
-  const totalAdvance = cart.reduce((sum, item)=> sum + getAdvance(item), 0);
 
   const productBlocks = cart.map((item, idx)=> formatCartItemLines(item, idx).join('\n'));
 
@@ -190,7 +189,7 @@ function sendCartWhatsapp(){
     `• Teléfono: ${phone}`,
     doc ? `• Documento: ${doc}` : null,
     ``,
-    `Quiero reservar estos productos. ¿Me comparten los medios de pago para realizar el anticipo de ${fmt(totalAdvance)} y confirmar mi pedido?`
+    `Quiero reservar estos productos. ¿Me comparten los medios de pago para confirmar mi pedido?`
   ].filter(l => l !== null).join('\n');
 
   const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines)}`;
