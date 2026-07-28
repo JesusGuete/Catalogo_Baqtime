@@ -1,10 +1,14 @@
-import { fmt } from './pricing.js';
+import { PRICE_SHIP, getAdvance, fmt } from './pricing.js';
 import { escapeHtml } from '../shared/escape.js';
+import { ALL_PRODUCTS } from './catalog-data.js';
+import { resolveProductImage } from './site-images.js';
+import { validateShippingForm, filterDigitsInput, filterNameCityInput } from './shipping-form.js';
+import { WHATSAPP_NUMBER } from './whatsapp-order.js';
 
-// ===== Carrito — Fase 1 =====
+// ===== Carrito =====
 // Guarda cada línea en localStorage (así no se pierde si el cliente recarga la página
-// por accidente). Cada línea guarda todo lo que después hará falta para el mensaje de
-// WhatsApp (Fase 3): producto, color/variante, iniciales, color de iniciales, precio.
+// por accidente). Cada línea guarda todo lo que hace falta para el mensaje de WhatsApp:
+// producto, color/variante, iniciales, color de iniciales, precio.
 // No hay "cantidad": agregar el mismo producto dos veces crea dos líneas separadas
 // (por ejemplo, el mismo Tote Bag pero con iniciales distintas para dos personas).
 const STORAGE_KEY = 'baqtime_cart';
@@ -28,7 +32,7 @@ function saveCart(){
 
 export function getCart(){ return cart; }
 export function getCartCount(){ return cart.length; }
-export function getCartTotal(){ return cart.reduce((sum, item)=> sum + item.price + item.extra, 0); }
+export function getCartSubtotal(){ return cart.reduce((sum, item)=> sum + item.price + item.extra, 0); }
 
 export function addToCart(item){
   cart.push({ id: 'line_' + Date.now() + '_' + Math.random().toString(36).slice(2), ...item });
@@ -42,6 +46,12 @@ export function removeFromCart(lineId){
   renderCartUI();
 }
 
+function clearCart(){
+  cart = [];
+  saveCart();
+  renderCartUI();
+}
+
 // Detalle legible de una línea, para mostrarla en el panel (color/variante + iniciales).
 function lineDetail(item){
   const parts = [];
@@ -49,6 +59,11 @@ function lineDetail(item){
   else if(item.color) parts.push(item.color);
   if(item.initials) parts.push(`Iniciales: ${item.initials} (${item.initialsColorName})`);
   return parts.join(' · ');
+}
+
+function lineImage(item){
+  const product = ALL_PRODUCTS.find(p=>p.id===item.productId);
+  return product ? resolveProductImage(product) : 'assets/img/placeholder.svg';
 }
 
 function renderCartBadge(){
@@ -62,15 +77,23 @@ function renderCartBadge(){
 function renderCartUI(){
   renderCartBadge();
   const listEl = document.getElementById('cartItemsList');
+  const shippingSection = document.getElementById('cartShippingSection');
+  const sendBtn = document.getElementById('sendCartBtn');
   listEl.innerHTML = '';
+
   if(!cart.length){
     listEl.innerHTML = '<p class="cart-empty">Tu carrito está vacío.</p>';
+    shippingSection.classList.add('hidden');
+    sendBtn.classList.add('hidden');
   } else {
+    shippingSection.classList.remove('hidden');
+    sendBtn.classList.remove('hidden');
     cart.forEach(item=>{
       const row = document.createElement('div');
       row.className = 'cart-line';
       row.innerHTML = `
-        <div>
+        <img class="cart-line-img" src="${escapeHtml(lineImage(item))}" alt="${escapeHtml(item.name)}">
+        <div class="cart-line-body">
           <p class="cart-line-name">${escapeHtml(item.name)}</p>
           <p class="cart-line-detail">${escapeHtml(lineDetail(item))}</p>
           <p class="cart-line-price mono">${fmt(item.price + item.extra)}</p>
@@ -83,7 +106,86 @@ function renderCartUI(){
       btn.addEventListener('click', ()=> removeFromCart(btn.dataset.id));
     });
   }
-  document.getElementById('cartTotal').textContent = fmt(getCartTotal());
+
+  const subtotal = getCartSubtotal();
+  const shipping = cart.length ? PRICE_SHIP : 0;
+  document.getElementById('cartSubtotal').textContent = fmt(subtotal);
+  document.getElementById('cartShipping').textContent = fmt(shipping);
+  document.getElementById('cartTotal').textContent = fmt(subtotal + shipping);
+}
+
+// Líneas del mensaje de WhatsApp para un producto del carrito (mismo formato por
+// categoría que tenía el flujo de un solo producto — ver whatsapp-order.js).
+function formatCartItemLines(item, idx){
+  const initialsLine = `• Iniciales: ${item.initials || '(sin iniciales)'}`;
+  const initialsColorLine = item.initialsColorName ? `• Color de las iniciales: ${item.initialsColorName}` : null;
+  let lines;
+  if(item.category==='tote'){
+    lines = [
+      `• Producto: Tote Bag personalizado`,
+      `• Color del bolso: ${item.color}`,
+      `• Color de los cordones: ${(item.variant||'').replace('Cordones ','')}`,
+      initialsLine, initialsColorLine,
+    ];
+  } else if(item.category==='tote-luxury'){
+    lines = [`• Producto: Tote Bag Luxury`, `• Color: ${item.color}`, initialsLine, initialsColorLine];
+  } else if(item.category==='neceser'){
+    lines = [`• Producto: Neceser`, `• Color / modelo: ${item.color}`, initialsLine, initialsColorLine];
+  } else if(item.category==='cosmetiquera'){
+    lines = [`• Producto: Cosmetiquera`, `• Color: ${item.color}`, initialsLine, initialsColorLine];
+  } else if(item.category==='makeup-bag'){
+    lines = [`• Producto: Makeup Bag`, `• Color: ${item.color}`, initialsLine, initialsColorLine];
+  } else {
+    lines = [`• Producto: Bag Lumiere`, `• Color / modelo: ${item.color}`];
+  }
+  return [
+    `Producto ${idx+1} — ${item.name}:`,
+    ...lines.filter(Boolean),
+    item.extra ? `• Personalización adicional: ${fmt(item.extra)}` : null,
+    `• Valor: ${fmt(item.price + item.extra)}`,
+  ].filter(Boolean);
+}
+
+function sendCartWhatsapp(){
+  if(!cart.length) return;
+  if(!validateShippingForm()) return;
+
+  const name = document.getElementById('shipName').value.trim();
+  const city = document.getElementById('shipCity').value.trim();
+  const address = document.getElementById('shipAddress').value.trim();
+  const phone = document.getElementById('shipPhone').value.trim();
+  const doc = document.getElementById('shipDoc').value.trim();
+
+  const subtotal = getCartSubtotal();
+  const totalAdvance = cart.reduce((sum, item)=> sum + getAdvance(item), 0);
+
+  const productBlocks = cart.map((item, idx)=> formatCartItemLines(item, idx).join('\n'));
+
+  const lines = [
+    `¡Hola! Quiero agendar un pedido en Baqtime (${cart.length} producto${cart.length>1?'s':''})`,
+    ``,
+    `DETALLES DE MI PEDIDO:`,
+    ``,
+    productBlocks.join('\n\n'),
+    ``,
+    `VALOR DEL PEDIDO:`,
+    `• Subtotal productos: ${fmt(subtotal)}`,
+    `• Envío: ${fmt(PRICE_SHIP)}`,
+    `• Total: ${fmt(subtotal + PRICE_SHIP)}`,
+    ``,
+    `DATOS PARA EL ENVÍO:`,
+    `• Nombre: ${name}`,
+    `• Ciudad: ${city}`,
+    `• Dirección: ${address}`,
+    `• Teléfono: ${phone}`,
+    doc ? `• Documento: ${doc}` : null,
+    ``,
+    `Quiero reservar estos productos. ¿Me comparten los medios de pago para realizar el anticipo de ${fmt(totalAdvance)} y confirmar mi pedido?`
+  ].filter(l => l !== null).join('\n');
+
+  const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines)}`;
+  window.location.href = url;
+  clearCart();
 }
 
 export function initCart(){
@@ -93,4 +195,10 @@ export function initCart(){
     btn.addEventListener('click', ()=> panel.classList.toggle('hidden'));
   });
   document.getElementById('cartCloseBtn').addEventListener('click', ()=> panel.classList.add('hidden'));
+  document.getElementById('sendCartBtn').addEventListener('click', sendCartWhatsapp);
+
+  filterDigitsInput('shipPhone', 10);
+  filterDigitsInput('shipDoc', 20);
+  filterNameCityInput('shipName');
+  filterNameCityInput('shipCity');
 }
