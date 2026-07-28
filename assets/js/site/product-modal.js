@@ -41,29 +41,56 @@ export function galleryFor(product){
   return [{img:product.img, product}];
 }
 
+// ===== Carrusel de la foto principal: scroll nativo + scroll-snap, mismo mecanismo
+// probado que el carrusel de colecciones y el de relacionados (ver esos archivos). =====
+function slideStep(){
+  const slidesEl = document.getElementById('gallerySlides');
+  const first = slidesEl.firstElementChild;
+  return first ? first.getBoundingClientRect().width : 0;
+}
+function currentSlideIndex(){
+  const slidesEl = document.getElementById('gallerySlides');
+  const step = slideStep();
+  return step ? Math.round(slidesEl.scrollLeft / step) : 0;
+}
+function goToSlide(idx){
+  document.getElementById('gallerySlides').scrollTo({ left: idx * slideStep(), behavior:'smooth' });
+}
+function updateGalleryArrows(){
+  const slidesEl = document.getElementById('gallerySlides');
+  const idx = currentSlideIndex();
+  const count = slidesEl.children.length;
+  document.getElementById('galleryPrevBtn').disabled = idx <= 0;
+  document.getElementById('galleryNextBtn').disabled = idx >= count - 1;
+  document.querySelectorAll('#galleryThumbs img').forEach((im,i)=> im.classList.toggle('active', i===idx));
+}
+
 export function openModal(product, { updateUrl = true } = {}){
   state.currentProduct = product;
   state.currentInitialsColor = INITIALS_COLORS[0];
   const sub = product.category==='tote' ? ` – ${product.variant}` : '';
   document.getElementById('modalTitle').textContent = `${product.name}${sub}`;
-  document.getElementById('galleryImg').src = resolveProductImage(product);
 
-  // Galería / miniaturas
+  // Galería principal (carrusel deslizable) + miniaturas
   const thumbs = galleryFor(product);
+  const slidesEl = document.getElementById('gallerySlides');
   const thumbsEl = document.getElementById('galleryThumbs');
-  thumbsEl.innerHTML='';
+  slidesEl.innerHTML = '';
+  thumbsEl.innerHTML = '';
   thumbs.forEach((t,idx)=>{
-    const img = document.createElement('img');
-    img.src = resolveImageUrl(t.img);
-    img.className = idx===0 ? 'active' : '';
-    img.onclick = ()=>{
-      document.getElementById('galleryImg').src = resolveImageUrl(t.img);
-      thumbsEl.querySelectorAll('img').forEach(i=>i.classList.remove('active'));
-      img.classList.add('active');
-      if(t.product !== state.currentProduct){ state.currentProduct = t.product; updatePreview(); }
-    };
-    thumbsEl.appendChild(img);
+    const slideImg = document.createElement('img');
+    slideImg.src = resolveImageUrl(t.img);
+    slideImg.alt = product.name;
+    slidesEl.appendChild(slideImg);
+
+    const thumb = document.createElement('img');
+    thumb.src = resolveImageUrl(t.img);
+    thumb.className = idx===0 ? 'active' : '';
+    thumb.onclick = ()=> goToSlide(idx);
+    thumbsEl.appendChild(thumb);
   });
+  slidesEl.scrollLeft = 0; // el producto cambió: siempre empieza en la primera foto
+  updateGalleryArrows();
 
   // Opciones de color (solo aplica a Neceser y Bag Lumiere; Tote no tiene, ya que sus variantes son combinaciones de cordones)
   const optionsField = document.getElementById('optionsField');
@@ -237,7 +264,9 @@ export function updatePreview(){
 }
 
 export function openZoom(){
-  document.getElementById('zoomImg').src = document.getElementById('galleryImg').src;
+  const slidesEl = document.getElementById('gallerySlides');
+  const activeImg = slidesEl.children[currentSlideIndex()];
+  document.getElementById('zoomImg').src = activeImg ? activeImg.src : '';
   zoomOverlay.classList.add('open');
 }
 
@@ -264,6 +293,19 @@ export function initModal(){
       closeModal({ updateUrl:false });
     }
   });
+
+  // Flechas de la foto principal (stopPropagation: #galleryMain también abre el zoom
+  // al hacer clic, y las flechas están dentro de ese mismo contenedor).
+  document.getElementById('galleryPrevBtn').addEventListener('click', (e)=>{
+    e.stopPropagation();
+    goToSlide(Math.max(0, currentSlideIndex() - 1));
+  });
+  document.getElementById('galleryNextBtn').addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const count = document.getElementById('gallerySlides').children.length;
+    goToSlide(Math.min(count - 1, currentSlideIndex() + 1));
+  });
+  document.getElementById('gallerySlides').addEventListener('scroll', updateGalleryArrows);
 
   // Flechas del carrusel de "También te puede interesar" (mismo mecanismo de scroll
   // nativo que el carrusel de colecciones — ver collections-carousel.js).
