@@ -152,15 +152,18 @@
     max-width:1180px; margin:0 auto; padding:0 20px 60px;
     display:flex; align-items:center; gap:12px;
   }
-  .portada-viewport{ flex:1; overflow:hidden; }
-  .portada{
-    display:flex; gap:22px; transition:transform .3s ease;
-    touch-action:pan-y; /* deja que la página siga haciendo scroll vertical normal;
-                           el arrastre horizontal lo maneja el JS del carrusel */
-    user-select:none; cursor:grab;
+  .portada-viewport{
+    flex:1; overflow-x:auto; overflow-y:hidden;
+    scroll-snap-type:x mandatory; scroll-behavior:smooth;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none; /* Firefox: oculta la barra de scroll nativa */
   }
-  .portada:active{ cursor:grabbing; }
+  .portada-viewport::-webkit-scrollbar{ display:none; } /* Chrome/Safari: idem */
+  .portada{
+    display:flex; gap:22px;
+  }
   .portada-card{
+    scroll-snap-align:start; /* cada tarjeta "engancha" el scroll a su borde izquierdo */
     flex:0 0 calc((100% - 44px)/3); /* 3 tarjetas visibles, descontando 2 espacios de 22px */
     background:var(--white-card); border:1px solid var(--line); border-radius:3px;
     overflow:hidden; display:flex; flex-direction:column;
