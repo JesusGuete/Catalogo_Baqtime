@@ -10,8 +10,18 @@ skills-lock.json
 .DS_Store
 Thumbs.db
 
-# Astro (migración) - por si acaso, aunque astro-app/ trae su propio .gitignore
-astro-app/node_modules/
-astro-app/dist/
-astro-app/.astro/
-astro-app/.env
+# Astro
+dist/
+.astro/
+node_modules/
+.env
+.env.production
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# jetbrains setting folder
+.idea/
