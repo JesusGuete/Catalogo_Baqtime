@@ -3,6 +3,7 @@ import { CATALOG_MOCK, IMPORTED_CATEGORIES } from "../../lib/mock-catalog.js";
 import { initialsColorsFor } from "../../lib/initials.js";
 import { PRICE_EXTRA_INITIALS, PRICE_SHIP, fmt } from "../../lib/pricing.js";
 import { addToCart } from "../../lib/cart-store.js";
+import { useCart } from "../../lib/useCart.js";
 
 // Portado desde assets/js/site/product-modal.js.
 // Mismas clases CSS que index.html (.modal-overlay/.modal), así que el diseño de
@@ -13,6 +14,7 @@ import { addToCart } from "../../lib/cart-store.js";
 // modal y pasa a ser una página real /producto/[slug], así que implementar ahora
 // el ?producto= sería trabajo que se bota.
 export default function ProductView({ product, onClose, onOpenProduct }) {
+  const cartItems = useCart();
   const initialsColors = useMemo(() => initialsColorsFor(product), [product]);
   const [initials, setInitials] = useState("");
   const [initialsColor, setInitialsColor] = useState(initialsColors[0]);
@@ -108,6 +110,14 @@ export default function ProductView({ product, onClose, onOpenProduct }) {
         }}
       >
         <div className="modal" role="dialog" aria-modal="true" aria-label={product.name}>
+          <button
+            type="button"
+            className="cart-icon-btn-modal"
+            aria-label="Ver carrito"
+            onClick={() => window.dispatchEvent(new CustomEvent("baqtime:toggle-cart"))}
+          >
+            🛒 <span className={"cart-count" + (cartItems.length === 0 ? " hidden" : "")}>{cartItems.length}</span>
+          </button>
           <button className="modal-close" onClick={onClose} aria-label="Cerrar">
             ✕
           </button>
