@@ -2,16 +2,17 @@
 // Catálogo público — versión Astro + React.
 // Portado desde index.html: mismo <head>, mismo orden de secciones, mismo site.css.
 // Lo que falta a propósito en este paso (siguiente trabajo, no incluido todavía):
-//   - Modal/página de producto al hacer clic en una tarjeta (Fase 3/4).
-//   - Carrito + checkout por WhatsApp (próxima isla).
+//   - Página de producto real con URL compartible (Fase 4).
 //   - Panel admin (Fase 6).
-//   - Datos reales de Supabase en vez de mock-catalog.js (Fase 1/2).
 import Header from "../components/astro/Header.astro";
 import Hero from "../components/astro/Hero.astro";
 import CollectionsCarousel from "../components/astro/CollectionsCarousel.astro";
 import Footer from "../components/astro/Footer.astro";
 import ShopApp from "../components/react/ShopApp.jsx";
+import { loadCatalog } from "../lib/catalog.js";
 import "../styles/site.css";
+
+const catalog = await loadCatalog();
 ---
 
 <html lang="es">
@@ -27,7 +28,7 @@ import "../styles/site.css";
   <Header />
   <Hero />
   <CollectionsCarousel />
-  <ShopApp client:load />
+  <ShopApp client:load catalog={catalog} />
   <Footer />
 </body>
 </html>

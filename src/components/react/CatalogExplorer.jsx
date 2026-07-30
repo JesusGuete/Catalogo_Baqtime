@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { CATALOG_MOCK, CATS, CATEGORY_LABELS } from "../../lib/mock-catalog.js";
 import { SORTERS, matchesSearch, fmt } from "../../lib/search-utils.js";
 
 // Equivalente React de: search.js + catalog-filters.js + catalog-grid.js juntos.
@@ -7,9 +6,8 @@ import { SORTERS, matchesSearch, fmt } from "../../lib/search-utils.js";
 // innerHTML, dataset de clases "active"/"hidden"). Aquí es un solo componente porque
 // los tres compartían el mismo estado (categoría, color, texto de búsqueda, orden) —
 // en la versión vanilla ese estado vivía en state.js; aquí vive en useState.
-//
-// ⚠️ Usa CATALOG_MOCK (datos temporales) — ver src/lib/mock-catalog.js.
-export default function CatalogExplorer({ onOpenProduct }) {
+export default function CatalogExplorer({ catalog, onOpenProduct }) {
+  const { products: CATALOG, CATS, CATEGORY_LABELS } = catalog;
   const [category, setCategory] = useState(null);
   const [colorFilter, setColorFilter] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -32,7 +30,7 @@ export default function CatalogExplorer({ onOpenProduct }) {
   // Si el filtro de color activo ya no existe en la categoría elegida, se limpia
   // (equivalente a reconcileColorFilter() en catalog-filters.js).
   const colorsInCategory = useMemo(() => {
-    const pool = category ? CATALOG_MOCK.filter((p) => p.category === category) : CATALOG_MOCK;
+    const pool = category ? CATALOG.filter((p) => p.category === category) : CATALOG;
     return [...new Set(pool.map((p) => p.groupKey))];
   }, [category]);
 
@@ -43,7 +41,7 @@ export default function CatalogExplorer({ onOpenProduct }) {
   }, [colorsInCategory, colorFilter]);
 
   const products = useMemo(() => {
-    const filtered = CATALOG_MOCK.filter((p) => !category || p.category === category)
+    const filtered = CATALOG.filter((p) => !category || p.category === category)
       .filter((p) => !colorFilter || p.groupKey === colorFilter)
       .filter((p) => matchesSearch(p, searchQuery, CATEGORY_LABELS));
     const sorter = SORTERS[sortBy];

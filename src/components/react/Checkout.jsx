@@ -9,7 +9,7 @@ const EMPTY = { name: "", city: "", address: "", phone: "", doc: "" };
 // Página completa de "Finalizar compra" — portada desde #checkoutOverlay en
 // index.html + sendCartWhatsapp() en cart.js. Mismo markup/clases, mismos textos
 // de error, mismo orden de campos.
-export default function Checkout({ items, onClose }) {
+export default function Checkout({ items, products, onClose }) {
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState({});
 
@@ -61,7 +61,7 @@ export default function Checkout({ items, onClose }) {
           {items.length === 0 ? (
             <p className="cart-empty">Tu carrito está vacío.</p>
           ) : (
-            items.map((item) => <CartLine key={item.id} item={item} />)
+            items.map((item) => <CartLine key={item.id} item={item} products={products} />)
           )}
         </div>
 

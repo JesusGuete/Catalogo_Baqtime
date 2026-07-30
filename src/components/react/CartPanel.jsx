@@ -1,4 +1,3 @@
-import { CATALOG_MOCK } from "../../lib/mock-catalog.js";
 import { fmt, PRICE_SHIP } from "../../lib/pricing.js";
 import { removeFromCart, getCartSubtotal } from "../../lib/cart-store.js";
 
@@ -11,17 +10,17 @@ export function lineDetail(item) {
   return parts.join(" · ");
 }
 
-function lineImage(item) {
-  const product = CATALOG_MOCK.find((p) => p.id === item.productId);
+function lineImage(item, products) {
+  const product = products.find((p) => p.id === item.productId);
   return product ? product.img : "/assets/img/placeholder.svg";
 }
 
 // Una línea del carrito. Se usa igual en el panel lateral y en el checkout,
 // tal como hacía buildCartLineElement() en la versión vanilla.
-export function CartLine({ item }) {
+export function CartLine({ item, products }) {
   return (
     <div className="cart-line">
-      <img className="cart-line-img" src={lineImage(item)} alt={item.name} />
+      <img className="cart-line-img" src={lineImage(item, products)} alt={item.name} />
       <div className="cart-line-body">
         <p className="cart-line-name">{item.name}</p>
         <p className="cart-line-detail">{lineDetail(item)}</p>
@@ -63,7 +62,7 @@ export function CartTotals({ items }) {
 }
 
 // Panel lateral: vistazo rápido (lista + totales + "Finalizar compra").
-export default function CartPanel({ items, onClose, onCheckout }) {
+export default function CartPanel({ items, products, onClose, onCheckout }) {
   return (
     <div className="cart-panel">
       <div className="cart-panel-head">
@@ -76,7 +75,7 @@ export default function CartPanel({ items, onClose, onCheckout }) {
         {items.length === 0 ? (
           <p className="cart-empty">Tu carrito está vacío.</p>
         ) : (
-          items.map((item) => <CartLine key={item.id} item={item} />)
+          items.map((item) => <CartLine key={item.id} item={item} products={products} />)
         )}
       </div>
       <CartTotals items={items} />

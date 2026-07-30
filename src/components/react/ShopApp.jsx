@@ -9,7 +9,7 @@ import { useCart } from "../../lib/useCart.js";
 // checkout porque los cuatro comparten estado (qué producto está abierto, qué hay
 // en el carrito, qué panel está visible). En la versión vanilla ese estado vivía
 // repartido entre state.js y clases CSS en el DOM.
-export default function ShopApp() {
+export default function ShopApp({ catalog }) {
   const items = useCart();
   const [openProduct, setOpenProduct] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -27,10 +27,11 @@ export default function ShopApp() {
 
   return (
     <>
-      <CatalogExplorer onOpenProduct={setOpenProduct} />
+      <CatalogExplorer catalog={catalog} onOpenProduct={setOpenProduct} />
 
       {openProduct && (
         <ProductView
+          catalog={catalog}
           product={openProduct}
           onClose={() => setOpenProduct(null)}
           onOpenProduct={setOpenProduct}
@@ -40,6 +41,7 @@ export default function ShopApp() {
       {cartOpen && (
         <CartPanel
           items={items}
+          products={catalog.products}
           onClose={() => setCartOpen(false)}
           onCheckout={() => {
             setCartOpen(false);
@@ -48,7 +50,9 @@ export default function ShopApp() {
         />
       )}
 
-      {checkoutOpen && <Checkout items={items} onClose={() => setCheckoutOpen(false)} />}
+      {checkoutOpen && (
+        <Checkout items={items} products={catalog.products} onClose={() => setCheckoutOpen(false)} />
+      )}
     </>
   );
 }

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CATALOG_MOCK, IMPORTED_CATEGORIES } from "../../lib/mock-catalog.js";
 import { initialsColorsFor } from "../../lib/initials.js";
 import { PRICE_EXTRA_INITIALS, PRICE_SHIP, fmt } from "../../lib/pricing.js";
 import { addToCart } from "../../lib/cart-store.js";
@@ -13,7 +12,8 @@ import { useCart } from "../../lib/useCart.js";
 // sincronía con el botón atrás del navegador. En la Fase 4 esto deja de ser un
 // modal y pasa a ser una página real /producto/[slug], así que implementar ahora
 // el ?producto= sería trabajo que se bota.
-export default function ProductView({ product, onClose, onOpenProduct }) {
+export default function ProductView({ catalog, product, onClose, onOpenProduct }) {
+  const { products: CATALOG, IMPORTED_CATEGORIES } = catalog;
   const cartItems = useCart();
   const initialsColors = useMemo(() => initialsColorsFor(product), [product]);
   const [initials, setInitials] = useState("");
@@ -47,15 +47,13 @@ export default function ProductView({ product, onClose, onOpenProduct }) {
 
   useEffect(() => () => clearTimeout(addedTimer.current), []);
 
-  // Con datos mock cada producto tiene una sola foto. Cuando lleguen las fotos
-  // reales de Supabase esto pasa a ser product.gallery (varias imágenes).
   const photos = product.gallery && product.gallery.length ? product.gallery : [product.img];
 
   // Opciones de color: solo para categorías distintas de tote (el tote usa variantes
   // de cordones, no colores sueltos). Portado de openModal().
   const colorOptions = useMemo(() => {
     if (product.category === "tote") return [];
-    const sameCategory = CATALOG_MOCK.filter((p) => p.category === product.category);
+    const sameCategory = CATALOG.filter((p) => p.category === product.category);
     const unique = [];
     sameCategory.forEach((p) => {
       if (!unique.find((u) => u.groupKey === p.groupKey)) unique.push(p);
@@ -65,7 +63,7 @@ export default function ProductView({ product, onClose, onOpenProduct }) {
 
   // "También te puede interesar": mismo color, categoría distinta.
   const related = useMemo(
-    () => CATALOG_MOCK.filter((p) => p.groupKey === product.groupKey && p.category !== product.category),
+    () => CATALOG.filter((p) => p.groupKey === product.groupKey && p.category !== product.category),
     [product]
   );
 

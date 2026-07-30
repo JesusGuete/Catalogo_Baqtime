@@ -1,17 +1,11 @@
-// ⚠️ DATOS TEMPORALES — SOLO PARA DESARROLLO DEL FRONT, MIENTRAS NO EXISTE SUPABASE.
+// El sitio ya no usa este archivo — src/lib/catalog.js trae el catálogo real desde
+// Supabase (ver src/pages/index.astro). Se conserva porque
+// scripts/migrate-firebase-to-supabase.mjs lo importa como fuente de los 30
+// productos "de fábrica" al armar products_draft; si ese script se vuelve a correr
+// (otro proyecto de Supabase, un reset, etc.) necesita este archivo.
 //
-// Este archivo es una copia literal de assets/js/shared/catalog-seed.js +
-// assets/js/site/catalog-data.js (los 30 productos "de fábrica" + su glue de
-// categorías), tal como existen HOY en el proyecto vanilla. No agrega ni quita
-// ningún producto.
-//
-// En la Fase 1 (cuando Jesús entregue el esquema de Supabase), este archivo se
-// reemplaza por una consulta real a Supabase en build (getStaticPaths / fetch en
-// el frontmatter de los .astro). Ningún componente que consuma CATALOG_MOCK debería
-// necesitar cambios ese día — solo cambia de dónde vienen los datos.
-//
-// Las fotos NO son reales todavía: se usa el placeholder local, igual que hace hoy
-// site-images.js antes de que Firebase las reemplace.
+// Copia literal de assets/js/shared/catalog-seed.js + assets/js/site/catalog-data.js
+// del sitio vanilla. No agrega ni quita ningún producto.
 
 export const CATEGORY_LABELS = {
   tote: "Tote Personalizado",
