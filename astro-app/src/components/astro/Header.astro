@@ -1,0 +1,11 @@
+---
+// Portado desde <header> en index.html.
+// El botón del carrito es una isla React mínima (CartBadge) porque necesita
+// mostrar el contador en vivo; el resto del encabezado sigue siendo HTML estático.
+import CartBadge from "../react/CartBadge.jsx";
+---
+<header>
+  <img src="/assets/img/logo.png" alt="Baqtime" class="brand-logo" />
+  <div class="cart-note">Barranquilla y Cartagena, Colombia</div>
+  <CartBadge client:load />
+</header>

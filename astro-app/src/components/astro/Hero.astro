@@ -1,0 +1,44 @@
+---
+// Portado tal cual desde <section class="hero"> en index.html.
+//
+// ⚠️ TEMPORAL: la imagen usa por ahora la URL de Firebase Storage que ya es pública
+// hoy (mismo archivo que ve baqtime.store), solo para no tener el hero vacío mientras
+// no existe todavía el pipeline de imágenes de Astro (Fase 2, con Supabase Storage).
+// No es una llamada al SDK de Firebase ni depende de Firebase Auth/RTDB — es una URL
+// https directa a un archivo. Se reemplaza en la Fase 2 por la imagen optimizada
+// (WebP/AVIF) que Astro genere en build desde Supabase Storage.
+const HERO_IMG =
+  "https://firebasestorage.googleapis.com/v0/b/baqtimecatalogo.firebasestorage.app/o/site-images%2Fhero_collage_v2.webp?alt=media&token=d4847b25-bf99-4cf4-8ee5-dfaf6d873da9";
+---
+<section class="hero">
+  <div>
+    <div class="eyebrow">Colección Baqtime</div>
+    <h1>Bolsos y accesorios<br /><em>Personalizados</em></h1>
+    <p>
+      Descubre una colección de Tote Bags personalizados, neceseres y bags Lumiere,
+      diseñados para acompañarte en cada ocasión. Piezas elegantes, creadas para quienes
+      creen que los pequeños detalles hacen la diferencia.
+    </p>
+    <div class="hero-cta">
+      <a href="#catalogo" class="btn btn-primary">Ver catálogo</a>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="hero-img-wrap">
+      <img
+        id="heroImg"
+        src={HERO_IMG}
+        alt="Tote bag mocca con cordones café e iniciales bordadas"
+        width="1000"
+        height="1200"
+      />
+      <a
+        class="ig-btn-link"
+        href="https://www.instagram.com/baqtime/"
+        target="_blank"
+        rel="noopener"
+        aria-label="Síguenos en Instagram"></a>
+    </div>
+    <div class="hero-mono-tag">Tu estilo · Tus iniciales · Tu bolso</div>
+  </div>
+</section>

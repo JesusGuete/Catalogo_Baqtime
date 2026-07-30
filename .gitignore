@@ -9,3 +9,9 @@ skills-lock.json
 # OS noise
 .DS_Store
 Thumbs.db
+
+# Astro (migración) - por si acaso, aunque astro-app/ trae su propio .gitignore
+astro-app/node_modules/
+astro-app/dist/
+astro-app/.astro/
+astro-app/.env

@@ -1,0 +1,33 @@
+---
+// Catálogo público — versión Astro + React.
+// Portado desde index.html: mismo <head>, mismo orden de secciones, mismo site.css.
+// Lo que falta a propósito en este paso (siguiente trabajo, no incluido todavía):
+//   - Modal/página de producto al hacer clic en una tarjeta (Fase 3/4).
+//   - Carrito + checkout por WhatsApp (próxima isla).
+//   - Panel admin (Fase 6).
+//   - Datos reales de Supabase en vez de mock-catalog.js (Fase 1/2).
+import Header from "../components/astro/Header.astro";
+import Hero from "../components/astro/Hero.astro";
+import CollectionsCarousel from "../components/astro/CollectionsCarousel.astro";
+import Footer from "../components/astro/Footer.astro";
+import ShopApp from "../components/react/ShopApp.jsx";
+import "../styles/site.css";
+---
+
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Baqtime — Accesorios Personalizados (prueba Astro)</title>
+  <meta name="description" content="Bolsos y accesorios personalizados: tote bags bordados con tus iniciales, neceseres y bags Lumiere. Hechos en Barranquilla y Cartagena, pedidos por WhatsApp." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <Header />
+  <Hero />
+  <CollectionsCarousel />
+  <ShopApp client:load />
+  <Footer />
+</body>
+</html>
