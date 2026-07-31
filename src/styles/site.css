@@ -1,17 +1,7 @@
-:root{
-    --cream:#F2F2F2;
-    --panel:#E9E9E9;
-    --ink:#26221D;
-    --ink-soft:#6b6259;
-    --line: rgba(38,34,29,0.14);
-    --mocha:#B68234;
-    --vino:#6E1F2A;
-    --olive:#59613F;
-    --blush:#E7BEC1;
-    --gold:#9C7A3C;
-    --white-card:#FFFFFF;
-    --radius: 2px;
-  }
+/* La paleta vive en tokens.css: la comparten la tienda y el panel de administración.
+   Los valores son los mismos que estaban acá, movidos sin cambios. */
+@import "./tokens.css";
+
   *{box-sizing:border-box;}
   /* Images carry width/height attributes so the browser can reserve space before they
      load. Without height:auto the browser treats the height attribute as a presentational

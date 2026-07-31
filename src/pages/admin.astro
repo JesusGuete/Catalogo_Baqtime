@@ -1,0 +1,35 @@
+---
+// Panel de administración.
+//
+// `client:only="react"` y no `client:load`: el panel NO se puede renderizar en el
+// build. Todo lo que muestra sale de products_draft y de publications, que exigen un
+// JWT de administrador — en build no hay sesión, y el borrador es justamente lo que
+// no tiene que estar en el HTML público. La página que se genera es una cáscara vacía
+// y React la llena en el navegador después del login.
+import AdminApp from "../components/react/admin/AdminApp.tsx";
+import "../styles/admin.css";
+---
+
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panel · Baqtime</title>
+    <!-- Fuera de los buscadores y de los archivadores. No es contenido público y no
+         tiene sentido que aparezca en resultados de búsqueda. -->
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unna:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="adm-body">
+    <AdminApp client:only="react" />
+    <noscript>
+      <p style="padding:40px;font-family:sans-serif">
+        El panel necesita JavaScript para funcionar.
+      </p>
+    </noscript>
+  </body>
+</html>
