@@ -131,14 +131,30 @@ export default function PublishView({ borrador, publicado, categorias, onPublica
       <aside className="adm-publicar-accion">
         {resultado ? (
           <section className="adm-card adm-card--exito">
-            <h3 className="adm-h3">Publicado</h3>
+            <h3 className="adm-h3">Catálogo publicado</h3>
             <p className="adm-nota">
-              El sitio ya muestra {resultado.product_count} productos y {resultado.photo_count} fotos.
+              Quedaron {resultado.product_count} productos y {resultado.photo_count} fotos en el
+              catálogo publicado.
             </p>
             <p className="adm-mono adm-hint">
               PUBLICACIÓN #{resultado.publication_id} · {resultado.imagenesBorradas} IMÁGENES
               LIBERADAS DE STORAGE
             </p>
+
+            {/* La tienda es HTML estático: loadCatalog() corre en el build, no en cada
+                visita. Publicar actualiza la base, pero baqtime.store sigue sirviendo el
+                HTML de la última construcción. Decir "ya está en el sitio" sería mentir, y
+                el dueño lo descubriría abriendo la tienda y no viendo su cambio. */}
+            <Aviso
+              tono="borrador"
+              titulo="Falta un paso: el sitio todavía no muestra esto."
+              meta="LA TIENDA SE ARMA EN EL BUILD · HAY QUE RECONSTRUIRLA PARA QUE TOME EL CATÁLOGO NUEVO"
+            >
+              <p>
+                Los cambios ya están guardados y no se pierden. Para que se vean en
+                baqtime.store hay que reconstruir el sitio desde Cloudflare.
+              </p>
+            </Aviso>
             {resultado.errorLimpieza && (
               <Aviso
                 tono="borrador"
@@ -170,6 +186,10 @@ export default function PublishView({ borrador, publicado, categorias, onPublica
                   ? `Se borran de Storage las ${huerfanasEstimadas} imágenes huérfanas`
                   : "No queda ninguna imagen huérfana para borrar"}
               </li>
+              <li>
+                <span className="adm-mono adm-paso-num">3</span>
+                Después hay que reconstruir el sitio para que la tienda lo muestre
+              </li>
             </ol>
 
             <ErrorAviso error={publicar.error} />
@@ -179,7 +199,7 @@ export default function PublishView({ borrador, publicado, categorias, onPublica
                 const n = diff.cambios.length;
                 if (
                   window.confirm(
-                    `¿Publicar ${n} ${n === 1 ? "cambio" : "cambios"}? El sitio se actualiza al instante.`
+                    `¿Publicar ${n} ${n === 1 ? "cambio" : "cambios"}? Quedan guardados en el catálogo. El sitio los muestra recién cuando se reconstruya.`
                   )
                 ) {
                   void publicar.ejecutar();
