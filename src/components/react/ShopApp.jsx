@@ -9,9 +9,20 @@ import { useCart } from "../../lib/useCart.js";
 // checkout porque los cuatro comparten estado (qué producto está abierto, qué hay
 // en el carrito, qué panel está visible). En la versión vanilla ese estado vivía
 // repartido entre state.js y clases CSS en el DOM.
-export default function ShopApp({ catalog }) {
+/**
+ * @param {{
+ *   catalog: import("../../lib/catalog").Catalogo,
+ *   initialProductId?: string | null,
+ * }} props
+ */
+export default function ShopApp({ catalog, initialProductId = null }) {
   const items = useCart();
-  const [openProduct, setOpenProduct] = useState(null);
+  // En /producto/[slug] la isla arranca con ese producto ya abierto. Astro renderiza
+  // esto en el servidor, así que el nombre, el precio y las fotos salen dentro del HTML
+  // y un buscador los ve sin ejecutar JavaScript.
+  const [openProduct, setOpenProduct] = useState(
+    () => catalog.products.find((p) => p.id === initialProductId) ?? null
+  );
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
@@ -33,7 +44,15 @@ export default function ShopApp({ catalog }) {
         <ProductView
           catalog={catalog}
           product={openProduct}
-          onClose={() => setOpenProduct(null)}
+          onClose={() => {
+            // Si esta página ES la del producto, cerrar tiene que devolver al catálogo.
+            // Solo ocultar el modal dejaría la URL diciendo /producto/x sobre una grilla.
+            if (initialProductId) {
+              window.location.href = "/";
+              return;
+            }
+            setOpenProduct(null);
+          }}
           onOpenProduct={setOpenProduct}
         />
       )}

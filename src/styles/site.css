@@ -374,6 +374,11 @@
     overflow:hidden;
     cursor:pointer;
     transition:transform .2s ease, box-shadow .2s ease;
+    /* La tarjeta pasó de <div> a <a> para que sea enlazable y navegable con teclado.
+       Estas tres líneas la dejan viéndose exactamente igual que antes. */
+    display:block;
+    color:inherit;
+    text-decoration:none;
   }
   .card:hover{
     transform:translateY(-4px);
