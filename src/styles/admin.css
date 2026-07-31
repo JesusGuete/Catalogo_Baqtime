@@ -62,24 +62,23 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
 
 .adm-login-editorial {
   width: 40%; min-width: 320px;
-  background: var(--admin-sidebar);
-  color: var(--cream);
+  /* Mismo gris que el fondo del collage del hero en la tienda (.portada-img). */
+  background: var(--panel);
+  border-right: 1px solid var(--line-solid);
   padding: 56px;
-  display: flex; flex-direction: column; justify-content: space-between;
+  display: flex; flex-direction: column; gap: 48px;
 }
-.adm-login-wordmark {
-  font-family: "Unna", serif; font-size: 30px; margin: 0 0 8px;
-}
+.adm-login-marca { flex-shrink: 0; }
+.adm-login-logo { height: 36px; width: auto; display: block; margin: 0 0 8px; }
 .adm-login-sub { font-size: 10px; color: var(--mocha); margin: 0; letter-spacing: 0.1em; }
+/* Ocupa el resto del alto disponible y centra el titular ahí, sin mover el logo
+   de arriba. */
+.adm-login-claim { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .adm-login-titular {
   font-family: "Unna", serif; font-weight: 400; font-size: 38px;
   line-height: 1.18; margin: 0 0 22px; letter-spacing: -0.01em;
 }
 .adm-login-rule { display: block; width: 64px; height: 2px; background: var(--mocha); }
-.adm-login-bajada {
-  font-size: 14px; color: var(--admin-sidebar-text); margin: 22px 0 0; max-width: 42ch;
-}
-.adm-login-pie { font-size: 10px; color: var(--admin-sidebar-dim); margin: 0; letter-spacing: 0.08em; }
 
 .adm-login-form {
   flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px;
@@ -94,7 +93,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
 
 @media (max-width: 900px) {
   .adm-login { flex-direction: column; }
-  .adm-login-editorial { width: 100%; min-height: auto; padding: 32px; gap: 24px; }
+  .adm-login-editorial {
+    width: 100%; min-height: auto; padding: 32px; gap: 24px;
+    border-right: none; border-bottom: 1px solid var(--line-solid);
+  }
   .adm-login-titular { font-size: 26px; }
 }
 
@@ -109,7 +111,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
   position: sticky; top: 0; height: 100vh;
 }
 .adm-sidebar-marca { padding: 24px; border-bottom: 1px solid var(--admin-sidebar-line); }
-.adm-sidebar-wordmark { font-family: "Unna", serif; font-size: 20px; margin: 0 0 6px; }
+.adm-sidebar-logo {
+  height: 24px; width: auto; display: block; margin: 0 0 6px;
+  /* Mismo logo real que usa la tienda (Header.astro), invertido a blanco porque
+     el sidebar es oscuro y el trazo original es negro sobre transparente. */
+  filter: brightness(0) invert(1);
+}
 .adm-sidebar-sub { font-size: 9px; color: var(--mocha); margin: 0; letter-spacing: 0.12em; }
 
 .adm-nav { list-style: none; margin: 0; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; }

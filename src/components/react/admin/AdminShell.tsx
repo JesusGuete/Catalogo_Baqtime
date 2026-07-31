@@ -59,7 +59,13 @@ export default function AdminShell({
     <div className="adm-shell">
       <nav className="adm-sidebar" aria-label="Secciones del panel">
         <div className="adm-sidebar-marca">
-          <p className="adm-sidebar-wordmark">BAQTIME</p>
+          <img
+            src="/assets/img/logo.png"
+            alt="Baqtime"
+            className="adm-sidebar-logo"
+            width="998"
+            height="297"
+          />
           <p className="adm-mono adm-sidebar-sub">ADMINISTRACIÓN</p>
         </div>
 
