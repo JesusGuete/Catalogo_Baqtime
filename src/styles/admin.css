@@ -197,8 +197,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
   display: flex; flex-direction: column; gap: 16px;
 }
 .adm-card--oscuro {
-  background: var(--admin-sidebar); border-color: var(--admin-sidebar);
-  color: var(--cream);
+  /* Mismo tratamiento claro que el login y el sidebar: --panel de fondo. */
+  background: var(--panel);
+  color: var(--ink);
 }
 .adm-card--exito { border-color: var(--live-border); background: var(--live-bg); }
 
@@ -541,11 +542,11 @@ input.adm-input { display: block; }
 
 .adm-publicar-rule { display: block; width: 40px; height: 2px; background: var(--mocha); }
 .adm-publicar-h3 { font-family: "Unna", serif; font-weight: 500; font-size: 22px; margin: 0; }
-.adm-publicar-bajada { font-size: 13px; color: var(--admin-sidebar-text); margin: 0; line-height: 1.55; }
-.adm-publicar-nota { font-size: 9px; color: var(--admin-sidebar-dim); margin: 0; letter-spacing: 0.06em; }
+.adm-publicar-bajada { font-size: 13px; color: var(--ink-soft); margin: 0; line-height: 1.55; }
+.adm-publicar-nota { font-size: 9px; color: var(--ink-faint); margin: 0; letter-spacing: 0.06em; }
 
 .adm-pasos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.adm-pasos li { display: flex; align-items: center; gap: 12px; font-size: 12px; color: #D8D3CC; }
+.adm-pasos li { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--ink-soft); }
 .adm-paso-num { font-size: 10px; color: var(--mocha); flex-shrink: 0; }
 
 .adm-historial { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
