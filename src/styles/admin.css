@@ -22,6 +22,10 @@
   color: var(--ink);
   font-family: "Work Sans", sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* Sin esto, deslizar hacia abajo estando arriba del todo dispara el gesto de
+     "recargar" del navegador — y como la sesión vive solo en memoria (ver
+     auth-store.ts), eso equivale a un logout accidental, a mitad de una edición. */
+  overscroll-behavior-y: contain;
 }
 
 .adm-mono { font-family: "JetBrains Mono", monospace; }
@@ -58,14 +62,16 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
 
 /* ============================================================ LOGIN */
 
-.adm-login { display: flex; min-height: 100vh; }
+/* dvh y no vh: en Safari móvil, 100vh cuenta el alto SIN la barra flotante del
+   navegador, así que el contenido queda tapado por ella. dvh sí la descuenta. */
+.adm-login { display: flex; min-height: 100dvh; }
 
 .adm-login-editorial {
   width: 40%; min-width: 320px;
   /* Mismo gris que el fondo del collage del hero en la tienda (.portada-img). */
   background: var(--panel);
   border-right: 1px solid var(--line-solid);
-  padding: 56px;
+  padding: 56px 56px 56px calc(56px + env(safe-area-inset-left));
   display: flex; flex-direction: column; gap: 48px;
 }
 .adm-login-marca { flex-shrink: 0; }
@@ -81,7 +87,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
 .adm-login-rule { display: block; width: 64px; height: 2px; background: var(--mocha); }
 
 .adm-login-form {
-  flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px;
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 40px calc(40px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) 40px;
 }
 .adm-login-card { width: 100%; max-width: 400px; }
 .adm-login-kicker { font-size: 10px; color: var(--ink-soft); margin: 0 0 8px; letter-spacing: 0.1em; }
@@ -94,7 +101,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
 @media (max-width: 900px) {
   .adm-login { flex-direction: column; }
   .adm-login-editorial {
-    width: 100%; min-height: auto; padding: 32px; gap: 24px;
+    width: 100%; min-height: auto; gap: 24px;
+    padding: calc(32px + env(safe-area-inset-top)) calc(32px + env(safe-area-inset-right)) 32px
+      calc(32px + env(safe-area-inset-left));
     border-right: none; border-bottom: 1px solid var(--line-solid);
   }
   .adm-login-titular { font-size: 26px; }
@@ -102,7 +111,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
 
 /* ============================================================ SHELL */
 
-.adm-shell { display: flex; min-height: 100vh; }
+.adm-shell { display: flex; min-height: 100dvh; }
 
 .adm-sidebar {
   width: 240px; flex-shrink: 0;
@@ -111,7 +120,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
   background: var(--panel); color: var(--ink);
   border-right: 1px solid var(--line-solid);
   display: flex; flex-direction: column;
-  position: sticky; top: 0; height: 100vh;
+  position: sticky; top: 0; height: 100dvh;
+  /* El sidebar es lo primero que toca el borde superior/izquierdo de la pantalla. */
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
 }
 .adm-sidebar-marca { padding: 24px; border-bottom: 1px solid var(--line-solid); }
 .adm-sidebar-logo { height: 24px; width: auto; display: block; margin: 0 0 6px; }
@@ -154,7 +166,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
 
 .adm-topbar {
   display: flex; align-items: center; gap: 16px;
-  padding: 14px 40px; background: var(--white-card);
+  padding: 14px calc(40px + env(safe-area-inset-right)) 14px calc(40px + env(safe-area-inset-left));
+  background: var(--white-card);
   border-bottom: 1px solid var(--line-solid);
   position: sticky; top: 0; z-index: 10;
 }
@@ -162,7 +175,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
 .adm-topbar-sub { font-size: 9px; color: var(--ink-soft); margin: 2px 0 0; letter-spacing: 0.08em; }
 .adm-topbar-acciones { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 
-.adm-contenido { padding: 24px 40px 48px; }
+.adm-contenido {
+  padding: 24px calc(40px + env(safe-area-inset-right)) calc(48px + env(safe-area-inset-bottom))
+    calc(40px + env(safe-area-inset-left));
+}
 
 @media (max-width: 860px) {
   .adm-shell { flex-direction: column; }
@@ -172,8 +188,23 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
   }
   .adm-nav { flex-direction: row; overflow-x: auto; }
   .adm-nav-item { width: auto; white-space: nowrap; }
-  .adm-nav-contador, .adm-sidebar-pie { display: none; }
-  .adm-topbar, .adm-contenido { padding-left: 20px; padding-right: 20px; }
+  .adm-nav-contador { display: none; }
+  .adm-topbar, .adm-contenido {
+    padding-left: calc(20px + env(safe-area-inset-left));
+    padding-right: calc(20px + env(safe-area-inset-right));
+  }
+
+  /* Antes esta fila entera se escondía acá — con eso desaparecía el único botón
+     para cerrar sesión del panel. Ahora se acomoda como fila compacta en vez de
+     ocultarse: correo + botón a la derecha, y el aviso de expiración abajo (
+     importa más en celular, justo porque un refresh accidental cierra la sesión). */
+  .adm-sidebar-pie {
+    flex-direction: row; flex-wrap: wrap; align-items: center;
+    gap: 4px 12px; padding: 10px 20px;
+  }
+  .adm-sidebar-email { flex: 1 1 auto; min-width: 0; }
+  .adm-sidebar-salir { order: 2; min-height: 40px; display: inline-flex; align-items: center; }
+  .adm-sidebar-expira { order: 3; flex-basis: 100%; }
 }
 
 /* ============================================================ PÍLDORA DE ESTADO */
@@ -233,7 +264,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
 
 /* ============================================================ CAMPOS */
 
-.adm-campo { display: flex; flex-direction: column; gap: 7px; flex: 1; min-width: 0; }
+/* min-width real (no 0): sin piso, una fila de 3 campos (.adm-fila-campos ya
+   tiene flex-wrap) nunca llega a apilarse en una pantalla angosta — se
+   comprime a ~100px cada uno en vez de pasar a una columna. Con un piso, el
+   wrap entra solo cuando ya no entran ahí. */
+.adm-campo { display: flex; flex-direction: column; gap: 7px; flex: 1; min-width: 150px; }
 .adm-campo-label { font-size: 10px; color: var(--ink-soft); letter-spacing: 0.06em; }
 .adm-campo-ayuda { color: var(--ink-faint); }
 .adm-campo-error { font-size: 11px; color: var(--vino); line-height: 1.45; }
@@ -259,6 +294,14 @@ input.adm-input { display: block; }
 }
 .adm-input-raw:focus-visible { outline: none; }
 .adm-select { appearance: none; padding-right: 32px; cursor: pointer; }
+
+@media (max-width: 640px) {
+  /* Por debajo de 16px, Safari en iOS hace zoom automático al enfocar el campo
+     y descuadra el resto de la pantalla. El sitio público ya resolvió esto
+     mismo para .initials-input. */
+  .adm-input { min-height: 46px; font-size: 16px; }
+  .adm-input-raw { font-size: 16px; }
+}
 
 .adm-swatch {
   width: 24px; height: 24px; padding: 0; flex-shrink: 0;
@@ -351,6 +394,17 @@ input.adm-input { display: block; }
 .adm-chip.is-activo { background: var(--ink); border-color: var(--ink); color: var(--cream); }
 .adm-toolbar-fin { margin-left: auto; }
 
+@media (max-width: 640px) {
+  /* Mismo patrón que .cat-tabs en la tienda (site.css): una sola fila que se
+     desliza, en vez de envolver en 2-3 renglones. */
+  .adm-buscar { width: 100%; }
+  .adm-chips {
+    flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .adm-chip { flex: 0 0 auto; -webkit-tap-highlight-color: transparent; }
+}
+
 /* ============================================================ TABLA */
 
 .adm-tabla-wrap {
@@ -371,7 +425,7 @@ input.adm-input { display: block; }
 }
 .adm-tabla tbody tr:last-child td { border-bottom: 0; }
 
-.adm-fila { cursor: pointer; }
+.adm-fila { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .adm-fila:hover { background: var(--surface-subtle); }
 .adm-fila.is-pendiente { background: var(--draft-bg); }
 .adm-fila.is-pendiente:hover { background: #FBF4E7; }
@@ -389,6 +443,10 @@ input.adm-input { display: block; }
 .adm-thumb {
   width: 44px; height: 44px; object-fit: cover;
   background: var(--panel); border-radius: var(--radius); display: block;
+  /* Mantener el dedo apretado sobre una imagen abre el menú "Guardar imagen"
+     de iOS — molesto en cualquier lado, y directamente rompe el arrastre si
+     pasa sobre una foto mientras se reordena. */
+  -webkit-touch-callout: none;
 }
 .adm-tabla-pie {
   font-size: 10px; color: var(--ink-soft); margin: 14px 0 0; letter-spacing: 0.06em;
@@ -411,10 +469,11 @@ input.adm-input { display: block; }
 
 /* ============================================================ EDITOR */
 
-.adm-editor { min-height: 100vh; padding-bottom: 48px; }
+.adm-editor { min-height: 100dvh; padding-bottom: calc(48px + env(safe-area-inset-bottom)); }
 .adm-editor-barra {
   display: flex; align-items: center; gap: 16px;
-  padding: 14px 40px; background: var(--white-card);
+  padding: 14px calc(40px + env(safe-area-inset-right)) 14px calc(40px + env(safe-area-inset-left));
+  background: var(--white-card);
   border-bottom: 1px solid var(--line-solid);
   position: sticky; top: 0; z-index: 10; flex-wrap: wrap;
 }
@@ -433,7 +492,9 @@ input.adm-input { display: block; }
 @media (max-width: 1100px) {
   .adm-editor-cols { flex-direction: column; padding: 20px; }
   .adm-editor-fotos { width: 100%; }
-  .adm-editor-barra { padding: 14px 20px; }
+  .adm-editor-barra {
+    padding: 14px calc(20px + env(safe-area-inset-right)) 14px calc(20px + env(safe-area-inset-left));
+  }
 }
 
 .adm-peligro-titulo { font-size: 10px; color: var(--vino); margin: 0; letter-spacing: 0.08em; }
@@ -459,6 +520,7 @@ input.adm-input { display: block; }
 .adm-foto-thumb {
   width: 54px; height: 54px; object-fit: cover;
   background: var(--panel); border-radius: var(--radius); flex-shrink: 0;
+  -webkit-touch-callout: none;
 }
 .adm-foto-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .adm-foto-pos { font-size: 9px; color: var(--ink-faint); letter-spacing: 0.06em; }
