@@ -39,7 +39,7 @@ create table if not exists public.categories (
   max_initials   smallint not null default 0 check (max_initials >= 0),
   has_variant    boolean  not null default false,
   position       smallint not null,
-  constraint categories_position_key unique (position)  -- non-deferrable: never reordered via API
+  constraint categories_position_key unique (position)  -- made deferrable in 009_categories_position_deferrable.sql
 );
 
 create table if not exists public.products (
