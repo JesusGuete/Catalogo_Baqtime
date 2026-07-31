@@ -67,8 +67,14 @@ export default function Checkout({ items, products, onClose }) {
 
         <CartTotals items={items} />
 
-        <div className="field cart-shipping-field">
-          <label>Datos de envío</label>
+        {/* Encabeza un grupo de campos, no describe uno solo. Cada input ya lleva su
+            propio aria-label. */}
+        <div
+          className="field cart-shipping-field"
+          role="group"
+          aria-labelledby="checkout-envio"
+        >
+          <span className="field-label" id="checkout-envio">Datos de envío</span>
           <div className="shipping-fields">
             <input
               type="text"
