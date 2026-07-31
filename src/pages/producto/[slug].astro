@@ -1,0 +1,108 @@
+---
+// Página de un producto, con URL propia.
+//
+// Antes el producto solo existía dentro de un modal y la URL nunca cambiaba: no se
+// podía compartir, no se podía enlazar, y para un buscador sencillamente no existía.
+// Toda la tienda era una sola página.
+//
+// Se renderiza en el servidor, así que el nombre, el precio y las fotos están en el
+// HTML — un buscador los lee sin ejecutar JavaScript. Y el bloque JSON-LD de abajo es
+// lo que permite que Google muestre precio y disponibilidad en el resultado de
+// búsqueda, en vez de un enlace pelado.
+import Header from "../../components/astro/Header.astro";
+import Footer from "../../components/astro/Footer.astro";
+import ShopApp from "../../components/react/ShopApp.jsx";
+import { loadCatalog } from "../../lib/catalog";
+import { productoPorSlug, rutaProducto } from "../../lib/product-url.ts";
+import "../../styles/site.css";
+
+const { slug } = Astro.params;
+const catalog = await loadCatalog();
+const producto = slug ? productoPorSlug(catalog.products, slug) : undefined;
+
+// Un producto que se despublicó tiene que devolver 404, no una página vacía: si
+// respondiera 200 sin contenido, Google seguiría mostrando la URL en los resultados.
+if (!producto) {
+  return new Response(null, { status: 404, statusText: "Producto no encontrado" });
+}
+
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, s-maxage=60, stale-while-revalidate=300"
+);
+
+const categoria = catalog.categories.find((c) => c.key === producto.category);
+const url = new URL(rutaProducto(producto), Astro.site).href;
+const imagen = producto.gallery[0] ?? new URL("/assets/img/logo.png", Astro.site).href;
+
+const detalle = [producto.variant ?? producto.color, categoria?.label]
+  .filter(Boolean)
+  .join(" · ");
+const titulo = `${producto.name} — Baqtime`;
+const descripcion = producto.personalizable
+  ? `${producto.name} (${detalle}). Personalizalo con tus iniciales bordadas. Hecho en Barranquilla y Cartagena, pedidos por WhatsApp.`
+  : `${producto.name} (${detalle}). Hecho en Barranquilla y Cartagena, pedidos por WhatsApp.`;
+
+// schema.org/Product. `priceCurrency` es COP porque los precios de la base son pesos
+// colombianos enteros. `availability` sale de que el producto esté publicado: si no
+// estuviera activo, esta página ya habría devuelto 404 más arriba.
+const datosEstructurados = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  name: producto.name,
+  description: descripcion,
+  image: producto.gallery.length ? producto.gallery : [imagen],
+  sku: producto.id,
+  color: producto.color,
+  category: categoria?.label,
+  brand: { "@type": "Brand", name: "Baqtime" },
+  offers: {
+    "@type": "Offer",
+    url,
+    priceCurrency: "COP",
+    price: producto.price,
+    availability: "https://schema.org/InStock",
+    itemCondition: "https://schema.org/NewCondition",
+    seller: { "@type": "Organization", name: "Baqtime" },
+  },
+};
+---
+
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{titulo}</title>
+    <meta name="description" content={descripcion} />
+    <link rel="canonical" href={url} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <meta property="og:type" content="product" />
+    <meta property="og:site_name" content="Baqtime" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descripcion} />
+    <meta property="og:url" content={url} />
+    <meta property="og:image" content={imagen} />
+    <meta property="product:price:amount" content={String(producto.price)} />
+    <meta property="product:price:currency" content="COP" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unna:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(datosEstructurados)}
+    />
+  </head>
+  <body>
+    <Header />
+    <ShopApp client:load catalog={catalog} initialProductId={producto.id} />
+    <Footer />
+  </body>
+</html>

@@ -5,7 +5,17 @@
 import CartBadge from "../react/CartBadge.jsx";
 ---
 <header>
-  <img src="/assets/img/logo.png" alt="Baqtime" class="brand-logo" />
+  <!-- width/height son las dimensiones reales del archivo (998x297). No fijan el
+       tamaño en pantalla — de eso se encarga `.brand-logo` con height:38px y el
+       `img{height:auto}` global. Sirven para que el navegador reserve el espacio
+       antes de que la imagen cargue y el encabezado no salte. -->
+  <img
+    src="/assets/img/logo.png"
+    alt="Baqtime"
+    class="brand-logo"
+    width="998"
+    height="297"
+  />
   <div class="cart-note">Barranquilla y Cartagena, Colombia</div>
   <CartBadge client:load />
 </header>

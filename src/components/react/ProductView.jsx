@@ -3,6 +3,7 @@ import { initialsColorsFor } from "../../lib/initials.js";
 import { PRICE_EXTRA_INITIALS, PRICE_SHIP, fmt } from "../../lib/pricing.js";
 import { addToCart } from "../../lib/cart-store.js";
 import { useCart } from "../../lib/useCart.js";
+import { rutaProducto } from "../../lib/product-url.ts";
 
 // Portado desde assets/js/site/product-modal.js.
 // Mismas clases CSS que index.html (.modal-overlay/.modal), así que el diseño de
@@ -137,14 +138,20 @@ export default function ProductView({ catalog, product, onClose, onOpenProduct }
 
             {colorOptions.length > 0 && (
               <div className="field">
-                <label>Opciones disponibles</label>
-                <div className="swatches">
+                {/* No es un <label>: un label describe UN control, y esto encabeza un
+                    grupo. Se anuncia con role="group" + aria-labelledby. */}
+                <span className="field-label" id="pv-opciones">Opciones disponibles</span>
+                <div className="swatches" role="group" aria-labelledby="pv-opciones">
                   {colorOptions.map((p) => (
-                    <div
+                    <button
+                      type="button"
                       key={p.id}
                       className={"swatch" + (p.groupKey === product.groupKey ? " selected" : "")}
                       style={{ "--swatch-color": p.hex }}
-                      title={p.color}
+                      // El color se transmitía solo por `title` y por el relleno. Sin
+                      // texto accesible, un lector de pantalla anunciaba "botón" a secas.
+                      aria-label={p.color}
+                      aria-pressed={p.groupKey === product.groupKey}
                       onClick={() => onOpenProduct(p)}
                     />
                   ))}
@@ -156,15 +163,19 @@ export default function ProductView({ catalog, product, onClose, onOpenProduct }
             {product.personalizable && (
               <div>
                 <div className="field">
-                  <label>Color de las iniciales</label>
+                  <span className="field-label" id="pv-color-iniciales">
+                    Color de las iniciales
+                  </span>
                   {initialsColors.length > 1 && (
-                    <div className="swatches">
+                    <div className="swatches" role="group" aria-labelledby="pv-color-iniciales">
                       {initialsColors.map((c) => (
-                        <div
+                        <button
+                          type="button"
                           key={c.name}
                           className={"swatch" + (initialsColor?.name === c.name ? " selected" : "")}
                           style={{ "--swatch-color": c.hex }}
-                          title={c.name}
+                          aria-label={c.name}
+                          aria-pressed={initialsColor?.name === c.name}
                           onClick={() => setInitialsColor(c)}
                         />
                       ))}
@@ -221,12 +232,23 @@ export default function ProductView({ catalog, product, onClose, onOpenProduct }
 
             {related.length > 0 && (
               <div className="related-products">
-                <label>También te puede interesar</label>
+                <h3 className="field-label">También te puede interesar</h3>
                 <div className="related-carousel">
                   <div className="related-viewport">
                     <div className="related-grid">
                       {related.map((p) => (
-                        <div className="card" key={p.id} onClick={() => onOpenProduct(p)}>
+                        // Mismo criterio que las tarjetas del catálogo: un enlace de
+                        // verdad, para que se pueda compartir y recorrer con teclado.
+                        <a
+                          className="card"
+                          key={p.id}
+                          href={rutaProducto(p)}
+                          onClick={(e) => {
+                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                            e.preventDefault();
+                            onOpenProduct(p);
+                          }}
+                        >
                           <div className="card-img">
                             <img src={p.img} alt={p.name} loading="lazy" />
                           </div>
@@ -234,7 +256,7 @@ export default function ProductView({ catalog, product, onClose, onOpenProduct }
                             <p className="card-name">{p.name}</p>
                             <p className="card-price mono">{fmt(p.price)}</p>
                           </div>
-                        </div>
+                        </a>
                       ))}
                     </div>
                   </div>

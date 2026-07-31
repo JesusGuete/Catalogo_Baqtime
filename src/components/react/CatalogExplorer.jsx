@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { SORTERS, matchesSearch, fmt } from "../../lib/search-utils.js";
+import { rutaProducto } from "../../lib/product-url.ts";
 
 // Equivalente React de: search.js + catalog-filters.js + catalog-grid.js juntos.
 // Antes eran 3 módulos que se comunicaban tocando el DOM directamente (getElementById,
@@ -146,7 +147,22 @@ export default function CatalogExplorer({ catalog, onOpenProduct }) {
         {products.map((p) => {
           const sub = p.category === "tote" ? p.variant : CATEGORY_LABELS[p.category];
           return (
-            <div className="card" key={p.id} onClick={() => onOpenProduct(p)}>
+            // Es un enlace de verdad, no un div con onClick. Tres cosas que un div no
+            // da: Google lo sigue y así llega a la página del producto, se puede copiar
+            // o abrir en otra pestaña, y funciona con el teclado.
+            // El clic sigue abriendo el modal como siempre — preventDefault evita la
+            // navegación, así que la experiencia no cambia.
+            <a
+              className="card"
+              key={p.id}
+              href={rutaProducto(p)}
+              onClick={(e) => {
+                // Respeta ctrl/cmd+clic, clic del medio y "abrir en pestaña nueva".
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                e.preventDefault();
+                onOpenProduct(p);
+              }}
+            >
               <div className="card-img">
                 <img src={p.img} alt={p.name} loading="lazy" />
               </div>
@@ -155,7 +171,7 @@ export default function CatalogExplorer({ catalog, onOpenProduct }) {
                 <p className="card-sub">{sub}</p>
                 <p className="card-price mono">{fmt(p.price)}</p>
               </div>
-            </div>
+            </a>
           );
         })}
       </div>
