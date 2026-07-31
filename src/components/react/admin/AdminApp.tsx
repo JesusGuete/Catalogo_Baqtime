@@ -107,6 +107,7 @@ export default function AdminApp() {
           cargando={datos.cargando}
           onEditar={setEditando}
           onNuevo={() => setEditando("nuevo")}
+          onCambio={() => void datos.recargar()}
         />
       )}
 

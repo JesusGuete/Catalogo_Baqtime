@@ -394,6 +394,14 @@ input.adm-input { display: block; }
   font-size: 10px; color: var(--ink-soft); margin: 14px 0 0; letter-spacing: 0.06em;
 }
 
+/* Reordenar filas por arrastre (Productos y Categorías). Mismo ícono y botones
+   ↑/↓ que ya usa PhotoManager para las fotos (.adm-foto-agarre/.adm-foto-btn),
+   adaptados al ancho angosto de una columna de tabla. */
+.adm-fila-orden { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.adm-fila-agarre { color: var(--ink-faint); cursor: grab; font-size: 12px; }
+.adm-fila-agarre.is-deshabilitado { cursor: not-allowed; opacity: 0.4; }
+.adm-tabla-wrap.is-guardando, .adm-tabla.is-guardando { opacity: 0.6; pointer-events: none; }
+
 /* ============================================================ EDITOR */
 
 .adm-editor { min-height: 100vh; padding-bottom: 48px; }

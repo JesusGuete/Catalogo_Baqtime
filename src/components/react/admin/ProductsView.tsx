@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
-import type { Category, ProductWithPhotos } from "../../../types/database";
+import { useMemo, useRef, useState } from "react";
+import type { Category, Product, ProductWithPhotos } from "../../../types/database";
 import { calcularDiff, type TipoCambio } from "../../../lib/admin/diff";
+import { useAccion } from "../../../lib/admin/useAdminData";
+import * as productosRepo from "../../../lib/admin/products.repo";
 import { publicImageUrl, PLACEHOLDER_IMAGE } from "../../../lib/supabase/config";
-import { Boton, Punto, Cargando, Vacio, dinero, type EstadoPunto } from "./ui";
+import { Boton, Punto, Cargando, ErrorAviso, Vacio, dinero, type EstadoPunto } from "./ui";
 
 // Pantalla 02 del diseño: la lista del BORRADOR, no del catálogo público.
 //
@@ -17,6 +19,7 @@ interface Props {
   cargando: boolean;
   onEditar: (id: string) => void;
   onNuevo: () => void;
+  onCambio: () => void;
 }
 
 const ESTADO_UI: Record<TipoCambio | "sin-cambios", { punto: EstadoPunto; texto: string }> = {
@@ -35,14 +38,29 @@ export default function ProductsView({
   cargando,
   onEditar,
   onNuevo,
+  onCambio,
 }: Props) {
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState<string | null>(null);
+  const arrastrandoIndice = useRef<number | null>(null);
 
   const etiquetaCategoria = useMemo(
     () => Object.fromEntries(categorias.map((c) => [c.key, c.label])),
     [categorias]
   );
+
+  // Para que "TODAS" agrupe por categoría en el mismo orden que la pestaña
+  // Categorías (position), no alfabético por category_key.
+  const posicionPorCategoria = useMemo(
+    () => new Map(categorias.map((c) => [c.key, c.position])),
+    [categorias]
+  );
+
+  // Solo se puede arrastrar para reordenar cuando la lista visible es
+  // exactamente todos los productos de una categoría — con "TODAS" o con
+  // texto en el buscador, la lista está mezclada o incompleta y reordenar
+  // por índice rompería el sort_order de productos que ni se ven.
+  const puedeReordenar = categoria !== null && busqueda.trim() === "";
 
   // El estado de cada fila sale del mismo cálculo que usa la pantalla de publicar.
   // Si se calculara aparte, las dos pantallas podrían contradecirse — que es
@@ -54,7 +72,7 @@ export default function ProductsView({
 
   const visibles = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    return borrador.filter((p) => {
+    const filtrados = borrador.filter((p) => {
       if (categoria && p.category_key !== categoria) return false;
       if (!q) return true;
       return (
@@ -64,7 +82,31 @@ export default function ProductsView({
         (p.variant ?? "").toLowerCase().includes(q)
       );
     });
-  }, [borrador, busqueda, categoria]);
+    // Con una categoría específica esto no cambia nada (todas comparten la
+    // misma posición). Con "TODAS" agrupa por el orden real de las pestañas
+    // de Categorías en vez del alfabético de category_key.
+    return [...filtrados].sort((a, b) => {
+      const posA = posicionPorCategoria.get(a.category_key) ?? Number.MAX_SAFE_INTEGER;
+      const posB = posicionPorCategoria.get(b.category_key) ?? Number.MAX_SAFE_INTEGER;
+      return posA !== posB ? posA - posB : a.sort_order - b.sort_order;
+    });
+  }, [borrador, busqueda, categoria, posicionPorCategoria]);
+
+  const reordenar = useAccion(async (ordenados: ProductWithPhotos[]) => {
+    // products_draft no tiene columna product_photos_draft (es una tabla
+    // aparte embebida en el select) — hay que sacarla antes del upsert.
+    const limpios: Product[] = ordenados.map(({ product_photos_draft: _fotos, ...resto }) => resto);
+    await productosRepo.reordenar(limpios);
+    onCambio();
+  });
+
+  function mover(desde: number, hasta: number) {
+    if (!puedeReordenar || desde === hasta) return;
+    const copia = [...visibles];
+    const [movido] = copia.splice(desde, 1);
+    copia.splice(hasta, 0, movido!);
+    void reordenar.ejecutar(copia);
+  }
 
   if (cargando && !borrador.length) return <Cargando />;
 
@@ -106,6 +148,8 @@ export default function ProductsView({
         </div>
       </div>
 
+      <ErrorAviso error={reordenar.error} />
+
       {!categorias.length ? (
         <Vacio titulo="Todavía no hay categorías.">
           <p>
@@ -119,7 +163,7 @@ export default function ProductsView({
         </Vacio>
       ) : (
         <>
-          <div className="adm-tabla-wrap">
+          <div className={`adm-tabla-wrap ${reordenar.enCurso ? "is-guardando" : ""}`}>
             <table className="adm-tabla">
               <thead>
                 <tr>
@@ -135,7 +179,7 @@ export default function ProductsView({
                 </tr>
               </thead>
               <tbody>
-                {visibles.map((p) => {
+                {visibles.map((p, i) => {
                   const fotos = p.product_photos_draft ?? [];
                   const principal = fotos.find((f) => f.position === 0) ?? fotos[0];
                   const tipo = estadoPorId.get(p.id) ?? "sin-cambios";
@@ -153,6 +197,15 @@ export default function ProductsView({
                           e.preventDefault();
                           onEditar(p.id);
                         }
+                      }}
+                      onDragOver={(e) => {
+                        if (puedeReordenar) e.preventDefault();
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const desde = arrastrandoIndice.current;
+                        arrastrandoIndice.current = null;
+                        if (puedeReordenar && desde !== null) mover(desde, i);
                       }}
                     >
                       <td>
@@ -178,7 +231,53 @@ export default function ProductsView({
                       </td>
                       <td>{etiquetaCategoria[p.category_key] ?? p.category_key}</td>
                       <td className="adm-mono adm-num">{dinero(p.price)}</td>
-                      <td className="adm-mono adm-num">{p.sort_order}</td>
+                      <td className="adm-mono adm-num">
+                        <span className="adm-fila-orden">
+                          {puedeReordenar && i > 0 && (
+                            <button
+                              type="button"
+                              className="adm-foto-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                mover(i, i - 1);
+                              }}
+                              aria-label={`Subir ${p.name}`}
+                            >
+                              ↑
+                            </button>
+                          )}
+                          {puedeReordenar && i < visibles.length - 1 && (
+                            <button
+                              type="button"
+                              className="adm-foto-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                mover(i, i + 1);
+                              }}
+                              aria-label={`Bajar ${p.name}`}
+                            >
+                              ↓
+                            </button>
+                          )}
+                          <span
+                            className={`adm-mono adm-fila-agarre ${puedeReordenar ? "" : "is-deshabilitado"}`}
+                            aria-hidden="true"
+                            draggable={puedeReordenar}
+                            onClick={(e) => e.stopPropagation()}
+                            onDragStart={() => {
+                              arrastrandoIndice.current = i;
+                            }}
+                            title={
+                              puedeReordenar
+                                ? "Arrastrá para reordenar"
+                                : "Elegí una sola categoría (no TODAS) y vaciá el buscador para reordenar por arrastre"
+                            }
+                          >
+                            ⠿
+                          </span>
+                          {p.sort_order}
+                        </span>
+                      </td>
                       <td className={`adm-mono adm-num ${fotos.length === 0 ? "adm-alerta" : ""}`}>
                         {fotos.length}
                       </td>
@@ -194,6 +293,9 @@ export default function ProductsView({
 
           <p className="adm-mono adm-tabla-pie">
             MOSTRANDO {visibles.length} DE {borrador.length} · ORDENADO POR CATEGORÍA Y ORDEN
+            {puedeReordenar
+              ? " · ARRASTRÁ EL ⠿ PARA REORDENAR"
+              : " · ELEGÍ UNA SOLA CATEGORÍA Y VACIÁ LA BÚSQUEDA PARA REORDENAR POR ARRASTRE"}
           </p>
         </>
       )}
