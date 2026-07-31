@@ -1,9 +1,12 @@
 ---
-// Catálogo público — versión Astro + React.
-// Portado desde index.html: mismo <head>, mismo orden de secciones, mismo site.css.
-// Lo que falta a propósito en este paso (siguiente trabajo, no incluido todavía):
-//   - Página de producto real con URL compartible (Fase 4).
-//   - Panel admin (Fase 6).
+// Catálogo público.
+//
+// Se renderiza por petición, no en el build: publicar desde el panel se ve en la
+// tienda sin reconstruir nada.
+//
+// Falta todavía la página de producto con URL propia — hoy el producto se abre en un
+// modal y la URL no cambia, así que no hay nada que un buscador pueda indexar por
+// producto.
 import Header from "../components/astro/Header.astro";
 import Hero from "../components/astro/Hero.astro";
 import CollectionsCarousel from "../components/astro/CollectionsCarousel.astro";
@@ -11,6 +14,16 @@ import Footer from "../components/astro/Footer.astro";
 import ShopApp from "../components/react/ShopApp.jsx";
 import { loadCatalog } from "../lib/catalog.js";
 import "../styles/site.css";
+
+// Cloudflare guarda el HTML ya renderizado en el edge, así que la mayoría de las
+// visitas no llegan a Supabase. `s-maxage=60` acota cuánto puede tardar en verse un
+// precio nuevo; `stale-while-revalidate` hace que nadie espere por una caché fría —
+// se sirve la copia anterior y se refresca detrás. Bajar el 60 acerca el "tiempo
+// real" a costa de más consultas.
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, s-maxage=60, stale-while-revalidate=300"
+);
 
 const catalog = await loadCatalog();
 ---
