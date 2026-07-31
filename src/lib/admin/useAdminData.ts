@@ -123,3 +123,64 @@ export function useAccion<Args extends unknown[], R>(
 
   return { ejecutar, enCurso, error, limpiarError: () => setError(null) };
 }
+
+/**
+ * Lista que se reordena en pantalla al instante y recién después guarda.
+ *
+ * ES LA EXCEPCIÓN A LA REGLA de este panel, y vale la pena decir por qué: en
+ * todo el resto, una escritura espera la respuesta del servidor antes de
+ * mostrar nada. Acá no se puede — si al soltar el dedo la fila se quedara en
+ * su lugar viejo hasta que vuelva el servidor, el arrastre se sentiría roto.
+ *
+ * El precio, asumido: si el guardado falla, la lista vuelve sola al orden
+ * anterior junto con el mensaje de error. Nada se pierde (el orden bueno sigue
+ * siendo el del servidor), pero es un salto visible.
+ */
+export function useOrdenOptimista<T>(
+  base: T[],
+  guardar: (ordenado: T[]) => Promise<void>
+): {
+  lista: T[];
+  mover: (desde: number, hasta: number) => void;
+  guardando: boolean;
+  error: AdminError | null;
+} {
+  const [optimista, setOptimista] = useState<T[] | null>(null);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<AdminError | null>(null);
+
+  // Cuando llegan datos nuevos del servidor, mandan ellos: se suelta la copia
+  // local. Esto es lo que cierra el ciclo después de guardar bien.
+  useEffect(() => {
+    setOptimista(null);
+  }, [base]);
+
+  const lista = optimista ?? base;
+
+  const mover = useCallback(
+    (desde: number, hasta: number) => {
+      if (desde === hasta) return;
+      const copia = [...lista];
+      const [movido] = copia.splice(desde, 1);
+      if (movido === undefined) return;
+      copia.splice(hasta, 0, movido);
+
+      setOptimista(copia);
+      setGuardando(true);
+      setError(null);
+      void (async () => {
+        try {
+          await guardar(copia);
+        } catch (e) {
+          setError(comoAdminError(e));
+          setOptimista(null);
+        } finally {
+          setGuardando(false);
+        }
+      })();
+    },
+    [lista, guardar]
+  );
+
+  return { lista, mover, guardando, error };
+}

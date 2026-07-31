@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import type { RefObject } from "react";
 import type { Category } from "../../../types/database";
 import * as categoriasRepo from "../../../lib/admin/categories.repo";
 import { validarCategoria, esValido } from "../../../lib/admin/validation";
-import { useAccion } from "../../../lib/admin/useAdminData";
+import { useAccion, useOrdenOptimista } from "../../../lib/admin/useAdminData";
+import { useArrastreOrden } from "../../../lib/admin/useArrastreOrden";
 import {
   Aviso,
   Boton,
@@ -10,6 +12,7 @@ import {
   Cargando,
   ErrorAviso,
   Etiqueta,
+  IconoAgarre,
   Interruptor,
   Numero,
   Texto,
@@ -67,7 +70,6 @@ export default function CategoriesView({
   const [seleccionada, setSeleccionada] = useState<string | null>(null);
   const [form, setForm] = useState<Category | null>(null);
   const [esNueva, setEsNueva] = useState(false);
-  const arrastrandoIndice = useRef<number | null>(null);
 
   // Al recargar desde el servidor hay que refrescar el formulario, si no se queda
   // mostrando lo que había antes de guardar.
@@ -107,18 +109,18 @@ export default function CategoriesView({
 
   // A diferencia de productos, acá no hay filtro ni buscador: `categorias` ya
   // es la lista completa, así que reordenar por índice siempre es seguro.
-  const reordenarCats = useAccion(async (ordenadas: Category[]) => {
+  // Optimista, igual que en Productos (ver el comentario de useOrdenOptimista).
+  const {
+    lista: categoriasOrdenadas,
+    mover,
+    guardando,
+    error: errorOrden,
+  } = useOrdenOptimista(categorias, async (ordenadas) => {
     await categoriasRepo.reordenar(ordenadas);
     onCambio();
   });
 
-  function mover(desde: number, hasta: number) {
-    if (desde === hasta) return;
-    const copia = [...categorias];
-    const [movida] = copia.splice(desde, 1);
-    copia.splice(hasta, 0, movida!);
-    void reordenarCats.ejecutar(copia);
-  }
+  const arrastre = useArrastreOrden({ cantidad: categoriasOrdenadas.length, onMover: mover });
 
   function actualizar<K extends keyof Category>(campo: K, valor: Category[K]) {
     setForm((f) => (f ? { ...f, [campo]: valor } : f));
@@ -166,8 +168,8 @@ export default function CategoriesView({
           </Vacio>
         ) : (
           <>
-            <ErrorAviso error={reordenarCats.error} />
-            <table className={`adm-tabla ${reordenarCats.enCurso ? "is-guardando" : ""}`}>
+            <ErrorAviso error={errorOrden} />
+            <table className={`adm-tabla ${guardando ? "is-guardando" : ""}`}>
               <thead>
                 <tr>
                   <th className="adm-mono" scope="col">
@@ -179,10 +181,11 @@ export default function CategoriesView({
                   <th className="adm-mono" scope="col">REGLAS ACTIVAS</th>
                 </tr>
               </thead>
-              <tbody>
-                {categorias.map((c, i) => (
+              <tbody ref={arrastre.contenedorRef as RefObject<HTMLTableSectionElement | null>}>
+                {categoriasOrdenadas.map((c, i) => (
                   <tr
                     key={c.key}
+                    {...arrastre.propsItem(i)}
                     className={`adm-fila ${seleccionada === c.key && !esNueva ? "is-seleccionada" : ""}`}
                     onClick={() => {
                       setEsNueva(false);
@@ -197,53 +200,16 @@ export default function CategoriesView({
                         setForm({ ...c });
                       }
                     }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const desde = arrastrandoIndice.current;
-                      arrastrandoIndice.current = null;
-                      if (desde !== null) mover(desde, i);
-                    }}
                   >
                     <td className="adm-num">
                       <span className="adm-fila-orden">
-                        {i > 0 && (
-                          <button
-                            type="button"
-                            className="adm-foto-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              mover(i, i - 1);
-                            }}
-                            aria-label={`Subir ${c.label}`}
-                          >
-                            ↑
-                          </button>
-                        )}
-                        {i < categorias.length - 1 && (
-                          <button
-                            type="button"
-                            className="adm-foto-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              mover(i, i + 1);
-                            }}
-                            aria-label={`Bajar ${c.label}`}
-                          >
-                            ↓
-                          </button>
-                        )}
                         <span
-                          className="adm-mono adm-fila-agarre"
-                          aria-hidden="true"
-                          draggable
-                          onClick={(e) => e.stopPropagation()}
-                          onDragStart={() => {
-                            arrastrandoIndice.current = i;
-                          }}
-                          title="Arrastrá para reordenar"
+                          className="adm-fila-agarre"
+                          {...arrastre.propsAgarre(i)}
+                          aria-label={`Reordenar ${c.label}. Usá las flechas arriba y abajo, o arrastrá.`}
+                          title="Arrastrá o usá las flechas para reordenar"
                         >
-                          ⠿
+                          <IconoAgarre />
                         </span>
                       </span>
                     </td>

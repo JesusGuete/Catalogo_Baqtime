@@ -1,8 +1,9 @@
-import { useRef, useState, type DragEvent } from "react";
+import { useRef, useState, type DragEvent, type RefObject } from "react";
 import { subirArchivos } from "../../../lib/admin/photos.repo";
 import { publicImageUrl } from "../../../lib/supabase/config";
+import { useArrastreOrden } from "../../../lib/admin/useArrastreOrden";
 import type { AdminError } from "../../../lib/supabase/errors";
-import { Aviso, ErrorAviso, SectionHead } from "./ui";
+import { Aviso, ErrorAviso, IconoAgarre, SectionHead } from "./ui";
 
 // Gestor de fotos de un producto.
 //
@@ -33,7 +34,6 @@ export default function PhotoManager({ rutas, onChange, categoryKey, deshabilita
   const [subiendo, setSubiendo] = useState<SubiendoUI[]>([]);
   const [errores, setErrores] = useState<{ nombreArchivo: string; error: AdminError }[]>([]);
   const [arrastrando, setArrastrando] = useState(false);
-  const arrastrandoIndice = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function agregar(archivos: File[]) {
@@ -76,6 +76,10 @@ export default function PhotoManager({ rutas, onChange, categoryKey, deshabilita
     onChange(copia);
   }
 
+  // Ya es optimista por diseño (mover() escribe directo en la lista en
+  // memoria, sin red), así que alcanza con el hook de arrastre solo.
+  const arrastre = useArrastreOrden({ cantidad: rutas.length, activo: !deshabilitado, onMover: mover });
+
   function soltarArchivos(e: DragEvent) {
     e.preventDefault();
     setArrastrando(false);
@@ -90,29 +94,25 @@ export default function PhotoManager({ rutas, onChange, categoryKey, deshabilita
       <SectionHead numero="04" titulo="Fotos" />
 
       <p className="adm-nota">
-        Arrastrá para reordenar. La primera es la que se ve en la tarjeta del catálogo.
+        Arrastrá o usá las flechas para reordenar. La primera es la que se ve en la
+        tarjeta del catálogo.
       </p>
 
       {rutas.length > 0 && (
-        <ul className="adm-fotos">
+        <ul className="adm-fotos" ref={arrastre.contenedorRef as RefObject<HTMLUListElement | null>}>
           {rutas.map((ruta, i) => (
-            <li
-              key={ruta}
-              className="adm-foto"
-              draggable={!deshabilitado}
-              onDragStart={() => {
-                arrastrandoIndice.current = i;
-              }}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                const desde = arrastrandoIndice.current;
-                if (desde !== null) mover(desde, i);
-                arrastrandoIndice.current = null;
-              }}
-            >
-              <span className="adm-mono adm-foto-agarre" aria-hidden="true">
-                ⠿
+            <li key={ruta} className="adm-foto" {...arrastre.propsItem(i)}>
+              <span
+                className={`adm-foto-agarre ${deshabilitado ? "is-deshabilitado" : ""}`}
+                {...arrastre.propsAgarre(i)}
+                aria-label={
+                  deshabilitado
+                    ? undefined
+                    : `Reordenar foto ${i + 1}. Usá las flechas arriba y abajo, o arrastrá.`
+                }
+                title={deshabilitado ? undefined : "Arrastrá o usá las flechas para reordenar"}
+              >
+                <IconoAgarre />
               </span>
               <img
                 className="adm-foto-thumb"
@@ -131,28 +131,6 @@ export default function PhotoManager({ rutas, onChange, categoryKey, deshabilita
                 <span className="adm-mono adm-foto-path">{ruta}</span>
               </div>
               <div className="adm-foto-acciones">
-                {i > 0 && (
-                  <button
-                    type="button"
-                    className="adm-mono adm-foto-btn"
-                    onClick={() => mover(i, i - 1)}
-                    aria-label={`Subir la foto ${i + 1}`}
-                    disabled={deshabilitado}
-                  >
-                    ↑
-                  </button>
-                )}
-                {i < rutas.length - 1 && (
-                  <button
-                    type="button"
-                    className="adm-mono adm-foto-btn"
-                    onClick={() => mover(i, i + 1)}
-                    aria-label={`Bajar la foto ${i + 1}`}
-                    disabled={deshabilitado}
-                  >
-                    ↓
-                  </button>
-                )}
                 <button
                   type="button"
                   className="adm-mono adm-foto-btn adm-foto-btn--quitar"
