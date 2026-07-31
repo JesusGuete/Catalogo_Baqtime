@@ -475,7 +475,10 @@
     max-height:none;
     overflow-y:auto;
   }
-  .modal-info h2{ font-size:24px; margin:0 0 4px; padding-right:30px;}
+  /* h1 y h2 son el mismo título con distinto peso semántico: en /producto/[slug] el
+     nombre encabeza la página, sobre el catálogo es contenido subordinado al Hero.
+     Se ve igual en los dos casos, así que el estilo no distingue. */
+  .modal-info h1, .modal-info h2{ font-size:24px; margin:0 0 4px; padding-right:30px;}
   .modal-info .price-live{
     font-family:'JetBrains Mono', monospace; font-size:20px; color:var(--mocha); margin-bottom:18px;
   }
@@ -664,7 +667,7 @@
 
     .modal-gallery{ padding:18px; }
     .modal-info{ padding:22px 18px 26px; }
-    .modal-info h2{ font-size:20px; }
+    .modal-info h1, .modal-info h2{ font-size:20px; }
 
     footer{ padding:30px 16px 44px; font-size:11px; }
   }
