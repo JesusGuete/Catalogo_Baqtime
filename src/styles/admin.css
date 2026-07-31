@@ -394,12 +394,19 @@ input.adm-input { display: block; }
   font-size: 10px; color: var(--ink-soft); margin: 14px 0 0; letter-spacing: 0.06em;
 }
 
-/* Reordenar filas por arrastre (Productos y Categorías). Mismo ícono y botones
-   ↑/↓ que ya usa PhotoManager para las fotos (.adm-foto-agarre/.adm-foto-btn),
-   adaptados al ancho angosto de una columna de tabla. */
+/* Reordenar filas por arrastre (Productos y Categorías), con useArrastreOrden.
+   Mismo ícono que PhotoManager usa para las fotos (.adm-foto-agarre): un
+   agarre enfocable que además responde a las flechas del teclado, así que ya
+   no hacen falta botones ↑/↓ aparte. */
 .adm-fila-orden { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
-.adm-fila-agarre { color: var(--ink-faint); cursor: grab; font-size: 12px; }
+.adm-fila-agarre {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; color: var(--ink-faint); border-radius: var(--radius);
+}
 .adm-fila-agarre.is-deshabilitado { cursor: not-allowed; opacity: 0.4; }
+.adm-fila-agarre:focus-visible, .adm-foto-agarre:focus-visible {
+  outline: 2px solid var(--mocha); outline-offset: 2px;
+}
 .adm-tabla-wrap.is-guardando, .adm-tabla.is-guardando { opacity: 0.6; pointer-events: none; }
 
 /* ============================================================ EDITOR */
@@ -443,7 +450,12 @@ input.adm-input { display: block; }
 }
 .adm-foto:first-child { background: var(--surface-muted); border-color: var(--line-solid); }
 .adm-foto--subiendo { background: var(--draft-bg); border-color: var(--draft-border); }
-.adm-foto-agarre { color: var(--ink-faint); cursor: grab; font-size: 12px; }
+.adm-foto-agarre {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; color: var(--ink-faint); border-radius: var(--radius);
+  flex-shrink: 0;
+}
+.adm-foto-agarre.is-deshabilitado { cursor: not-allowed; opacity: 0.4; }
 .adm-foto-thumb {
   width: 54px; height: 54px; object-fit: cover;
   background: var(--panel); border-radius: var(--radius); flex-shrink: 0;

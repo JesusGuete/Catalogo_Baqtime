@@ -19,6 +19,38 @@ export function Mono({ children, className = "" }: { children: ReactNode; classN
   return <span className={`adm-mono ${className}`.trim()}>{children}</span>;
 }
 
+// ============================================================================
+// Íconos
+// ============================================================================
+
+/**
+ * Ícono de agarre para reordenar (tres líneas, como Spotify).
+ *
+ * Antes era el carácter "⠿" (braille de 8 puntos) puesto como texto. Se
+ * cambia a SVG por dos razones: se ve como se busca, y deja de depender de
+ * que el dispositivo tenga esa fuente — braille no es un ícono universal,
+ * cada sistema lo dibuja distinto y algunos no lo traen.
+ */
+export function IconoAgarre({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M2 4h12M2 8h12M2 12h12"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function SectionHead({ numero, titulo }: { numero?: string; titulo: string }) {
   return (
     <div className="adm-sechead">

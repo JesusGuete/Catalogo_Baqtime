@@ -1,10 +1,12 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import type { RefObject } from "react";
 import type { Category, Product, ProductWithPhotos } from "../../../types/database";
 import { calcularDiff, type TipoCambio } from "../../../lib/admin/diff";
-import { useAccion } from "../../../lib/admin/useAdminData";
+import { useOrdenOptimista } from "../../../lib/admin/useAdminData";
+import { useArrastreOrden } from "../../../lib/admin/useArrastreOrden";
 import * as productosRepo from "../../../lib/admin/products.repo";
 import { publicImageUrl, PLACEHOLDER_IMAGE } from "../../../lib/supabase/config";
-import { Boton, Punto, Cargando, ErrorAviso, Vacio, dinero, type EstadoPunto } from "./ui";
+import { Boton, Punto, Cargando, ErrorAviso, IconoAgarre, Vacio, dinero, type EstadoPunto } from "./ui";
 
 // Pantalla 02 del diseño: la lista del BORRADOR, no del catálogo público.
 //
@@ -42,7 +44,6 @@ export default function ProductsView({
 }: Props) {
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState<string | null>(null);
-  const arrastrandoIndice = useRef<number | null>(null);
 
   const etiquetaCategoria = useMemo(
     () => Object.fromEntries(categorias.map((c) => [c.key, c.label])),
@@ -92,7 +93,15 @@ export default function ProductsView({
     });
   }, [borrador, busqueda, categoria, posicionPorCategoria]);
 
-  const reordenar = useAccion(async (ordenados: ProductWithPhotos[]) => {
+  // Optimista a propósito: si esperara al servidor como el resto del panel,
+  // la fila se quedaría en su lugar viejo hasta que vuelva la respuesta y el
+  // arrastre se sentiría trabado. Ver el comentario de useOrdenOptimista.
+  const {
+    lista: visiblesOrdenados,
+    mover,
+    guardando,
+    error: errorOrden,
+  } = useOrdenOptimista(visibles, async (ordenados) => {
     // products_draft no tiene columna product_photos_draft (es una tabla
     // aparte embebida en el select) — hay que sacarla antes del upsert.
     const limpios: Product[] = ordenados.map(({ product_photos_draft: _fotos, ...resto }) => resto);
@@ -100,13 +109,11 @@ export default function ProductsView({
     onCambio();
   });
 
-  function mover(desde: number, hasta: number) {
-    if (!puedeReordenar || desde === hasta) return;
-    const copia = [...visibles];
-    const [movido] = copia.splice(desde, 1);
-    copia.splice(hasta, 0, movido!);
-    void reordenar.ejecutar(copia);
-  }
+  const arrastre = useArrastreOrden({
+    cantidad: visiblesOrdenados.length,
+    activo: puedeReordenar,
+    onMover: mover,
+  });
 
   if (cargando && !borrador.length) return <Cargando />;
 
@@ -148,7 +155,7 @@ export default function ProductsView({
         </div>
       </div>
 
-      <ErrorAviso error={reordenar.error} />
+      <ErrorAviso error={errorOrden} />
 
       {!categorias.length ? (
         <Vacio titulo="Todavía no hay categorías.">
@@ -163,7 +170,7 @@ export default function ProductsView({
         </Vacio>
       ) : (
         <>
-          <div className={`adm-tabla-wrap ${reordenar.enCurso ? "is-guardando" : ""}`}>
+          <div className={`adm-tabla-wrap ${guardando ? "is-guardando" : ""}`}>
             <table className="adm-tabla">
               <thead>
                 <tr>
@@ -178,8 +185,8 @@ export default function ProductsView({
                   <th className="adm-mono" scope="col">ESTADO</th>
                 </tr>
               </thead>
-              <tbody>
-                {visibles.map((p, i) => {
+              <tbody ref={arrastre.contenedorRef as RefObject<HTMLTableSectionElement | null>}>
+                {visiblesOrdenados.map((p, i) => {
                   const fotos = p.product_photos_draft ?? [];
                   const principal = fotos.find((f) => f.position === 0) ?? fotos[0];
                   const tipo = estadoPorId.get(p.id) ?? "sin-cambios";
@@ -189,6 +196,7 @@ export default function ProductsView({
                   return (
                     <tr
                       key={p.id}
+                      {...arrastre.propsItem(i)}
                       className={`adm-fila ${pendiente ? "is-pendiente" : ""} ${!p.is_active ? "is-inactivo" : ""}`}
                       onClick={() => onEditar(p.id)}
                       tabIndex={0}
@@ -197,15 +205,6 @@ export default function ProductsView({
                           e.preventDefault();
                           onEditar(p.id);
                         }
-                      }}
-                      onDragOver={(e) => {
-                        if (puedeReordenar) e.preventDefault();
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const desde = arrastrandoIndice.current;
-                        arrastrandoIndice.current = null;
-                        if (puedeReordenar && desde !== null) mover(desde, i);
                       }}
                     >
                       <td>
@@ -233,47 +232,21 @@ export default function ProductsView({
                       <td className="adm-mono adm-num">{dinero(p.price)}</td>
                       <td className="adm-mono adm-num">
                         <span className="adm-fila-orden">
-                          {puedeReordenar && i > 0 && (
-                            <button
-                              type="button"
-                              className="adm-foto-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                mover(i, i - 1);
-                              }}
-                              aria-label={`Subir ${p.name}`}
-                            >
-                              ↑
-                            </button>
-                          )}
-                          {puedeReordenar && i < visibles.length - 1 && (
-                            <button
-                              type="button"
-                              className="adm-foto-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                mover(i, i + 1);
-                              }}
-                              aria-label={`Bajar ${p.name}`}
-                            >
-                              ↓
-                            </button>
-                          )}
                           <span
-                            className={`adm-mono adm-fila-agarre ${puedeReordenar ? "" : "is-deshabilitado"}`}
-                            aria-hidden="true"
-                            draggable={puedeReordenar}
-                            onClick={(e) => e.stopPropagation()}
-                            onDragStart={() => {
-                              arrastrandoIndice.current = i;
-                            }}
+                            className={`adm-fila-agarre ${puedeReordenar ? "" : "is-deshabilitado"}`}
+                            {...arrastre.propsAgarre(i)}
+                            aria-label={
+                              puedeReordenar
+                                ? `Reordenar ${p.name}. Usá las flechas arriba y abajo, o arrastrá.`
+                                : undefined
+                            }
                             title={
                               puedeReordenar
-                                ? "Arrastrá para reordenar"
-                                : "Elegí una sola categoría (no TODAS) y vaciá el buscador para reordenar por arrastre"
+                                ? "Arrastrá o usá las flechas para reordenar"
+                                : "Elegí una sola categoría (no TODAS) y vaciá el buscador para reordenar"
                             }
                           >
-                            ⠿
+                            <IconoAgarre />
                           </span>
                           {p.sort_order}
                         </span>
@@ -294,8 +267,8 @@ export default function ProductsView({
           <p className="adm-mono adm-tabla-pie">
             MOSTRANDO {visibles.length} DE {borrador.length} · ORDENADO POR CATEGORÍA Y ORDEN
             {puedeReordenar
-              ? " · ARRASTRÁ EL ⠿ PARA REORDENAR"
-              : " · ELEGÍ UNA SOLA CATEGORÍA Y VACIÁ LA BÚSQUEDA PARA REORDENAR POR ARRASTRE"}
+              ? " · ARRASTRÁ O USÁ LAS FLECHAS PARA REORDENAR"
+              : " · ELEGÍ UNA SOLA CATEGORÍA Y VACIÁ LA BÚSQUEDA PARA REORDENAR"}
           </p>
         </>
       )}
