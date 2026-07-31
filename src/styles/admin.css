@@ -106,17 +106,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
 
 .adm-sidebar {
   width: 240px; flex-shrink: 0;
-  background: var(--admin-sidebar); color: var(--cream);
+  /* Mismo tratamiento claro que el panel izquierdo del login: --panel de fondo,
+     borde para separarlo del contenido en vez de un tono oscuro. */
+  background: var(--panel); color: var(--ink);
+  border-right: 1px solid var(--line-solid);
   display: flex; flex-direction: column;
   position: sticky; top: 0; height: 100vh;
 }
-.adm-sidebar-marca { padding: 24px; border-bottom: 1px solid var(--admin-sidebar-line); }
-.adm-sidebar-logo {
-  height: 24px; width: auto; display: block; margin: 0 0 6px;
-  /* Mismo logo real que usa la tienda (Header.astro), invertido a blanco porque
-     el sidebar es oscuro y el trazo original es negro sobre transparente. */
-  filter: brightness(0) invert(1);
-}
+.adm-sidebar-marca { padding: 24px; border-bottom: 1px solid var(--line-solid); }
+.adm-sidebar-logo { height: 24px; width: auto; display: block; margin: 0 0 6px; }
 .adm-sidebar-sub { font-size: 9px; color: var(--mocha); margin: 0; letter-spacing: 0.12em; }
 
 .adm-nav { list-style: none; margin: 0; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; }
@@ -124,33 +122,33 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
   width: 100%; height: 40px;
   display: flex; align-items: center; gap: 12px;
   padding: 0 12px; border: 0; border-radius: var(--radius);
-  background: transparent; color: var(--admin-sidebar-text);
+  background: transparent; color: var(--ink-soft);
   cursor: pointer; text-align: left;
 }
-.adm-nav-item:hover { background: var(--admin-sidebar-hover); }
-.adm-nav-item.is-activo { background: var(--admin-sidebar-hover); color: var(--cream); }
+.adm-nav-item:hover { background: var(--white-card); }
+.adm-nav-item.is-activo { background: var(--white-card); color: var(--ink); }
 .adm-nav-marca { width: 2px; height: 16px; background: transparent; flex-shrink: 0; }
 .adm-nav-item.is-activo .adm-nav-marca { background: var(--mocha); }
 .adm-nav-label { font-size: 11px; letter-spacing: 0.06em; }
-.adm-nav-contador { margin-left: auto; font-size: 11px; color: var(--admin-sidebar-dim); }
+.adm-nav-contador { margin-left: auto; font-size: 11px; color: var(--ink-faint); }
 .adm-nav-punto {
   margin-left: auto; width: 6px; height: 6px; border-radius: 50%; background: var(--mocha);
 }
 
 .adm-sidebar-pie {
   margin-top: auto; padding: 20px;
-  border-top: 1px solid var(--admin-sidebar-line);
+  border-top: 1px solid var(--line-solid);
   display: flex; flex-direction: column; gap: 8px;
 }
 .adm-sidebar-email { font-size: 12px; margin: 0; word-break: break-all; }
 .adm-sidebar-expira {
-  font-size: 9px; color: var(--admin-sidebar-dim); margin: 0; line-height: 1.5; letter-spacing: 0.04em;
+  font-size: 9px; color: var(--ink-faint); margin: 0; line-height: 1.5; letter-spacing: 0.04em;
 }
 .adm-sidebar-salir {
   background: none; border: 0; padding: 0; cursor: pointer;
-  color: var(--admin-sidebar-text); font-size: 10px; text-align: left; letter-spacing: 0.08em;
+  color: var(--ink-soft); font-size: 10px; text-align: left; letter-spacing: 0.08em;
 }
-.adm-sidebar-salir:hover { color: var(--cream); }
+.adm-sidebar-salir:hover { color: var(--ink); }
 
 .adm-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
@@ -168,7 +166,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
 
 @media (max-width: 860px) {
   .adm-shell { flex-direction: column; }
-  .adm-sidebar { width: 100%; height: auto; position: static; }
+  .adm-sidebar {
+    width: 100%; height: auto; position: static;
+    border-right: none; border-bottom: 1px solid var(--line-solid);
+  }
   .adm-nav { flex-direction: row; overflow-x: auto; }
   .adm-nav-item { width: auto; white-space: nowrap; }
   .adm-nav-contador, .adm-sidebar-pie { display: none; }
