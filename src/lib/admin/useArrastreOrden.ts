@@ -49,6 +49,7 @@ interface Arrastre {
   propsItem: (i: number) => { "data-indice": number; style: CSSProperties };
   /** Va en el ícono de agarre. */
   propsAgarre: (i: number) => {
+    ref: (nodo: HTMLElement | null) => (() => void) | void;
     onPointerDown: (e: EventoPuntero<HTMLElement>) => void;
     onPointerMove: (e: EventoPuntero<HTMLElement>) => void;
     onPointerUp: (e: EventoPuntero<HTMLElement>) => void;
@@ -173,6 +174,20 @@ export function useArrastreOrden({ cantidad, activo = true, onMover }: Opciones)
 
   const propsAgarre = useCallback(
     (i: number) => ({
+      // `touch-action: none` (más abajo, en `style`) alcanza en Chrome/Firefox,
+      // pero iOS Safari a veces igual arranca su propio gesto de scroll apenas
+      // el dedo se mueve, sin llegar a disparar `pointermove`. Cancelar el
+      // `touchstart` a mano es el único respaldo que funciona ahí — y tiene que
+      // ser un listener nativo con `passive: false`, porque el `onTouchStart`
+      // de React se agrega pasivo y `preventDefault()` ahí no hace nada.
+      ref: (nodo: HTMLElement | null) => {
+        if (!nodo) return;
+        const cancelar = (e: TouchEvent) => {
+          if (activo && cantidad > 1) e.preventDefault();
+        };
+        nodo.addEventListener("touchstart", cancelar, { passive: false });
+        return () => nodo.removeEventListener("touchstart", cancelar);
+      },
       onPointerDown: (e: EventoPuntero<HTMLElement>) => {
         if (!activo || cantidad < 2) return;
         if (e.button !== 0) return; // solo el botón principal del mouse
