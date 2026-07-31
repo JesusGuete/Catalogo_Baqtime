@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Category, ProductWithPhotos, Publication } from "../../../types/database";
 import { calcularDiff, type TipoCambio } from "../../../lib/admin/diff";
 import * as publishRepo from "../../../lib/admin/publish.repo";
+import { descartarCambios } from "../../../lib/admin/revertir";
 import { useAccion } from "../../../lib/admin/useAdminData";
 import { comoAdminError, type AdminError } from "../../../lib/supabase/errors";
 import { Aviso, Boton, ErrorAviso, Etiqueta, Vacio } from "./ui";
@@ -17,6 +18,8 @@ interface Props {
   publicado: ProductWithPhotos[];
   categorias: Category[];
   onPublicado: () => void;
+  /** Después de "Deshacer cambios" (revertir.ts). Solo productos, ver ahí por qué. */
+  onCambio: () => void;
 }
 
 const TAG_POR_TIPO: Record<TipoCambio, { texto: string; tono: "solido" | "borrador" | "neutro" }> = {
@@ -27,7 +30,7 @@ const TAG_POR_TIPO: Record<TipoCambio, { texto: string; tono: "solido" | "borrad
   eliminado: { texto: "SE BORRA", tono: "neutro" },
 };
 
-export default function PublishView({ borrador, publicado, categorias, onPublicado }: Props) {
+export default function PublishView({ borrador, publicado, categorias, onPublicado, onCambio }: Props) {
   const [publicaciones, setPublicaciones] = useState<Publication[]>([]);
   const [errorHistorial, setErrorHistorial] = useState<AdminError | null>(null);
   const [resultado, setResultado] = useState<publishRepo.ResultadoPublicacion | null>(null);
@@ -50,6 +53,11 @@ export default function PublishView({ borrador, publicado, categorias, onPublica
     setResultado(r);
     onPublicado();
     return r;
+  });
+
+  const descartar = useAccion(async () => {
+    await descartarCambios(borrador, publicado);
+    onCambio();
   });
 
   // Cuántas imágenes van a quedar sin uso. Es una estimación del cliente: la cuenta
@@ -191,7 +199,7 @@ export default function PublishView({ borrador, publicado, categorias, onPublica
               </li>
             </ol>
 
-            <ErrorAviso error={publicar.error} />
+            <ErrorAviso error={publicar.error ?? descartar.error} />
 
             <Boton
               onClick={() => {
@@ -212,6 +220,24 @@ export default function PublishView({ borrador, publicado, categorias, onPublica
               {diff.vacio
                 ? "NADA PARA PUBLICAR"
                 : `PUBLICAR ${diff.cambios.length} ${diff.cambios.length === 1 ? "CAMBIO" : "CAMBIOS"}`}
+            </Boton>
+            <Boton
+              onClick={() => {
+                const n = diff.cambios.length;
+                if (
+                  window.confirm(
+                    `¿Deshacer ${n === 1 ? "el cambio" : `los ${n} cambios`} sin publicar? El borrador de productos vuelve a quedar igual a lo publicado ahora mismo.`
+                  )
+                ) {
+                  void descartar.ejecutar();
+                }
+              }}
+              variante="peligro"
+              ancho
+              disabled={diff.vacio}
+              cargando={descartar.enCurso}
+            >
+              DESHACER CAMBIOS
             </Boton>
             <p className="adm-mono adm-publicar-nota">SE PIDE CONFIRMACIÓN ANTES DE EJECUTAR</p>
           </section>
