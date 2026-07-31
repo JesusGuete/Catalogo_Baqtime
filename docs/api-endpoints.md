@@ -344,7 +344,14 @@ Authorization: Bearer <access_token>
 
 Sin cuerpo.
 
-**200** ✅ *(ejecutado el 2026-07-30, primera publicación del proyecto)*
+**200** ✅ *(ejecutado el 2026-07-31 desde el panel, por RPC)*
+
+> Hasta el 2026-07-31 esta respuesta figuraba como verificada porque se había ejecutado
+> desde el **SQL Editor**, simulando el JWT con `set local request.jwt.claims`. Eso no es
+> lo mismo que llamar al endpoint: la sesión de PostgREST carga `pg_safeupdate` y la del
+> SQL Editor no. La primera llamada real falló con `21000` porque la función tenía dos
+> `delete` sin `where`. Un ✅ sobre un camino que nadie recorrió no vale — si la prueba
+> es en el SQL Editor, va 📄.
 
 ```json
 [{ "publication_id": 1, "product_count": 1, "photo_count": 0, "removed_paths": [] }]

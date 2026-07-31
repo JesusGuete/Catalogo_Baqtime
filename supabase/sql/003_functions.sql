@@ -101,8 +101,12 @@ begin
   select coalesce(array_agg(pp.storage_path), '{}') into v_before
     from public.product_photos pp;
 
-  delete from public.product_photos;                                    -- FK order: photos first
-  delete from public.products;
+  -- `where true` is not decoration. Supabase loads pg_safeupdate in the PostgREST
+  -- session, which rejects any unqualified DELETE with 21000 'DELETE requires a
+  -- WHERE clause'. The SQL Editor does not load it, so these two lines worked in
+  -- every manual test and failed the first time the panel called this over RPC.
+  delete from public.product_photos where true;                         -- FK order: photos first
+  delete from public.products where true;
 
   -- Explicit column lists, not SELECT * — if a column is later added to only one twin, an
   -- enumerated list fails loudly at parse time, while SELECT * can silently mis-map two
