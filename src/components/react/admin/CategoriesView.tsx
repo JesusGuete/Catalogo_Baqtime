@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import type { Category } from "../../../types/database";
 import * as categoriasRepo from "../../../lib/admin/categories.repo";
@@ -70,6 +70,19 @@ export default function CategoriesView({
   const [seleccionada, setSeleccionada] = useState<string | null>(null);
   const [form, setForm] = useState<Category | null>(null);
   const [esNueva, setEsNueva] = useState(false);
+  const reglasRef = useRef<HTMLElement>(null);
+
+  // Solo en modo apilado (mismo corte que .adm-cats en 1100px, ver admin.css):
+  // en dos columnas el formulario ya está a la vista, bajar el scroll ahí
+  // sería un salto molesto que nadie pidió. Se espera al próximo frame porque
+  // en "+ CREAR LA PRIMERA" el <aside> todavía no existe en el DOM en el
+  // momento del click (form pasa de null a un valor recién con este render).
+  function bajarAlFormulario() {
+    if (!window.matchMedia("(max-width: 1100px)").matches) return;
+    requestAnimationFrame(() => {
+      reglasRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
 
   // Al recargar desde el servidor hay que refrescar el formulario, si no se queda
   // mostrando lo que había antes de guardar.
@@ -162,26 +175,39 @@ export default function CategoriesView({
               La categoría es lo primero que hay que crear: define el precio base, las
               reglas de iniciales y la carpeta donde se guardan las imágenes.
             </p>
-            <Boton onClick={nueva} variante="acento">
+            <Boton
+              onClick={() => {
+                nueva();
+                bajarAlFormulario();
+              }}
+              variante="acento"
+            >
               + CREAR LA PRIMERA
             </Boton>
           </Vacio>
         ) : (
           <>
             <ErrorAviso error={errorOrden} />
-            <table className={`adm-tabla ${guardando ? "is-guardando" : ""}`}>
-              <thead>
-                <tr>
-                  <th className="adm-mono" scope="col">
+            {/* Roles ARIA explícitos: ver el mismo comentario en ProductsView.tsx —
+                las filas pasan a display:grid en ≤640px para el layout de
+                tarjetas, y ahí la semántica implícita de tabla no es confiable
+                entre navegadores. */}
+            <table className={`adm-tabla ${guardando ? "is-guardando" : ""}`} role="table">
+              <thead role="rowgroup">
+                <tr role="row">
+                  <th className="adm-mono" scope="col" role="columnheader">
                     <span className="adm-sr">Reordenar</span>
                   </th>
-                  <th className="adm-mono" scope="col">CATEGORÍA</th>
-                  <th className="adm-mono adm-num" scope="col">PRECIO BASE</th>
-                  <th className="adm-mono adm-num" scope="col">PRODUCTOS</th>
-                  <th className="adm-mono" scope="col">REGLAS ACTIVAS</th>
+                  <th className="adm-mono" scope="col" role="columnheader">CATEGORÍA</th>
+                  <th className="adm-mono adm-num" scope="col" role="columnheader">PRECIO BASE</th>
+                  <th className="adm-mono adm-num" scope="col" role="columnheader">PRODUCTOS</th>
+                  <th className="adm-mono" scope="col" role="columnheader">REGLAS ACTIVAS</th>
                 </tr>
               </thead>
-              <tbody ref={arrastre.contenedorRef as RefObject<HTMLTableSectionElement | null>}>
+              <tbody
+                role="rowgroup"
+                ref={arrastre.contenedorRef as RefObject<HTMLTableSectionElement | null>}
+              >
                 {categoriasOrdenadas.map((c, i) => (
                   <tr
                     key={c.key}
@@ -191,17 +217,20 @@ export default function CategoriesView({
                       setEsNueva(false);
                       setSeleccionada(c.key);
                       setForm({ ...c });
+                      bajarAlFormulario();
                     }}
                     tabIndex={0}
+                    role="row"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         setEsNueva(false);
                         setSeleccionada(c.key);
                         setForm({ ...c });
+                        bajarAlFormulario();
                       }
                     }}
                   >
-                    <td className="adm-num">
+                    <td className="adm-num adm-td-agarre" role="cell">
                       <span className="adm-fila-orden">
                         <span
                           className="adm-fila-agarre"
@@ -213,15 +242,17 @@ export default function CategoriesView({
                         </span>
                       </span>
                     </td>
-                    <td>
+                    <td className="adm-td-nombre" role="cell">
                       <span className="adm-fila-nombre">{c.label}</span>
                       <span className="adm-mono adm-fila-meta">
                         {c.key.toUpperCase()} · POSICIÓN {c.position}
                       </span>
                     </td>
-                    <td className="adm-mono adm-num">{dinero(c.default_price)}</td>
-                    <td className="adm-mono adm-num">{conteoPorCategoria[c.key] ?? 0}</td>
-                    <td>
+                    <td className="adm-mono adm-num adm-td-precio" role="cell">{dinero(c.default_price)}</td>
+                    <td className="adm-mono adm-num adm-td-conteo" role="cell">
+                      {conteoPorCategoria[c.key] ?? 0}
+                    </td>
+                    <td className="adm-td-reglas" role="cell">
                       <span className="adm-tags">
                         {c.has_variant && <Etiqueta tono="solido">VARIANTE</Etiqueta>}
                         {c.extra_initials_price > 0 && <Etiqueta tono="solido">RECARGO</Etiqueta>}
@@ -241,7 +272,13 @@ export default function CategoriesView({
             </table>
 
             <div className="adm-cats-pie">
-              <Boton onClick={nueva} variante="acento">
+              <Boton
+                onClick={() => {
+                  nueva();
+                  bajarAlFormulario();
+                }}
+                variante="acento"
+              >
                 + NUEVA CATEGORÍA
               </Boton>
             </div>
@@ -250,7 +287,7 @@ export default function CategoriesView({
       </div>
 
       {form && (
-        <aside className="adm-cats-reglas">
+        <aside className="adm-cats-reglas" ref={reglasRef}>
           <ErrorAviso error={guardar.error ?? borrar.error} />
 
           <section className="adm-card">

@@ -171,21 +171,31 @@ export default function ProductsView({
       ) : (
         <>
           <div className={`adm-tabla-wrap ${guardando ? "is-guardando" : ""}`}>
-            <table className="adm-tabla">
-              <thead>
-                <tr>
-                  <th className="adm-mono" scope="col">
+            {/* Roles ARIA explícitos: en ≤640px las filas pasan a display:grid
+                (ver admin.css) para el layout de tarjetas, y ahí la semántica
+                implícita de tabla no es confiable entre navegadores. Con el rol
+                puesto a mano no depende del display computado. */}
+            <table
+              className={`adm-tabla ${categoria !== null ? "adm-tabla--filtrada" : ""}`}
+              role="table"
+            >
+              <thead role="rowgroup">
+                <tr role="row">
+                  <th className="adm-mono" scope="col" role="columnheader">
                     <span className="adm-sr">Foto</span>
                   </th>
-                  <th className="adm-mono" scope="col">PRODUCTO</th>
-                  <th className="adm-mono" scope="col">CATEGORÍA</th>
-                  <th className="adm-mono adm-num" scope="col">PRECIO</th>
-                  <th className="adm-mono adm-num" scope="col">ORDEN</th>
-                  <th className="adm-mono adm-num" scope="col">FOTOS</th>
-                  <th className="adm-mono" scope="col">ESTADO</th>
+                  <th className="adm-mono" scope="col" role="columnheader">PRODUCTO</th>
+                  <th className="adm-mono" scope="col" role="columnheader">CATEGORÍA</th>
+                  <th className="adm-mono adm-num" scope="col" role="columnheader">PRECIO</th>
+                  <th className="adm-mono adm-num" scope="col" role="columnheader">ORDEN</th>
+                  <th className="adm-mono adm-num" scope="col" role="columnheader">FOTOS</th>
+                  <th className="adm-mono" scope="col" role="columnheader">ESTADO</th>
                 </tr>
               </thead>
-              <tbody ref={arrastre.contenedorRef as RefObject<HTMLTableSectionElement | null>}>
+              <tbody
+                role="rowgroup"
+                ref={arrastre.contenedorRef as RefObject<HTMLTableSectionElement | null>}
+              >
                 {visiblesOrdenados.map((p, i) => {
                   const fotos = p.product_photos_draft ?? [];
                   const principal = fotos.find((f) => f.position === 0) ?? fotos[0];
@@ -200,6 +210,7 @@ export default function ProductsView({
                       className={`adm-fila ${pendiente ? "is-pendiente" : ""} ${!p.is_active ? "is-inactivo" : ""}`}
                       onClick={() => onEditar(p.id)}
                       tabIndex={0}
+                      role="row"
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
@@ -207,7 +218,7 @@ export default function ProductsView({
                         }
                       }}
                     >
-                      <td>
+                      <td className="adm-td-foto" role="cell">
                         <img
                           className="adm-thumb"
                           src={principal ? publicImageUrl(principal.storage_path) : PLACEHOLDER_IMAGE}
@@ -217,7 +228,7 @@ export default function ProductsView({
                           loading="lazy"
                         />
                       </td>
-                      <td>
+                      <td className="adm-td-nombre" role="cell">
                         <span className="adm-fila-nombre">
                           {p.name}
                           {p.variant ? ` · ${p.variant}` : ""}
@@ -228,9 +239,11 @@ export default function ProductsView({
                           {fotos.length === 0 && " · SIN FOTOS"}
                         </span>
                       </td>
-                      <td>{etiquetaCategoria[p.category_key] ?? p.category_key}</td>
-                      <td className="adm-mono adm-num">{dinero(p.price)}</td>
-                      <td className="adm-mono adm-num">
+                      <td className="adm-td-categoria" role="cell">
+                        {etiquetaCategoria[p.category_key] ?? p.category_key}
+                      </td>
+                      <td className="adm-mono adm-num adm-td-precio" role="cell">{dinero(p.price)}</td>
+                      <td className="adm-mono adm-num adm-td-orden" role="cell">
                         <span className="adm-fila-orden">
                           <span
                             className={`adm-fila-agarre ${puedeReordenar ? "" : "is-deshabilitado"}`}
@@ -248,13 +261,16 @@ export default function ProductsView({
                           >
                             <IconoAgarre />
                           </span>
-                          {p.sort_order}
+                          <span className="adm-fila-orden-num">{p.sort_order}</span>
                         </span>
                       </td>
-                      <td className={`adm-mono adm-num ${fotos.length === 0 ? "adm-alerta" : ""}`}>
+                      <td
+                        className={`adm-mono adm-num adm-td-fotos ${fotos.length === 0 ? "adm-alerta" : ""}`}
+                        role="cell"
+                      >
                         {fotos.length}
                       </td>
-                      <td>
+                      <td className="adm-td-estado" role="cell">
                         <Punto estado={ui.punto} texto={ui.texto} />
                       </td>
                     </tr>

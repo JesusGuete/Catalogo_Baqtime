@@ -467,6 +467,76 @@ input.adm-input { display: block; }
 }
 .adm-tabla-wrap.is-guardando, .adm-tabla.is-guardando { opacity: 0.6; pointer-events: none; }
 
+/* Entrega 3 del plan móvil: en pantallas angostas cada fila se reacomoda como
+   tarjeta (foto+nombre arriba, precio+estado abajo, agarre a un costado) en
+   vez de forzar scroll horizontal para leer precio o estado. Es la misma
+   tabla con estilos encima, no una versión de marcado aparte — evita tener
+   dos fuentes de verdad que después se desincronizan.
+
+   Se ocultan la columna FOTOS (su único dato útil, "SIN FOTOS", ya está en
+   .adm-fila-meta) y el número crudo de ORDEN (el agarre solo ya alcanza).
+   CATEGORÍA se oculta nada más cuando la tabla ya está filtrada por una sola
+   (.adm-tabla--filtrada), porque en TODAS sigue siendo información nueva. */
+@media (max-width: 640px) {
+  .adm-tabla-wrap { overflow-x: visible; border: 0; background: none; }
+  .adm-tabla, .adm-cats-lista .adm-tabla { min-width: 0; border-collapse: separate; border-spacing: 0 10px; }
+  /* No display:none: eso saca el thead del árbol de accesibilidad y un lector
+     de pantalla deja de anunciar a qué columna corresponde cada dato de la
+     tarjeta. Mismo patrón que .adm-sr (oculto a la vista, no al lector). */
+  .adm-tabla thead {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  .adm-tabla tbody { display: block; }
+  .adm-tabla-pie { margin-top: 4px; }
+
+  .adm-tabla tr.adm-fila {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    grid-template-areas:
+      "foto nombre agarre"
+      "precio precio estado";
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 6px;
+    padding: 12px;
+    background: var(--white-card);
+    border: 1px solid var(--line-solid);
+    border-radius: var(--radius);
+  }
+  .adm-tabla tr.adm-fila.is-pendiente { background: var(--draft-bg); }
+  .adm-tabla td { display: block; padding: 0; border: 0; font-size: 13px; }
+
+  .adm-td-foto { grid-area: foto; }
+  .adm-td-nombre { grid-area: nombre; }
+  .adm-td-precio { grid-area: precio; text-align: left; font-family: "Unna", serif; font-size: 15px; }
+  .adm-td-estado { grid-area: estado; }
+  .adm-td-categoria { grid-area: categoria; grid-column: 1 / -1; padding-left: 56px; font-size: 11px; color: var(--ink-soft); }
+  .adm-tabla--filtrada .adm-td-categoria { display: none; }
+  /* Prefijo td. para ganarle en especificidad a ".adm-tabla td { display:
+     block }" de arriba — con solo la clase, ese display:block gana igual
+     (empatan en clases, pero esa regla suma un elemento) y la columna nunca
+     se llegaba a ocultar. */
+  td.adm-td-fotos { display: none; }
+
+  /* Categorías: sin foto, así que el agarre pasa a la esquina y REGLAS
+     ocupa todo el ancho abajo en vez de comprimirse en una quinta columna. */
+  .adm-cats-lista .adm-tabla tr.adm-fila {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "nombre agarre"
+      "precio conteo"
+      "reglas reglas";
+  }
+  .adm-td-agarre { grid-area: agarre; }
+  .adm-td-conteo { grid-area: conteo; text-align: right; }
+  .adm-td-reglas { grid-area: reglas; }
+
+  .adm-td-orden { grid-area: agarre; }
+  .adm-fila-orden-num { display: none; }
+}
+
 /* ============================================================ EDITOR */
 
 .adm-editor { min-height: 100dvh; padding-bottom: calc(48px + env(safe-area-inset-bottom)); }
@@ -634,5 +704,10 @@ input.adm-input { display: block; }
 
 @media (max-width: 1100px) {
   .adm-publicar { flex-direction: column; }
-  .adm-publicar-accion { width: 100%; }
+  .adm-publicar-accion {
+    width: 100%;
+    /* Apilado, el botón PUBLICAR quedaba debajo de toda la lista de cambios.
+       Con order sube arriba sin tocar el marcado ni el orden lógico/de tab. */
+    order: -1;
+  }
 }
