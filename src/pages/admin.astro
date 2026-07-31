@@ -8,6 +8,11 @@
 // y React la llena en el navegador después del login.
 import AdminApp from "../components/react/admin/AdminApp.tsx";
 import "../styles/admin.css";
+
+// Esta página se pre-construye aunque el resto del sitio se renderice por petición:
+// es una cáscara vacía, siempre idéntica, sin un solo dato del servidor. Renderizarla
+// en cada visita gastaría una invocación del Worker para devolver siempre lo mismo.
+export const prerender = true;
 ---
 
 <html lang="es">

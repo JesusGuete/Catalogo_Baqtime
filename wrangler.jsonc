@@ -1,8 +1,14 @@
 {
-  // Worker de assets estáticos del catálogo Baqtime
+  // Worker de la tienda Baqtime.
+  //
+  // Ya no es un Worker de solo assets: con el adaptador de Astro el Worker ejecuta
+  // código y renderiza las páginas por petición. El adaptador inyecta al construir el
+  // punto de entrada y el binding ASSETS que sirve los archivos estáticos, así que acá
+  // no hace falta declararlos.
+  //
+  // `nodejs_compat` lo pide el adaptador para las APIs de Node que usa Astro dentro
+  // del runtime de Workers.
   "name": "catalogo-baqtime",
   "compatibility_date": "2025-07-01",
-  "assets": {
-    "directory": "./dist"
-  }
+  "compatibility_flags": ["nodejs_compat"]
 }

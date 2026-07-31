@@ -27,17 +27,36 @@ en el bundle, el catálogo entero queda escribible desde el navegador.
 `SUPABASE_SERVICE_ROLE_KEY` que también figura ahí es para scripts locales de un solo
 uso y hoy no la necesita nadie del lado del front.
 
-### Astro estático vs. datos frescos
+### Cómo llegan los datos a la tienda — RESUELTO el 2026-07-31
 
-El catálogo cambia cuando el dueño publica desde el panel, no en cada visita. Dos
-opciones, y la primera es la recomendada:
+**El sitio se renderiza por petición** (`output: 'server'` + `@astrojs/cloudflare`).
+`loadCatalog()` corre en el frontmatter, igual que antes, pero ahora en cada visita en
+vez de una sola vez al construir.
 
-- **Fetch en build** (frontmatter de `.astro` / `getStaticPaths`). El HTML sale con los
-  productos adentro, cero JavaScript de datos, y el sitio sirve desde el edge de
-  Cloudflare. Requiere redeploy cuando el dueño publica — se resuelve con un webhook
-  o un botón de "publicar" que dispare el build.
-- **Fetch en cliente**. Datos siempre frescos, pero el catálogo aparece después del
-  primer render y se pierde el SEO del contenido.
+Antes se hacía en el build. Esa versión decía que reconstruir era el precio a pagar y
+que "se resuelve con un webhook". No alcanzaba, por dos razones que aparecieron usando
+el sistema:
+
+- **Falla silenciosa y permanente.** El 2026-07-31 un build corrió en el instante en
+  que `products` estaba vacía y horneó `products: []` en el HTML. La base estaba
+  intacta — 6 categorías, 32 productos, 42 fotos — y la tienda igual mostró el catálogo
+  vacío, sin ningún error, hasta que alguien reconstruyera a mano.
+- **Hay páginas que no se pueden pre-construir.** El seguimiento de un pedido depende
+  de quién pregunta y de cuándo. No existe en el momento del build.
+
+Lo que hace falta saber para trabajar con esto:
+
+- Cada página fija su `Cache-Control`. La portada usa
+  `public, s-maxage=60, stale-while-revalidate=300`: Cloudflare guarda el HTML ya
+  renderizado en el edge, así que la mayoría de las visitas no llegan a Supabase. El
+  `60` acota cuánto tarda en verse un precio nuevo, y bajarlo acerca el "tiempo real"
+  a costa de más consultas.
+- Una página sin datos del servidor se pre-construye con `export const prerender = true`.
+  `/admin` lo hace: es una cáscara vacía y renderizarla por visita gastaría una
+  invocación del Worker para devolver siempre lo mismo.
+- El build ya **no** necesita credenciales de Supabase. Antes fallaba entero si faltaba
+  `PUBLIC_SUPABASE_URL`; ahora eso es un error en tiempo de ejecución de una página, no
+  una construcción rota.
 
 ---
 
