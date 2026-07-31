@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Category } from "../../../types/database";
 import * as categoriasRepo from "../../../lib/admin/categories.repo";
 import { validarCategoria, esValido } from "../../../lib/admin/validation";
@@ -67,6 +67,7 @@ export default function CategoriesView({
   const [seleccionada, setSeleccionada] = useState<string | null>(null);
   const [form, setForm] = useState<Category | null>(null);
   const [esNueva, setEsNueva] = useState(false);
+  const arrastrandoIndice = useRef<number | null>(null);
 
   // Al recargar desde el servidor hay que refrescar el formulario, si no se queda
   // mostrando lo que había antes de guardar.
@@ -103,6 +104,21 @@ export default function CategoriesView({
     setForm(null);
     onCambio();
   });
+
+  // A diferencia de productos, acá no hay filtro ni buscador: `categorias` ya
+  // es la lista completa, así que reordenar por índice siempre es seguro.
+  const reordenarCats = useAccion(async (ordenadas: Category[]) => {
+    await categoriasRepo.reordenar(ordenadas);
+    onCambio();
+  });
+
+  function mover(desde: number, hasta: number) {
+    if (desde === hasta) return;
+    const copia = [...categorias];
+    const [movida] = copia.splice(desde, 1);
+    copia.splice(hasta, 0, movida!);
+    void reordenarCats.ejecutar(copia);
+  }
 
   function actualizar<K extends keyof Category>(campo: K, valor: Category[K]) {
     setForm((f) => (f ? { ...f, [campo]: valor } : f));
@@ -150,9 +166,13 @@ export default function CategoriesView({
           </Vacio>
         ) : (
           <>
-            <table className="adm-tabla">
+            <ErrorAviso error={reordenarCats.error} />
+            <table className={`adm-tabla ${reordenarCats.enCurso ? "is-guardando" : ""}`}>
               <thead>
                 <tr>
+                  <th className="adm-mono" scope="col">
+                    <span className="adm-sr">Reordenar</span>
+                  </th>
                   <th className="adm-mono" scope="col">CATEGORÍA</th>
                   <th className="adm-mono adm-num" scope="col">PRECIO BASE</th>
                   <th className="adm-mono adm-num" scope="col">PRODUCTOS</th>
@@ -160,7 +180,7 @@ export default function CategoriesView({
                 </tr>
               </thead>
               <tbody>
-                {categorias.map((c) => (
+                {categorias.map((c, i) => (
                   <tr
                     key={c.key}
                     className={`adm-fila ${seleccionada === c.key && !esNueva ? "is-seleccionada" : ""}`}
@@ -177,7 +197,56 @@ export default function CategoriesView({
                         setForm({ ...c });
                       }
                     }}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const desde = arrastrandoIndice.current;
+                      arrastrandoIndice.current = null;
+                      if (desde !== null) mover(desde, i);
+                    }}
                   >
+                    <td className="adm-num">
+                      <span className="adm-fila-orden">
+                        {i > 0 && (
+                          <button
+                            type="button"
+                            className="adm-foto-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              mover(i, i - 1);
+                            }}
+                            aria-label={`Subir ${c.label}`}
+                          >
+                            ↑
+                          </button>
+                        )}
+                        {i < categorias.length - 1 && (
+                          <button
+                            type="button"
+                            className="adm-foto-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              mover(i, i + 1);
+                            }}
+                            aria-label={`Bajar ${c.label}`}
+                          >
+                            ↓
+                          </button>
+                        )}
+                        <span
+                          className="adm-mono adm-fila-agarre"
+                          aria-hidden="true"
+                          draggable
+                          onClick={(e) => e.stopPropagation()}
+                          onDragStart={() => {
+                            arrastrandoIndice.current = i;
+                          }}
+                          title="Arrastrá para reordenar"
+                        >
+                          ⠿
+                        </span>
+                      </span>
+                    </td>
                     <td>
                       <span className="adm-fila-nombre">{c.label}</span>
                       <span className="adm-mono adm-fila-meta">
