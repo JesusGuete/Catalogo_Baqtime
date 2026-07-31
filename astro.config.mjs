@@ -24,5 +24,9 @@ export default defineConfig({
   site: 'https://baqtime.store',
   output: 'server',
   adapter: cloudflare(),
-  integrations: [react(), sitemap()]
+  // El panel salía en el sitemap. Entregarle /admin/ a Google mientras robots.txt lo
+  // bloquea es peor que no decir nada: la URL bloqueada nunca se rastrea, así que el
+  // `noindex` del panel jamás se lee, y Google puede terminar indexando la dirección
+  // pelada de todos modos.
+  integrations: [react(), sitemap({ filter: (page) => !page.includes("/admin") })]
 });
