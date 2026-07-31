@@ -18,7 +18,10 @@ export const prerender = true;
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover: sin esto, env(safe-area-inset-*) en admin.css siempre
+         da 0 y el contenido queda tapado por la barra flotante de Safari o el
+         notch, aunque el CSS ya esté preparado para descontarlos. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Panel · Baqtime</title>
     <!-- Fuera de los buscadores y de los archivadores. No es contenido público y no
          tiene sentido que aparezca en resultados de búsqueda. -->
