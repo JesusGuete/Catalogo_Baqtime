@@ -1,0 +1,72 @@
+---
+// El <head> que comparten la portada y la página de producto.
+//
+// Estaba copiado en las dos páginas y ya había empezado a separarse: la de producto
+// tenía etiquetas que la portada no. Con un solo lugar, la próxima etiqueta entra en
+// las dos o en ninguna.
+interface Props {
+  title: string;
+  description: string;
+  url: string;
+  image: string;
+  imageAlt: string;
+  // Solo cuando se conocen de verdad. Facebook y LinkedIn confían en estos números
+  // para reservar el espacio antes de descargar la imagen: si mienten, el recorte
+  // sale mal. Las fotos de producto vienen de Supabase sin dimensiones, así que esas
+  // páginas no los declaran.
+  imageSize?: { width: number; height: number };
+  type?: "website" | "product";
+}
+
+const {
+  title,
+  description,
+  url,
+  image,
+  imageAlt,
+  imageSize,
+  type = "website",
+} = Astro.props;
+---
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={url} />
+
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<meta name="theme-color" content="#F2F2F2" />
+
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content="Baqtime" />
+<meta property="og:locale" content="es_CO" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={url} />
+<meta property="og:image" content={image} />
+<meta property="og:image:alt" content={imageAlt} />
+{
+  imageSize && (
+    <>
+      <meta property="og:image:width" content={String(imageSize.width)} />
+      <meta property="og:image:height" content={String(imageSize.height)} />
+    </>
+  )
+}
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image:alt" content={imageAlt} />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<!-- Los archivos .woff2 no salen de googleapis.com sino de gstatic.com, y ese dominio
+     recién se descubre al leer el CSS. Sin este preconnect el navegador paga DNS + TLS
+     completo justo cuando ya necesita la fuente. -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Unna:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+  rel="stylesheet"
+/>

@@ -11,6 +11,7 @@
 // búsqueda, en vez de un enlace pelado.
 import Header from "../../components/astro/Header.astro";
 import Footer from "../../components/astro/Footer.astro";
+import SiteHead from "../../components/astro/SiteHead.astro";
 import ShopApp from "../../components/react/ShopApp.jsx";
 import { loadCatalog } from "../../lib/catalog";
 import { productoPorSlug, rutaProducto } from "../../lib/product-url.ts";
@@ -33,7 +34,10 @@ Astro.response.headers.set(
 
 const categoria = catalog.categories.find((c) => c.key === producto.category);
 const url = new URL(rutaProducto(producto), Astro.site).href;
-const imagen = producto.gallery[0] ?? new URL("/assets/img/logo.png", Astro.site).href;
+// Un producto sin fotos cae en la tarjeta de marca, no en el logo suelto: el logo mide
+// 998x297 y LinkedIn lo descarta por chico.
+const imagen =
+  producto.gallery[0] ?? new URL("/assets/img/og-image.png", Astro.site).href;
 
 const detalle = [producto.variant ?? producto.color, categoria?.label]
   .filter(Boolean)
@@ -68,31 +72,18 @@ const datosEstructurados = {
 };
 ---
 
-<html lang="es">
+<html lang="es-CO">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{titulo}</title>
-    <meta name="description" content={descripcion} />
-    <link rel="canonical" href={url} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-
-    <meta property="og:type" content="product" />
-    <meta property="og:site_name" content="Baqtime" />
-    <meta property="og:title" content={titulo} />
-    <meta property="og:description" content={descripcion} />
-    <meta property="og:url" content={url} />
-    <meta property="og:image" content={imagen} />
+    <SiteHead
+      title={titulo}
+      description={descripcion}
+      url={url}
+      image={imagen}
+      imageAlt={`${producto.name} — Baqtime`}
+      type="product"
+    />
     <meta property="product:price:amount" content={String(producto.price)} />
     <meta property="product:price:currency" content="COP" />
-    <meta name="twitter:card" content="summary_large_image" />
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Unna:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
 
     <script
       is:inline

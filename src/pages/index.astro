@@ -3,14 +3,11 @@
 //
 // Se renderiza por petición, no en el build: publicar desde el panel se ve en la
 // tienda sin reconstruir nada.
-//
-// Falta todavía la página de producto con URL propia — hoy el producto se abre en un
-// modal y la URL no cambia, así que no hay nada que un buscador pueda indexar por
-// producto.
 import Header from "../components/astro/Header.astro";
 import Hero from "../components/astro/Hero.astro";
 import CollectionsCarousel from "../components/astro/CollectionsCarousel.astro";
 import Footer from "../components/astro/Footer.astro";
+import SiteHead from "../components/astro/SiteHead.astro";
 import ShopApp from "../components/react/ShopApp.jsx";
 import { loadCatalog } from "../lib/catalog";
 import "../styles/site.css";
@@ -26,28 +23,69 @@ Astro.response.headers.set(
 );
 
 const catalog = await loadCatalog();
+
+const url = new URL("/", Astro.site).href;
+const titulo = "Baqtime — Bolsos y Accesorios Personalizados";
+const descripcion =
+  "Bolsos y accesorios personalizados: tote bags bordados con tus iniciales, neceseres y bags Lumiere. Hechos en Barranquilla y Cartagena, pedidos por WhatsApp.";
+
+// El logo suelto medía 998x297: por debajo del mínimo de LinkedIn, que descartaba la
+// imagen y compartía la tienda sin nada. og-image.png es ese mismo logo sobre el crema
+// de la marca, en el 1200x630 que esperan todas las plataformas.
+const imagen = new URL("/assets/img/og-image.png", Astro.site).href;
+
+// Organization + WebSite. Le dice a Google que baqtime.store y "Baqtime" son la misma
+// entidad; sin esto el nombre de la marca en los resultados es lo que el buscador
+// adivine del título. El @id enlaza los dos nodos en vez de repetir los datos.
+const datosEstructurados = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${url}#organizacion`,
+      name: "Baqtime",
+      url,
+      logo: new URL("/assets/img/logo.png", Astro.site).href,
+      image: imagen,
+      description: descripcion,
+      areaServed: [
+        { "@type": "City", name: "Barranquilla" },
+        { "@type": "City", name: "Cartagena" },
+      ],
+      contactPoint: {
+        "@type": "ContactPoint",
+        contactType: "sales",
+        telephone: "+573134954478",
+        availableLanguage: "es",
+      },
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${url}#sitio`,
+      url,
+      name: "Baqtime",
+      inLanguage: "es-CO",
+      publisher: { "@id": `${url}#organizacion` },
+    },
+  ],
+};
 ---
 
-<html lang="es">
+<html lang="es-CO">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Baqtime — Bolsos y Accesorios Personalizados</title>
-  <meta name="description" content="Bolsos y accesorios personalizados: tote bags bordados con tus iniciales, neceseres y bags Lumiere. Hechos en Barranquilla y Cartagena, pedidos por WhatsApp." />
-  <link rel="canonical" href="https://baqtime.store/" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Baqtime" />
-  <meta property="og:title" content="Baqtime — Bolsos y Accesorios Personalizados" />
-  <meta property="og:description" content="Bolsos y accesorios personalizados: tote bags bordados con tus iniciales, neceseres y bags Lumiere. Hechos en Barranquilla y Cartagena, pedidos por WhatsApp." />
-  <meta property="og:url" content="https://baqtime.store/" />
-  <meta property="og:image" content="https://baqtime.store/assets/img/logo.png" />
-  <meta name="twitter:card" content="summary_large_image" />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Unna:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <SiteHead
+    title={titulo}
+    description={descripcion}
+    url={url}
+    image={imagen}
+    imageAlt="Logo de Baqtime sobre fondo crema"
+    imageSize={{ width: 1200, height: 630 }}
+  />
+  <script
+    is:inline
+    type="application/ld+json"
+    set:html={JSON.stringify(datosEstructurados)}
+  />
 </head>
 <body>
   <Header />
