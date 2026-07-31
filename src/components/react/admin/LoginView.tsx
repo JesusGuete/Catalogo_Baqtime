@@ -34,21 +34,22 @@ export default function LoginView() {
     <div className="adm-login">
       <aside className="adm-login-editorial">
         <div className="adm-login-marca">
-          <p className="adm-login-wordmark">BAQTIME</p>
+          <img
+            src="/assets/img/logo.png"
+            alt="Baqtime"
+            className="adm-login-logo"
+            width="998"
+            height="297"
+          />
           <p className="adm-mono adm-login-sub">PANEL DE ADMINISTRACIÓN</p>
         </div>
 
         <div className="adm-login-claim">
           <h1 className="adm-login-titular">
-            El catálogo se edita en borrador. El sitio solo cambia cuando vos publicás.
+            El catálogo se edita en borrador. El sitio solo cambia cuando publicas los cambios.
           </h1>
           <span className="adm-login-rule" />
-          <p className="adm-login-bajada">
-            Ningún cambio llega a la tienda hasta que confirmes la publicación.
-          </p>
         </div>
-
-        <p className="adm-mono adm-login-pie">SUPABASE · RLS ACTIVO</p>
       </aside>
 
       <main className="adm-login-form">
