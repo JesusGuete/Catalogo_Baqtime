@@ -168,7 +168,6 @@ export default function PublishView({ borrador, publicado, categorias, onPublica
           </section>
         ) : (
           <section className="adm-card adm-card--oscuro">
-            <span className="adm-publicar-rule" />
             <h3 className="adm-publicar-h3">Publicar el borrador</h3>
             <p className="adm-publicar-bajada">
               Copia el borrador entero al catálogo público en una sola transacción. O pasa

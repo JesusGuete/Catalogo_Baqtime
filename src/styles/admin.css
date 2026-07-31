@@ -196,11 +196,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
   padding: 24px;
   display: flex; flex-direction: column; gap: 16px;
 }
-.adm-card--oscuro {
-  /* Mismo tratamiento claro que el login y el sidebar: --panel de fondo. */
-  background: var(--panel);
-  color: var(--ink);
-}
 .adm-card--exito { border-color: var(--live-border); background: var(--live-bg); }
 
 .adm-sechead { display: flex; align-items: center; gap: 12px; }
@@ -540,7 +535,6 @@ input.adm-input { display: block; }
 .adm-cambio-cat { font-family: "JetBrains Mono", monospace; font-size: 9px; color: var(--ink-faint); }
 .adm-cambio-detalle { font-size: 10px; color: var(--ink-soft); letter-spacing: 0.04em; text-align: right; }
 
-.adm-publicar-rule { display: block; width: 40px; height: 2px; background: var(--mocha); }
 .adm-publicar-h3 { font-family: "Unna", serif; font-weight: 500; font-size: 22px; margin: 0; }
 .adm-publicar-bajada { font-size: 13px; color: var(--ink-soft); margin: 0; line-height: 1.55; }
 .adm-publicar-nota { font-size: 9px; color: var(--ink-faint); margin: 0; letter-spacing: 0.06em; }
