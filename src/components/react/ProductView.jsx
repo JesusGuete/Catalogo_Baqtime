@@ -9,11 +9,19 @@ import { rutaProducto } from "../../lib/product-url.ts";
 // Mismas clases CSS que index.html (.modal-overlay/.modal), así que el diseño de
 // "página completa" que ya tienes en site.css se aplica igual.
 //
-// PENDIENTE a propósito (Fase 4 del plan): la URL compartible ?producto=t1 y la
-// sincronía con el botón atrás del navegador. En la Fase 4 esto deja de ser un
-// modal y pasa a ser una página real /producto/[slug], así que implementar ahora
-// el ?producto= sería trabajo que se bota.
-export default function ProductView({ catalog, product, onClose, onOpenProduct }) {
+// El mismo componente cubre dos situaciones: el modal que se abre sobre el catálogo y
+// la página propia del producto. `isProductPage` distingue cuál de las dos es, porque
+// el encabezado no puede ser el mismo en ambas: en la página, el nombre del producto es
+// el tema de la página y va en <h1>; sobre el catálogo, el <h1> ya lo ocupa el Hero y
+// esto es contenido subordinado.
+export default function ProductView({
+  catalog,
+  product,
+  onClose,
+  onOpenProduct,
+  isProductPage = false,
+}) {
+  const Title = isProductPage ? "h1" : "h2";
   const { products: CATALOG, IMPORTED_CATEGORIES } = catalog;
   const cartItems = useCart();
   const initialsColors = useMemo(() => initialsColorsFor(product), [product]);
@@ -100,15 +108,25 @@ export default function ProductView({ catalog, product, onClose, onOpenProduct }
       ? "Tus iniciales (máximo 2 letras)"
       : `Tus iniciales (máx. ${product.maxInitials})`;
 
+  // `aria-modal` le dice al lector de pantalla que todo lo demás de la página está
+  // inerte. En /producto/[slug] esto no está encima de nada: es el contenido de la
+  // página, y declararlo diálogo esconde el Header y el Footer sin razón.
+  const dialogProps = isProductPage
+    ? {}
+    : { role: "dialog", "aria-modal": "true", "aria-label": product.name };
+
   return (
     <>
       <div
         className="modal-overlay open"
         onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
+          // Clic en el fondo cierra solo cuando esto es un modal. En la página propia
+          // del producto no hay nada que cerrar, y navegar porque alguien tocó un
+          // margen vacío es una salida que nadie pidió.
+          if (!isProductPage && e.target === e.currentTarget) onClose();
         }}
       >
-        <div className="modal" role="dialog" aria-modal="true" aria-label={product.name}>
+        <div className="modal" {...dialogProps}>
           <button
             type="button"
             className="cart-icon-btn-modal"
@@ -117,7 +135,11 @@ export default function ProductView({ catalog, product, onClose, onOpenProduct }
           >
             🛒 <span className={"cart-count" + (cartItems.length === 0 ? " hidden" : "")}>{cartItems.length}</span>
           </button>
-          <button className="modal-close" onClick={onClose} aria-label="Cerrar">
+          <button
+            className="modal-close"
+            onClick={onClose}
+            aria-label={isProductPage ? "Volver a la tienda" : "Cerrar"}
+          >
             ✕
           </button>
 
@@ -133,7 +155,7 @@ export default function ProductView({ catalog, product, onClose, onOpenProduct }
           </div>
 
           <div className="modal-info">
-            <h2>{`${product.name}${sub}`}</h2>
+            <Title>{`${product.name}${sub}`}</Title>
             <div className="price-live mono">{fmt(product.price)}</div>
 
             {colorOptions.length > 0 && (
