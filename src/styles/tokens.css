@@ -1,0 +1,49 @@
+/* Paleta y tipografía de la marca — fuente única para la tienda y el panel.
+ *
+ * Estaba dentro de site.css. Se movió acá cuando el panel necesitó los mismos
+ * valores: copiarlos habría dejado dos paletas que se separan sola la primera vez
+ * que alguien ajusta un color en un solo archivo.
+ *
+ * Los valores son exactamente los de antes, sin cambios. */
+:root {
+  --cream: #F2F2F2;
+  --panel: #E9E9E9;
+  --ink: #26221D;
+  --ink-soft: #6b6259;
+  --line: rgba(38, 34, 29, 0.14);
+  --mocha: #B68234;
+  --vino: #6E1F2A;
+  --olive: #59613F;
+  --blush: #E7BEC1;
+  --gold: #9C7A3C;
+  --white-card: #FFFFFF;
+  --radius: 2px;
+
+  /* Derivados que solo usa el panel. El significado de cada uno está fijado por el
+   * diseño y no es decorativo:
+   *   mocha  = hay algo sin publicar
+   *   olive  = está en vivo
+   *   vino   = error o acción destructiva */
+  --admin-sidebar: #26221D;
+  --admin-sidebar-hover: #332E27;
+  --admin-sidebar-line: #3a352e;
+  --admin-sidebar-text: #8F887F;
+  --admin-sidebar-dim: #5c554d;
+
+  --draft-bg: #FDFAF4;
+  --draft-border: #E8D9BC;
+  --draft-text: #8a6420;
+  --draft-tint: #FBF3E6;
+
+  --live-bg: #F4F6F0;
+  --live-border: #DDE2D2;
+
+  --error-bg: #F7EDEE;
+  --error-text: #8a6b6f;
+
+  --surface-muted: #F7F6F4;
+  --surface-subtle: #FBFAF9;
+  --line-soft: #EDEBE8;
+  --line-solid: #DCD9D5;
+  --ink-faint: #a8a29a;
+}

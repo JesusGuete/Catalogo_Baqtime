@@ -9,3 +9,19 @@ skills-lock.json
 # OS noise
 .DS_Store
 Thumbs.db
+
+# Astro
+dist/
+.astro/
+node_modules/
+.env
+.env.production
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# jetbrains setting folder
+.idea/

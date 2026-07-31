@@ -1,0 +1,103 @@
+---
+// Portado tal cual desde .portada-carousel en index.html + collections-carousel.js.
+// El scroll (arrastre táctil/mouse) sigue siendo 100% nativo vía CSS scroll-snap —
+// el script de abajo solo mueve el scroll cuando se hace clic en las flechas,
+// igual que hacía collections-carousel.js. Por eso esto NO es una isla React
+// (ver tabla "Qué es isla React y qué no" en docs/plan-mejoramiento.md).
+//
+// Imágenes servidas desde el bucket site-images de Supabase (solo lectura por API,
+// se suben a mano por el dashboard — ver docs/frontend-contract.md §4). Antes vivían
+// en Firebase Storage; se migraron para poder apagar Firebase sin romper esta sección.
+const STORAGE =
+  `${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/site-images/`;
+const collections = [
+  { id: "Tote", title: "Tote Personalizado", category: "tote",
+    desc: "Bolso tote bordado con tus iniciales. Perfecto para el día a día.",
+    img: STORAGE + "tote_personalizado.webp",
+    w: 785, h: 785 },
+  { id: "Luxury", title: "Tote Bag Luxury", category: "tote-luxury",
+    desc: "La versión premium del tote, en acabados más finos. Personalizable con hasta 2 iniciales.",
+    img: STORAGE + "tote_luxury.jpg",
+    w: 785, h: 785 },
+  { id: "Lumiere", title: "Bag Lumiere", category: "lumiere",
+    desc: "Bolso tipo hobo, elegante y listo para usar, sin personalización. Un básico versátil para cualquier look.",
+    img: STORAGE + "lumiere_negro_life1.webp",
+    w: 900, h: 1200 },
+  { id: "Cosmetiquera", title: "Cosmetiquera", category: "cosmetiquera",
+    desc: "Cosmetiquera personalizable con hasta 2 iniciales, del tamaño justo para tus básicos de maquillaje.",
+    img: STORAGE + "cosmetiqueras.jpg",
+    w: 900, h: 900 },
+  { id: "Neceser", title: "Neceser", category: "neceser",
+    desc: "Neceser de cuero vegano personalizable con máximo 2 letras. Ideal para viajes y el día a día.",
+    img: STORAGE + "neceser_portada1.webp",
+    w: 900, h: 900 },
+  { id: "Makeup", title: "Makeup Bag", category: "makeup-bag",
+    desc: "Makeup bag personalizable con hasta 3 iniciales, pensada para organizar tus productos de belleza con estilo.",
+    img: STORAGE + "makeup_bag_portada1.jpg",
+    w: 900, h: 900 },
+];
+---
+<h2 class="portada-heading">Nuestras colecciones</h2>
+<div class="portada-carousel">
+  <button type="button" class="portada-arrow portada-arrow-left" id="portadaPrevBtn" aria-label="Ver colecciones anteriores">‹</button>
+  <div class="portada-viewport">
+    <div class="portada" id="portadaTrack">
+      {collections.map((c) => (
+        <div class="portada-card">
+          <div class="portada-img"><img src={c.img} alt={c.title} width={c.w} height={c.h} /></div>
+          <div class="portada-body">
+            <h3>{c.title}</h3>
+            <p>{c.desc}</p>
+            <a href="#catalogo" class="btn btn-ghost" data-category={c.category}>Ver colección</a>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+  <button type="button" class="portada-arrow portada-arrow-right" id="portadaNextBtn" aria-label="Ver más colecciones">›</button>
+</div>
+
+<script>
+  // Flechas: scroll nativo, un "paso" = el ancho de una tarjeta + separación.
+  // Portado tal cual desde collections-carousel.js.
+  const viewport = document.querySelector<HTMLElement>(".portada-viewport")!;
+  const track = document.getElementById("portadaTrack")!;
+  const prevBtn = document.getElementById("portadaPrevBtn") as HTMLButtonElement;
+  const nextBtn = document.getElementById("portadaNextBtn") as HTMLButtonElement;
+  const cards = Array.from(track.children) as HTMLElement[];
+
+  function cardStep() {
+    const cardWidth = cards[0].getBoundingClientRect().width;
+    const gap = parseFloat(getComputedStyle(track).gap) || 0;
+    return cardWidth + gap;
+  }
+
+  function updateArrows() {
+    const maxScroll = track.scrollWidth - viewport.clientWidth;
+    prevBtn.disabled = viewport.scrollLeft <= 1;
+    nextBtn.disabled = viewport.scrollLeft >= maxScroll - 1;
+  }
+
+  prevBtn.addEventListener("click", () => {
+    viewport.scrollBy({ left: -cardStep(), behavior: "smooth" });
+  });
+  nextBtn.addEventListener("click", () => {
+    viewport.scrollBy({ left: cardStep(), behavior: "smooth" });
+  });
+  viewport.addEventListener("scroll", updateArrows);
+  window.addEventListener("resize", updateArrows);
+  updateArrows();
+
+  // Enlaces "Ver colección": la isla React del catálogo (CatalogExplorer) escucha este
+  // evento para cambiar de categoría. Es la misma idea que el "callback injection" que
+  // usaba catalog-filters.js/main.js, adaptada a que ahora son dos componentes
+  // separados (Astro estático + isla React) que no comparten estado directamente.
+  document.querySelectorAll<HTMLAnchorElement>("a[data-category]").forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const category = link.dataset.category || null;
+      window.dispatchEvent(new CustomEvent("baqtime:set-category", { detail: { category } }));
+      document.getElementById("catalogo")?.scrollIntoView();
+    });
+  });
+</script>

@@ -1,0 +1,46 @@
+---
+// Catálogo público — versión Astro + React.
+// Portado desde index.html: mismo <head>, mismo orden de secciones, mismo site.css.
+// Lo que falta a propósito en este paso (siguiente trabajo, no incluido todavía):
+//   - Página de producto real con URL compartible (Fase 4).
+//   - Panel admin (Fase 6).
+import Header from "../components/astro/Header.astro";
+import Hero from "../components/astro/Hero.astro";
+import CollectionsCarousel from "../components/astro/CollectionsCarousel.astro";
+import Footer from "../components/astro/Footer.astro";
+import ShopApp from "../components/react/ShopApp.jsx";
+import { loadCatalog } from "../lib/catalog.js";
+import "../styles/site.css";
+
+const catalog = await loadCatalog();
+---
+
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Baqtime — Bolsos y Accesorios Personalizados</title>
+  <meta name="description" content="Bolsos y accesorios personalizados: tote bags bordados con tus iniciales, neceseres y bags Lumiere. Hechos en Barranquilla y Cartagena, pedidos por WhatsApp." />
+  <link rel="canonical" href="https://baqtime.store/" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Baqtime" />
+  <meta property="og:title" content="Baqtime — Bolsos y Accesorios Personalizados" />
+  <meta property="og:description" content="Bolsos y accesorios personalizados: tote bags bordados con tus iniciales, neceseres y bags Lumiere. Hechos en Barranquilla y Cartagena, pedidos por WhatsApp." />
+  <meta property="og:url" content="https://baqtime.store/" />
+  <meta property="og:image" content="https://baqtime.store/assets/img/logo.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Unna:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <Header />
+  <Hero />
+  <CollectionsCarousel />
+  <ShopApp client:load catalog={catalog} />
+  <Footer />
+</body>
+</html>

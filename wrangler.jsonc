@@ -1,0 +1,8 @@
+{
+  // Worker de assets estáticos del catálogo Baqtime
+  "name": "catalogo-baqtime",
+  "compatibility_date": "2025-07-01",
+  "assets": {
+    "directory": "./dist"
+  }
+}
