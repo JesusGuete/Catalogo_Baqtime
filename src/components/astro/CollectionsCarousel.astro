@@ -5,33 +5,35 @@
 // igual que hacía collections-carousel.js. Por eso esto NO es una isla React
 // (ver tabla "Qué es isla React y qué no" en docs/plan-mejoramiento.md).
 //
-// TEMPORAL: mismas URLs de imagen de Firebase Storage que Hero.astro, por la misma razón
-// (no hay todavía pipeline de imágenes de Astro/Supabase). Se reemplazan en la Fase 2.
-const STORAGE = "https://firebasestorage.googleapis.com/v0/b/baqtimecatalogo.firebasestorage.app/o/";
+// Imágenes servidas desde el bucket site-images de Supabase (solo lectura por API,
+// se suben a mano por el dashboard — ver docs/frontend-contract.md §4). Antes vivían
+// en Firebase Storage; se migraron para poder apagar Firebase sin romper esta sección.
+const STORAGE =
+  `${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/site-images/`;
 const collections = [
   { id: "Tote", title: "Tote Personalizado", category: "tote",
     desc: "Bolso tote bordado con tus iniciales. Perfecto para el día a día.",
-    img: STORAGE + "site-images%2Ftote_personalizado.webp?alt=media&token=094f1a01-786f-496e-baa7-79ef8f398b46",
+    img: STORAGE + "tote_personalizado.webp",
     w: 785, h: 785 },
   { id: "Luxury", title: "Tote Bag Luxury", category: "tote-luxury",
     desc: "La versión premium del tote, en acabados más finos. Personalizable con hasta 2 iniciales.",
-    img: STORAGE + "site-images%2FTote%20luxury.webp.jpeg?alt=media&token=1dbf557b-7ef4-4588-ad5b-bd06b464815d",
+    img: STORAGE + "tote_luxury.jpg",
     w: 785, h: 785 },
   { id: "Lumiere", title: "Bag Lumiere", category: "lumiere",
     desc: "Bolso tipo hobo, elegante y listo para usar, sin personalización. Un básico versátil para cualquier look.",
-    img: STORAGE + "site-images%2Flumiere_negro_life1.webp?alt=media&token=f71fb1c8-e8d1-45bf-8f99-401e5efd29dc",
+    img: STORAGE + "lumiere_negro_life1.webp",
     w: 900, h: 1200 },
   { id: "Cosmetiquera", title: "Cosmetiquera", category: "cosmetiquera",
     desc: "Cosmetiquera personalizable con hasta 2 iniciales, del tamaño justo para tus básicos de maquillaje.",
-    img: STORAGE + "site-images%2FCosmetiqueras.webp?alt=media&token=6cbafde7-d2c2-4241-8d3f-c0f082d73a02",
+    img: STORAGE + "cosmetiqueras.jpg",
     w: 900, h: 900 },
   { id: "Neceser", title: "Neceser", category: "neceser",
     desc: "Neceser de cuero vegano personalizable con máximo 2 letras. Ideal para viajes y el día a día.",
-    img: STORAGE + "site-images%2Fneceser_portada1.webp?alt=media&token=e34fef95-b931-456e-b667-a9ec3db8ec15",
+    img: STORAGE + "neceser_portada1.webp",
     w: 900, h: 900 },
   { id: "Makeup", title: "Makeup Bag", category: "makeup-bag",
     desc: "Makeup bag personalizable con hasta 3 iniciales, pensada para organizar tus productos de belleza con estilo.",
-    img: STORAGE + "site-images%2FMakeup%20Bag%20portada1.webp?alt=media&token=3c37e9f0-8049-4d2f-b38c-2bf6624960c0",
+    img: STORAGE + "makeup_bag_portada1.jpg",
     w: 900, h: 900 },
 ];
 ---
