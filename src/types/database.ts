@@ -127,7 +127,138 @@ export interface Publication {
 }
 
 // ============================================================================
-// Funciones de Postgres — 003_functions.sql
+// orders / order_items / order_status_history — 010_orders.sql
+// ============================================================================
+//
+// Los pedidos NO pasan por el ciclo borrador/publicar: no tienen gemela de borrador y
+// publish_catalog() no los toca. Un pedido es un hecho desde que el cliente lo confirma.
+
+/**
+ * CHECK en orders.status — 010_orders.sql.
+ *
+ * Seis de estos son el flujo lineal. `no_confirmado` NO es un paso más: es el flujo
+ * interrumpido porque el cliente nunca pagó. Por eso va aparte en ORDER_FLOW.
+ */
+export type OrderStatus =
+  | "pendiente_pago"
+  | "aprobado"
+  | "en_produccion"
+  | "listo_para_envio"
+  | "enviado"
+  | "entregado"
+  | "no_confirmado";
+
+/** Los seis pasos del flujo, en orden. Es lo que dibuja la línea de tiempo del cliente. */
+export const ORDER_FLOW = [
+  "pendiente_pago",
+  "aprobado",
+  "en_produccion",
+  "listo_para_envio",
+  "enviado",
+  "entregado",
+] as const satisfies readonly OrderStatus[];
+
+/** Todos los estados válidos, para el selector del panel y para validar. */
+export const ORDER_STATUSES = [
+  ...ORDER_FLOW,
+  "no_confirmado",
+] as const satisfies readonly OrderStatus[];
+
+/** Etiquetas en el idioma del dueño. La base guarda la clave, nunca el texto. */
+export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+  pendiente_pago: "Pendiente de pago",
+  aprobado: "Aprobado",
+  en_produccion: "En producción",
+  listo_para_envio: "Listo para envío",
+  enviado: "Enviado",
+  entregado: "Entregado",
+  no_confirmado: "No confirmado",
+};
+
+export interface Order {
+  id: string;
+  /** `BQ-00001`. Legible y por eso ADIVINABLE: nunca sirve para acceder a nada. */
+  order_number: string;
+  /**
+   * La llave de acceso del cliente (122 bits). Solo la ve el panel y el propio cliente.
+   * No se manda al navegador de nadie más — ver get_order_by_token en 010_orders.sql.
+   */
+  public_token: string;
+  status: OrderStatus;
+  customer_name: string;
+  customer_phone: string;
+  customer_doc: string | null;
+  ship_city: string;
+  ship_address: string;
+  /** Pesos enteros, congelados al confirmar el pedido. */
+  subtotal: number;
+  shipping_cost: number;
+  total: number;
+  /** `null` = el pago todavía no se confirmó. */
+  paid_at: Timestamptz | null;
+  payment_note: string | null;
+  carrier: string | null;
+  tracking_number: string | null;
+  shipped_at: Timestamptz | null;
+  /** `date`, no `timestamptz`: es una fecha, no un instante. Manual y opcional. */
+  estimated_date: string | null;
+  created_at: Timestamptz;
+  updated_at: Timestamptz;
+}
+
+/**
+ * Lo único que el panel puede editar con un PATCH directo.
+ *
+ * No es una convención: 010_orders.sql revoca UPDATE sobre el resto de las columnas y
+ * solo concede estas cuatro. `status`, `paid_at` y `shipped_at` se mueven exclusivamente
+ * por set_order_status() / confirm_order_payment(), que escriben el historial en la misma
+ * transacción. Agregar un campo acá sin concederlo en el SQL da un 42501, no un cambio
+ * silencioso.
+ */
+export type OrderUpdate = Partial<
+  Pick<Order, "carrier" | "tracking_number" | "estimated_date" | "payment_note">
+>;
+
+export interface OrderItem {
+  id: number;
+  order_id: string;
+  /**
+   * Sin FK a products a propósito: publish_catalog() borra y reinserta esa tabla entera
+   * en cada publicación. Los campos de abajo son una COPIA del momento de la compra.
+   */
+  product_id: string | null;
+  product_name: string;
+  category_key: string | null;
+  category_label: string | null;
+  color: string | null;
+  variant: string | null;
+  initials: string | null;
+  initials_color: string | null;
+  unit_price: number;
+  extra_price: number;
+  /** Hoy siempre 1: el carrito modela una línea por unidad (cart-store.js:10-13). */
+  quantity: number;
+  line_total: number;
+}
+
+export interface OrderStatusHistory {
+  id: number;
+  order_id: string;
+  status: OrderStatus;
+  note: string | null;
+  /** `null` = lo escribió el sistema (el endpoint de checkout), no una persona. */
+  created_by: string | null;
+  created_at: Timestamptz;
+}
+
+/** Pedido con sus ítems e historial embebidos, como los pide el panel en un solo select. */
+export type OrderWithDetail = Order & {
+  order_items?: OrderItem[];
+  order_status_history?: OrderStatusHistory[];
+};
+
+// ============================================================================
+// Funciones de Postgres — 003_functions.sql y 010_orders.sql
 // ============================================================================
 
 /**
@@ -148,6 +279,52 @@ export interface ReplacePhotosArgs {
   p_product_id: string;
   /** El array COMPLETO en el orden final. El índice 0 es la foto principal. */
   p_storage_paths: string[];
+}
+
+/**
+ * Lo que devuelve `get_order_by_token(text)` — 010_orders.sql.
+ *
+ * Es MENOS que `Order` a propósito, y esa diferencia es la política de privacidad de la
+ * página de seguimiento: quien tenga el enlace no ve el documento del cliente, ni la
+ * dirección exacta, ni las notas internas de pago. La lista blanca vive en el SQL de la
+ * función; este tipo solo la refleja. Si alguien agrega un campo acá y no allá, llega
+ * `undefined` — nunca al revés, que es el error que importa evitar.
+ *
+ * La función devuelve `null` (no error) cuando el token no existe, para que la página
+ * pueda responder 404 sin distinguir "nunca existió" de "se borró".
+ */
+export interface OrderPublic {
+  order_number: string;
+  status: OrderStatus;
+  created_at: Timestamptz;
+  estimated_date: string | null;
+  carrier: string | null;
+  tracking_number: string | null;
+  shipped_at: Timestamptz | null;
+  customer_name: string;
+  ship_city: string;
+  subtotal: number;
+  shipping_cost: number;
+  total: number;
+  items: OrderPublicItem[];
+  history: OrderPublicHistory[];
+}
+
+export interface OrderPublicItem {
+  product_name: string;
+  category_label: string | null;
+  color: string | null;
+  variant: string | null;
+  initials: string | null;
+  initials_color: string | null;
+  quantity: number;
+  line_total: number;
+}
+
+export interface OrderPublicHistory {
+  status: OrderStatus;
+  note: string | null;
+  created_at: Timestamptz;
 }
 
 // ============================================================================
@@ -210,6 +387,68 @@ const columnasPublicacion = [
   "removed_paths",
 ] as const satisfies readonly (keyof Publication)[];
 
+// `public_token` NO está en la lista de la grilla: es la llave de acceso del cliente y no
+// tiene por qué viajar al navegador mientras solo se está listando pedidos. Se pide aparte,
+// en el detalle, donde el dueño sí necesita copiar el enlace.
+const columnasPedidoLista = [
+  "id",
+  "order_number",
+  "status",
+  "customer_name",
+  "customer_phone",
+  "ship_city",
+  "total",
+  "paid_at",
+  "carrier",
+  "tracking_number",
+  "estimated_date",
+  "created_at",
+] as const satisfies readonly (keyof Order)[];
+
+const columnasPedidoDetalle = [
+  ...columnasPedidoLista,
+  "public_token",
+  "customer_doc",
+  "ship_address",
+  "subtotal",
+  "shipping_cost",
+  "payment_note",
+  "shipped_at",
+  "updated_at",
+] as const satisfies readonly (keyof Order)[];
+
+const columnasPedidoItem = [
+  "id",
+  "product_id",
+  "product_name",
+  "category_key",
+  "category_label",
+  "color",
+  "variant",
+  "initials",
+  "initials_color",
+  "unit_price",
+  "extra_price",
+  "quantity",
+  "line_total",
+] as const satisfies readonly (keyof OrderItem)[];
+
+const columnasPedidoHistorial = [
+  "id",
+  "status",
+  "note",
+  "created_at",
+] as const satisfies readonly (keyof OrderStatusHistory)[];
+
 export const SELECT_PRODUCTO = columnasProducto.join(",");
 export const SELECT_CATEGORIA = columnasCategoria.join(",");
 export const SELECT_PUBLICACION = columnasPublicacion.join(",");
+export const SELECT_PEDIDO_LISTA = columnasPedidoLista.join(",");
+export const SELECT_PEDIDO_ITEM = columnasPedidoItem.join(",");
+export const SELECT_PEDIDO_HISTORIAL = columnasPedidoHistorial.join(",");
+
+/** El detalle con ítems e historial embebidos: una sola petición, no N+1. */
+export const SELECT_PEDIDO_DETALLE =
+  `${columnasPedidoDetalle.join(",")},` +
+  `order_items(${SELECT_PEDIDO_ITEM}),` +
+  `order_status_history(${SELECT_PEDIDO_HISTORIAL})`;
