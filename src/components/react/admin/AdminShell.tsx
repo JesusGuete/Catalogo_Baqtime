@@ -58,7 +58,12 @@ export default function AdminShell({
   return (
     <div className="adm-shell">
       <nav className="adm-sidebar" aria-label="Secciones del panel">
-        <div className="adm-sidebar-marca">
+        <button
+          type="button"
+          className="adm-sidebar-marca"
+          onClick={() => onVista("productos")}
+          aria-label="Ir al inicio del panel"
+        >
           <img
             src="/assets/img/logo.png"
             alt="Baqtime"
@@ -67,7 +72,7 @@ export default function AdminShell({
             height="297"
           />
           <p className="adm-mono adm-sidebar-sub">ADMINISTRACIÓN</p>
-        </div>
+        </button>
 
         <ul className="adm-nav">
           {items.map((it) => (
