@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { RefObject } from "react";
 import type { Category, Product, ProductWithPhotos } from "../../../types/database";
 import { calcularDiff, type TipoCambio } from "../../../lib/admin/diff";
@@ -19,6 +19,12 @@ interface Props {
   publicado: ProductWithPhotos[];
   categorias: Category[];
   cargando: boolean;
+  /** Elevados a AdminApp: si vivieran acá, se perderían cada vez que se abre
+   *  el editor (esta vista se desmonta) y se resetearían al volver. */
+  busqueda: string;
+  onBusqueda: (v: string) => void;
+  categoria: string | null;
+  onCategoria: (v: string | null) => void;
   onEditar: (id: string) => void;
   onNuevo: () => void;
   onCambio: () => void;
@@ -38,13 +44,14 @@ export default function ProductsView({
   publicado,
   categorias,
   cargando,
+  busqueda,
+  onBusqueda,
+  categoria,
+  onCategoria,
   onEditar,
   onNuevo,
   onCambio,
 }: Props) {
-  const [busqueda, setBusqueda] = useState("");
-  const [categoria, setCategoria] = useState<string | null>(null);
-
   const etiquetaCategoria = useMemo(
     () => Object.fromEntries(categorias.map((c) => [c.key, c.label])),
     [categorias]
@@ -125,14 +132,14 @@ export default function ProductsView({
           className="adm-input adm-buscar"
           placeholder="Buscar por nombre, color o id"
           value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          onChange={(e) => onBusqueda(e.target.value)}
         />
 
         <div className="adm-chips" role="group" aria-label="Filtrar por categoría">
           <button
             type="button"
             className={`adm-mono adm-chip ${categoria === null ? "is-activo" : ""}`}
-            onClick={() => setCategoria(null)}
+            onClick={() => onCategoria(null)}
           >
             TODAS
           </button>
@@ -141,7 +148,7 @@ export default function ProductsView({
               key={c.key}
               type="button"
               className={`adm-mono adm-chip ${categoria === c.key ? "is-activo" : ""}`}
-              onClick={() => setCategoria(c.key)}
+              onClick={() => onCategoria(c.key)}
             >
               {c.label.toUpperCase()}
             </button>

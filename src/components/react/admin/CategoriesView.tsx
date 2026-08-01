@@ -321,7 +321,11 @@ export default function CategoriesView({
                   invalido={!!errores.label}
                 />
               </Campo>
-              <Campo etiqueta="PRECIO BASE" error={errores.default_price}>
+              <Campo
+                etiqueta="PRECIO BASE"
+                ayuda="precio inicial de productos nuevos — no cambia los productos ya creados"
+                error={errores.default_price}
+              >
                 <Numero
                   value={form.default_price}
                   onChange={(v) => actualizar("default_price", v ?? 0)}

@@ -125,7 +125,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
 }
-.adm-sidebar-marca { padding: 24px; border-bottom: 1px solid var(--line-solid); }
+.adm-sidebar-marca {
+  display: block; width: 100%; padding: 24px; border: 0; border-bottom: 1px solid var(--line-solid);
+  background: none; text-align: left; cursor: pointer; font: inherit;
+}
 .adm-sidebar-logo { height: 24px; width: auto; display: block; margin: 0 0 6px; }
 .adm-sidebar-sub { font-size: 9px; color: var(--mocha); margin: 0; letter-spacing: 0.12em; }
 
