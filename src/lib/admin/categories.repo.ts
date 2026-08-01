@@ -73,15 +73,18 @@ export async function borrar(key: string): Promise<void> {
  * `position` 1..n.
  *
  * POR QUÉ ES UN UPSERT Y NO VARIOS PATCH — esto importa:
- * `categories_position_key` es UNIQUE y NO diferible (001_schema.sql:42). Cada
- * petición REST es su propia transacción, así que mover la categoría A de la
- * posición 2 a la 1 con un PATCH suelto choca contra la que ya está en la 1 y
- * devuelve `23505`, aunque el estado final fuera perfectamente válido.
+ * `categories_position_key` es UNIQUE y diferible
+ * (009_categories_position_deferrable.sql), o sea que se evalúa al COMMIT y no a
+ * medida que se escribe cada fila. Eso es lo que deja pasar la permutación
+ * entera: mover la categoría A de la posición 2 a la 1 mientras B todavía está
+ * en la 1 es un estado intermedio inválido que nadie llega a mirar.
  *
- * Un solo POST con `resolution=merge-duplicates` es UNA sentencia
- * (INSERT ... ON CONFLICT DO UPDATE) dentro de UNA transacción: Postgres evalúa el
- * UNIQUE sobre el resultado final, no sobre los pasos intermedios. La permutación
- * pasa entera o no pasa ninguna.
+ * Lo que salva la permutación es DEFERRABLE, no el hecho de ser una sola
+ * sentencia. Un UNIQUE no diferible se chequea fila por fila y devuelve `23505`
+ * igual, aunque el estado final sea válido: así estaba declarada esta restricción
+ * hasta el 009 y así fallaba el arrastre. Y aun siendo diferible hace falta un
+ * upsert único y no varios PATCH, porque cada petición REST es su propia
+ * transacción y dos PATCH son dos commits: el primero ya choca.
  *
  * Se mandan las filas COMPLETAS y no solo `{key, position}` porque un upsert que
  * inserta necesita todas las columnas NOT NULL. Para las que ya existen, el
