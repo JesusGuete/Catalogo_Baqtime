@@ -1,0 +1,438 @@
+---
+// Seguimiento del pedido — la página del cliente.
+//
+// SU ÚNICA LLAVE ES EL TOKEN DE LA URL. No hay login, y no debería haberlo: pedirle una
+// cuenta a alguien para ver en qué va su propia compra es fricción que nadie atraviesa.
+// Lo que sostiene la privacidad es que el token tiene 122 bits al azar y que
+// get_order_by_token() devuelve una lista blanca de campos — el documento, la dirección
+// exacta y las notas internas de pago no salen de la base.
+//
+// Tres cosas de esta página no son opcionales:
+//   1. `private, no-store` (cabecerasPrivadas): el resto del sitio se cachea en el borde
+//      de Cloudflare. Sin esto el pedido de un cliente podría servirse a otro.
+//   2. noindex + X-Robots-Tag: un token indexado es un pedido público para siempre.
+//   3. 404 —no 200 vacío— cuando el token no corresponde a nada.
+import PedidoHead from "../../components/astro/PedidoHead.astro";
+import Header from "../../components/astro/Header.astro";
+import Footer from "../../components/astro/Footer.astro";
+import { obtenerPedido, cabecerasPrivadas } from "../../lib/pedido";
+import { urlRastreo } from "../../lib/tracking";
+import { fmt } from "../../lib/pricing.js";
+import { ORDER_FLOW, ORDER_STATUS_LABEL } from "../../types/database";
+import type { OrderStatus } from "../../types/database";
+import "../../styles/site.css";
+
+export const prerender = false;
+
+cabecerasPrivadas(Astro.response.headers);
+
+const { token } = Astro.params;
+const resultado = await obtenerPedido(token ?? "");
+
+// 503 y 404 son respuestas distintas a propósito: si la base no contesta, decirle al
+// cliente que su pedido no existe sería mentirle sobre algo que le importa.
+if (resultado.estado === "error") {
+  return new Response(
+    "No pudimos consultar tu pedido en este momento. Volvé a intentar en unos minutos.",
+    { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
+  );
+}
+if (resultado.estado === "no-existe") {
+  return new Response(null, { status: 404, statusText: "Pedido no encontrado" });
+}
+const pedido = resultado.pedido;
+
+// 'no_confirmado' no es un paso del flujo sino su interrupción, así que la línea de tiempo
+// se apaga entera en vez de marcar un avance que no ocurrió.
+const interrumpido = pedido.status === "no_confirmado";
+const pasoActual = ORDER_FLOW.indexOf(pedido.status as (typeof ORDER_FLOW)[number]);
+
+const FORMATO = { day: "2-digit", month: "long", year: "numeric" } as const;
+
+/** Para `timestamptz` (created_at, cada fila del historial): sí lleva hora, sí se convierte. */
+const fechaDe = (iso: string): string =>
+  new Date(iso).toLocaleDateString("es-CO", FORMATO);
+
+/**
+ * Para `date` (estimated_date): NO lleva hora, y por eso no se puede pasar por new Date()
+ * a secas. "2026-08-12" se interpreta como medianoche UTC, y en Colombia (UTC-5) eso es
+ * el 11 a las 19:00 — la fecha estimada aparecía un día antes de la que cargó el dueño.
+ * Agregar la hora local fuerza que se lea en el huso del visitante, sin corrimiento.
+ */
+const fechaSolaDe = (fecha: string): string =>
+  new Date(`${fecha}T00:00:00`).toLocaleDateString("es-CO", FORMATO);
+
+const enlaceRastreo = urlRastreo(pedido.carrier, pedido.tracking_number);
+const estaEnviado = pedido.status === "enviado" || pedido.status === "entregado";
+---
+
+<html lang="es-CO">
+  <head>
+    <PedidoHead title={`Pedido ${pedido.order_number} — Baqtime`} />
+  </head>
+  <body>
+    <Header />
+
+    <main class="seg-wrap">
+      <header class="seg-head">
+        <p class="seg-eyebrow mono">TU PEDIDO</p>
+        <h1 class="seg-numero mono">{pedido.order_number}</h1>
+        <p class="seg-fecha">Hecho el {fechaDe(pedido.created_at)}</p>
+      </header>
+
+      <section class={`seg-estado ${interrumpido ? "is-interrumpido" : ""}`}>
+        <span class="seg-estado-label mono">ESTADO ACTUAL</span>
+        <strong class="seg-estado-valor">{ORDER_STATUS_LABEL[pedido.status]}</strong>
+        {
+          interrumpido && (
+            <p class="seg-estado-nota">
+              No registramos el pago de este pedido. Si ya lo hiciste, escribinos por
+              WhatsApp y lo reactivamos.
+            </p>
+          )
+        }
+        {
+          pedido.estimated_date && !interrumpido && (
+            <p class="seg-estado-nota">
+              Entrega estimada: {fechaSolaDe(pedido.estimated_date)}
+            </p>
+          )
+        }
+      </section>
+
+      {
+        estaEnviado && pedido.tracking_number && (
+          <section class="seg-guia">
+            <span class="seg-guia-label mono">
+              GUÍA · {pedido.carrier ?? "TRANSPORTADORA"}
+            </span>
+            <span class="seg-guia-num mono">{pedido.tracking_number}</span>
+            {enlaceRastreo && (
+              <a class="seg-guia-btn" href={enlaceRastreo} target="_blank" rel="noopener noreferrer">
+                Rastrear envío
+              </a>
+            )}
+            {/* El rastreador oficial se abre sin la guía precargada, así que hay que
+                pegarla. Decirlo es mejor que dejar al cliente buscando dónde va. */}
+            <p class="seg-guia-nota">Copiá el número y pegalo en el rastreador.</p>
+          </section>
+        )
+      }
+
+      <section class="seg-bloque">
+        <h2 class="seg-h2">Seguimiento</h2>
+        <ol class={`seg-linea ${interrumpido ? "is-apagada" : ""}`}>
+          {
+            ORDER_FLOW.map((estado, i) => (
+              <li class={`seg-paso ${!interrumpido && i <= pasoActual ? "is-hecho" : ""}`}>
+                <span class="seg-punto" aria-hidden="true" />
+                <span class="seg-paso-txt">{ORDER_STATUS_LABEL[estado as OrderStatus]}</span>
+              </li>
+            ))
+          }
+        </ol>
+
+        {
+          pedido.history.length > 0 && (
+            <ul class="seg-historial">
+              {pedido.history.map((h) => (
+                <li class="seg-historial-item">
+                  <span class="seg-historial-fecha mono">{fechaDe(h.created_at)}</span>
+                  <span class="seg-historial-txt">
+                    {ORDER_STATUS_LABEL[h.status]}
+                    {h.note && <span class="seg-historial-nota"> · {h.note}</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+      </section>
+
+      <section class="seg-bloque">
+        <h2 class="seg-h2">Resumen</h2>
+        <ul class="seg-items">
+          {
+            pedido.items.map((it) => (
+              <li class="seg-item">
+                <span class="seg-item-nombre">
+                  {it.product_name}
+                  {it.color && <span class="seg-item-detalle"> · {it.color}</span>}
+                  {it.variant && <span class="seg-item-detalle"> · {it.variant}</span>}
+                  {it.initials && (
+                    <span class="seg-item-detalle">
+                      {" "}
+                      · Iniciales {it.initials}
+                      {it.initials_color ? ` (${it.initials_color})` : ""}
+                    </span>
+                  )}
+                </span>
+                <span class="seg-item-precio mono">{fmt(it.line_total)}</span>
+              </li>
+            ))
+          }
+        </ul>
+
+        <div class="seg-totales">
+          <div class="seg-total-row">
+            <span>Subtotal</span><span class="mono">{fmt(pedido.subtotal)}</span>
+          </div>
+          <div class="seg-total-row">
+            <span>Envío</span><span class="mono">{fmt(pedido.shipping_cost)}</span>
+          </div>
+          <div class="seg-total-row is-final">
+            <span>Total</span><span class="mono">{fmt(pedido.total)}</span>
+          </div>
+        </div>
+
+        <p class="seg-envio-a">Envío a {pedido.ship_city}, a nombre de {pedido.customer_name}.</p>
+      </section>
+    </main>
+
+    <Footer />
+
+    <style>
+      .seg-wrap {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 40px 20px 72px;
+      }
+      .seg-head {
+        margin-bottom: 20px;
+      }
+      .seg-eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        color: var(--mocha);
+        margin: 0 0 6px;
+      }
+      .seg-numero {
+        font-size: 26px;
+        letter-spacing: 0.04em;
+        margin: 0 0 4px;
+        color: var(--ink);
+      }
+      .seg-fecha {
+        font-size: 13px;
+        color: var(--ink-soft);
+        margin: 0;
+      }
+
+      .seg-estado {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 18px 20px;
+        margin-bottom: 16px;
+        background: var(--live-bg);
+        border: 1px solid var(--live-border);
+        border-radius: var(--radius);
+      }
+      .seg-estado.is-interrumpido {
+        background: var(--error-bg);
+        border-color: #e3cdd0;
+      }
+      .seg-estado-label {
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        color: var(--ink-soft);
+      }
+      .seg-estado-valor {
+        font-family: "Unna", serif;
+        font-weight: 400;
+        font-size: 24px;
+        color: var(--ink);
+      }
+      .seg-estado-nota {
+        font-size: 13px;
+        line-height: 1.55;
+        color: var(--ink-soft);
+        margin: 2px 0 0;
+      }
+
+      .seg-guia {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 18px 20px;
+        margin-bottom: 16px;
+        background: var(--white-card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+      }
+      .seg-guia-label {
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        color: var(--ink-soft);
+      }
+      .seg-guia-num {
+        font-size: 20px;
+        letter-spacing: 0.06em;
+        color: var(--ink);
+        word-break: break-all;
+      }
+      .seg-guia-btn {
+        align-self: flex-start;
+        padding: 10px 18px;
+        background: var(--ink);
+        color: var(--cream);
+        text-decoration: none;
+        border-radius: var(--radius);
+        font-size: 13px;
+      }
+      .seg-guia-btn:hover {
+        background: var(--mocha);
+      }
+      .seg-guia-nota {
+        font-size: 12px;
+        color: var(--ink-soft);
+        margin: 0;
+      }
+
+      .seg-bloque {
+        padding: 22px 20px;
+        margin-bottom: 16px;
+        background: var(--white-card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+      }
+      .seg-h2 {
+        font-family: "Unna", serif;
+        font-weight: 400;
+        font-size: 19px;
+        margin: 0 0 16px;
+        color: var(--ink);
+      }
+
+      .seg-linea {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .seg-paso {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 0 18px 0;
+        font-size: 14px;
+        color: var(--ink-soft);
+      }
+      /* La línea que une los puntos se dibuja desde cada paso hacia el siguiente, así el
+         último no arrastra una cola suelta. */
+      .seg-paso:not(:last-child)::before {
+        content: "";
+        position: absolute;
+        left: 5px;
+        top: 14px;
+        width: 1px;
+        height: calc(100% - 10px);
+        background: var(--line);
+      }
+      .seg-punto {
+        position: relative;
+        z-index: 1;
+        flex-shrink: 0;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--cream);
+        border: 1px solid var(--line);
+      }
+      .seg-paso.is-hecho {
+        color: var(--ink);
+      }
+      .seg-paso.is-hecho .seg-punto {
+        background: var(--olive);
+        border-color: var(--olive);
+      }
+      .seg-linea.is-apagada {
+        opacity: 0.45;
+      }
+
+      .seg-historial {
+        list-style: none;
+        margin: 16px 0 0;
+        padding: 16px 0 0;
+        border-top: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .seg-historial-item {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+        font-size: 13px;
+        color: var(--ink);
+      }
+      .seg-historial-fecha {
+        font-size: 11px;
+        color: var(--ink-soft);
+        flex-shrink: 0;
+      }
+      .seg-historial-nota {
+        color: var(--ink-soft);
+      }
+
+      .seg-items {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .seg-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--line);
+        font-size: 14px;
+      }
+      .seg-item-detalle {
+        color: var(--ink-soft);
+        font-size: 13px;
+      }
+      .seg-item-precio {
+        flex-shrink: 0;
+      }
+
+      .seg-totales {
+        margin-top: 14px;
+      }
+      .seg-total-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        font-size: 14px;
+        color: var(--ink-soft);
+      }
+      .seg-total-row.is-final {
+        margin-top: 6px;
+        padding-top: 10px;
+        border-top: 1px solid var(--line);
+        font-size: 17px;
+        color: var(--ink);
+      }
+      .seg-envio-a {
+        margin: 16px 0 0;
+        font-size: 12px;
+        color: var(--ink-soft);
+      }
+
+      @media (max-width: 520px) {
+        .seg-wrap {
+          padding: 24px 16px 56px;
+        }
+        .seg-bloque,
+        .seg-estado,
+        .seg-guia {
+          padding: 18px 16px;
+        }
+        .seg-item {
+          flex-direction: column;
+          gap: 4px;
+        }
+      }
+    </style>
+  </body>
+</html>

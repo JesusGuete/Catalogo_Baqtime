@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { CartLine, CartTotals } from "./CartPanel.jsx";
-import { getCartSubtotal, clearCart } from "../../lib/cart-store.js";
-import { validateShipping, onlyDigits, onlyLetters } from "../../lib/shipping-validation.js";
-import { buildCartMessage, whatsappUrl } from "../../lib/whatsapp.js";
+import { clearCart } from "../../lib/cart-store.js";
+import {
+  validateShipping,
+  onlyDigits,
+  onlyLetters,
+  esEnvioLocal,
+} from "../../lib/shipping-validation.js";
 
 const EMPTY = { name: "", city: "", address: "", phone: "", doc: "" };
 
@@ -12,6 +16,8 @@ const EMPTY = { name: "", city: "", address: "", phone: "", doc: "" };
 export default function Checkout({ items, products, onClose }) {
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState({});
+  const [enviando, setEnviando] = useState(false);
+  const [errorEnvio, setErrorEnvio] = useState("");
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -31,17 +37,49 @@ export default function Checkout({ items, products, onClose }) {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
-  function handleSend() {
-    if (!items.length) return;
+  // El pedido se GUARDA antes de que el navegador se vaya a ningún lado.
+  //
+  // Antes esto armaba el mensaje de WhatsApp, vaciaba el carrito y navegaba fuera:
+  // si el cliente cancelaba en la pantalla de WhatsApp ya había perdido el carrito y
+  // los datos de envío, y de la venta no quedaba rastro en ninguna parte. Ahora el
+  // carrito se vacía recién cuando el servidor confirmó que el pedido existe, y el
+  // paso a WhatsApp ocurre después, desde la página de gracias.
+  //
+  // Al servidor se le manda QUÉ producto y QUÉ iniciales, nunca los precios: los
+  // recalcula él contra el catálogo (ver src/pages/api/pedidos.ts).
+  async function handleSend() {
+    if (!items.length || enviando) return;
     const found = validateShipping(form);
     setErrors(found);
     if (Object.keys(found).length > 0) return;
 
-    const message = buildCartMessage(items, form, getCartSubtotal(items));
-    // Se limpia el carrito ANTES de salir del sitio: una vez que el navegador
-    // se va a WhatsApp, el código de esta página ya no vuelve a correr.
-    clearCart();
-    window.location.href = whatsappUrl(message);
+    setErrorEnvio("");
+    setEnviando(true);
+    try {
+      const res = await fetch("/api/pedidos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((i) => ({
+            productId: i.productId,
+            initials: i.initials,
+            initialsColorName: i.initialsColorName,
+          })),
+          shipping: form,
+        }),
+      });
+      const datos = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErrorEnvio(datos.error || "No pudimos guardar tu pedido. Intentá de nuevo.");
+        setEnviando(false);
+        return;
+      }
+      clearCart();
+      window.location.href = `/pedido/gracias?p=${encodeURIComponent(datos.public_token)}`;
+    } catch {
+      setErrorEnvio("No pudimos conectarnos. Revisá tu internet e intentá de nuevo.");
+      setEnviando(false);
+    }
   }
 
   return (
@@ -114,10 +152,21 @@ export default function Checkout({ items, products, onClose }) {
             />
             <div className="field-error">{errors.phone || ""}</div>
 
+            {/* El texto del campo sigue a la ciudad que se está escribiendo: decir
+                "(opcional)" mientras el envío va a Medellín sería mentir, y el error
+                aparecería recién al intentar enviar. */}
             <input
               type="text"
-              placeholder="Número de documento (opcional)"
-              aria-label="Número de documento (opcional)"
+              placeholder={
+                esEnvioLocal(form.city)
+                  ? "Número de documento (opcional)"
+                  : "Número de documento"
+              }
+              aria-label={
+                esEnvioLocal(form.city)
+                  ? "Número de documento (opcional)"
+                  : "Número de documento (obligatorio)"
+              }
               inputMode="numeric"
               maxLength={20}
               value={form.doc}
@@ -131,8 +180,14 @@ export default function Checkout({ items, products, onClose }) {
           </div>
         </div>
 
-        <button className="whatsapp-btn" onClick={handleSend}>
-          Enviar pedido por WhatsApp
+        {errorEnvio && (
+          <div className="field-error" role="alert" style={{ marginBottom: "10px" }}>
+            {errorEnvio}
+          </div>
+        )}
+
+        <button className="whatsapp-btn" onClick={handleSend} disabled={enviando}>
+          {enviando ? "Guardando tu pedido…" : "Confirmar pedido"}
         </button>
         <div className="req-note"></div>
       </div>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { initialsColorsFor } from "../../lib/initials.js";
-import { PRICE_EXTRA_INITIALS, PRICE_SHIP, fmt } from "../../lib/pricing.js";
+import { PRICE_SHIP, fmt, recargoIniciales } from "../../lib/pricing.js";
 import { addToCart } from "../../lib/cart-store.js";
 import { useCart } from "../../lib/useCart.js";
 import { rutaProducto } from "../../lib/product-url.ts";
@@ -22,7 +22,13 @@ export default function ProductView({
   isProductPage = false,
 }) {
   const Title = isProductPage ? "h1" : "h2";
-  const { products: CATALOG, IMPORTED_CATEGORIES } = catalog;
+  const { products: CATALOG, IMPORTED_CATEGORIES, categories } = catalog;
+  // La categoría del producto trae las reglas de bordado (free_initials,
+  // extra_initials_price) que el dueño edita desde el panel.
+  const categoria = useMemo(
+    () => categories.find((c) => c.key === product.category),
+    [categories, product]
+  );
   const cartItems = useCart();
   const initialsColors = useMemo(() => initialsColorsFor(product), [product]);
   const [initials, setInitials] = useState("");
@@ -77,7 +83,11 @@ export default function ProductView({
   );
 
   const count = initials.length;
-  const extra = product.category === "tote" && count > 3 ? PRICE_EXTRA_INITIALS : 0;
+  // Antes: `product.category === "tote" && count > 3 ? 10000 : 0`, con la regla escrita a
+  // mano acá. Ahora sale de la categoría, que es lo que el panel edita y —esto es lo
+  // importante— lo mismo que recalcula el servidor al guardar el pedido. Ver
+  // recargoIniciales() en pricing.js.
+  const extra = recargoIniciales(categoria, count);
   const total = product.price + extra + PRICE_SHIP;
   const sub = product.category === "tote" ? ` – ${product.variant}` : "";
 
@@ -216,9 +226,12 @@ export default function ProductView({
                     value={initials}
                     onChange={handleInitialsChange}
                   />
-                  <div className={"initials-count mono" + (product.category === "tote" && count > 3 ? " warn" : "")}>
-                    {product.category === "tote"
-                      ? `${count} / 7 · hasta 3 incluidas`
+                  {/* También salía de la regla escrita a mano ("/ 7 · hasta 3 incluidas",
+                      solo para tote). Ahora el aviso aparece en cualquier categoría que
+                      tenga recargo configurado, con SUS números. */}
+                  <div className={"initials-count mono" + (extra > 0 ? " warn" : "")}>
+                    {categoria && categoria.extra_initials_price > 0
+                      ? `${count} / ${product.maxInitials} · hasta ${categoria.free_initials} incluidas`
                       : `${count} / ${product.maxInitials}`}
                   </div>
                 </div>

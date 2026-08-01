@@ -212,6 +212,74 @@ grant update (carrier, tracking_number, estimated_date, payment_note)
   on table public.orders to authenticated;
 
 -- ============================================================================
+-- create_order(jsonb, jsonb) — the checkout's write path
+-- ============================================================================
+-- ONE CALL, ONE TRANSACTION. PostgREST has no multi-statement transaction, so inserting
+-- the order and then its items would be two of them: a failure in between leaves an order
+-- with a total and no lines — which looks, to whoever opens the panel, exactly like a bug
+-- in the pricing rather than a half-written row.
+--
+-- DELIBERATELY DUMB: this function does not compute a single price. It writes what the
+-- checkout endpoint already worked out. The prices are recomputed server-side in
+-- src/pages/api/pedidos.ts against the live catalog, using the SAME recargoIniciales()
+-- the storefront uses to show them (src/lib/pricing.js). Reimplementing that rule here in
+-- SQL would give the project two definitions of what a bag costs, and they would drift.
+--
+-- Granted to service_role ONLY: the caller is the server endpoint, never a browser.
+
+create or replace function public.create_order(p_order jsonb, p_items jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare v_id uuid; v_number text; v_token text;
+begin
+  if p_items is null or jsonb_array_length(p_items) = 0 then
+    raise exception 'create_order: el pedido no tiene items' using errcode = '22023';
+  end if;
+
+  insert into public.orders (
+    customer_name, customer_phone, customer_doc,
+    ship_city, ship_address, subtotal, shipping_cost, total
+  ) values (
+    p_order->>'customer_name',
+    p_order->>'customer_phone',
+    -- '' y '   ' entran como NULL: el CHECK del documento mira `is not null`, y un string
+    -- vacío lo satisfaría sin que nadie haya escrito un documento.
+    nullif(btrim(coalesce(p_order->>'customer_doc', '')), ''),
+    p_order->>'ship_city',
+    p_order->>'ship_address',
+    (p_order->>'subtotal')::integer,
+    (p_order->>'shipping_cost')::integer,
+    (p_order->>'total')::integer
+  )
+  returning id, order_number, public_token into v_id, v_number, v_token;
+
+  insert into public.order_items (
+    order_id, product_id, product_name, category_key, category_label,
+    color, variant, initials, initials_color,
+    unit_price, extra_price, quantity, line_total
+  )
+  select v_id,
+         i->>'product_id',   i->>'product_name', i->>'category_key', i->>'category_label',
+         i->>'color',        i->>'variant',      i->>'initials',     i->>'initials_color',
+         (i->>'unit_price')::integer,
+         coalesce((i->>'extra_price')::integer, 0),
+         coalesce((i->>'quantity')::integer, 1),
+         (i->>'line_total')::integer
+    from jsonb_array_elements(p_items) as i;
+
+  insert into public.order_status_history (order_id, status, note, created_by)
+  values (v_id, 'pendiente_pago', 'Pedido creado desde la tienda', null);
+
+  return jsonb_build_object('order_number', v_number, 'public_token', v_token);
+end $$;
+
+revoke all    on function public.create_order(jsonb, jsonb) from public, anon, authenticated;
+grant  execute on function public.create_order(jsonb, jsonb) to service_role;
+
+-- ============================================================================
 -- get_order_by_token(text) — the customer's read path
 -- ============================================================================
 -- SECURITY DEFINER because orders has no policy for anon at all. The token IS the

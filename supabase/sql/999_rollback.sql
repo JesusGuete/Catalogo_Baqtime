@@ -72,6 +72,7 @@ exception when others then
   raise notice 'No había un job baqtime-expirar-pedidos que desprogramar.';
 end $$;
 
+drop function if exists public.create_order(jsonb, jsonb);
 drop function if exists public.get_order_by_token(text);
 drop function if exists public.set_order_status(uuid, text, text);
 drop function if exists public.confirm_order_payment(uuid, text);
