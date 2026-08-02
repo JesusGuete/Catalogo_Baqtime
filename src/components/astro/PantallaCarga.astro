@@ -1,0 +1,126 @@
+---
+// Pantalla de carga de la portada.
+//
+// TRES DECISIONES QUE LA HACEN SEGURA, y ninguna es opcional:
+//
+// 1. NACE OCULTA Y LA MUESTRA EL SCRIPT. Si el visitante tiene JavaScript apagado o el
+//    script falla al cargar, la pantalla no aparece nunca y ve el sitio normal. Al revés
+//    —nacer visible y ocultarse con JS— cualquier fallo dejaría la tienda tapada para
+//    siempre, que es la peor falla posible en una página de ventas.
+//
+// 2. EL CSS LA RETIRA SOLO A LOS 3 SEGUNDOS, pase lo que pase. Es la red por si el script
+//    que la oculta se rompe: la animación corre por su cuenta, sin depender de nada.
+//
+// 3. NO ESPERA A QUE CARGUE TODO. Espera la imagen del hero —lo único que se ve al
+//    entrar— con un tope de 2,2 s. Esperar las 32 fotos del catálogo haría al sitio más
+//    lento de lo que ya se siente, que es justo lo contrario de lo que se busca.
+//
+// El contenido real sigue en el HTML detrás de la pantalla: Google lo lee igual, porque
+// esto tapa visualmente pero no quita nada del documento.
+---
+
+<div id="pantalla-carga" class="carga" hidden aria-hidden="true">
+  <img src="/assets/img/logo.png" alt="" width="998" height="297" class="carga-logo" />
+</div>
+
+<script is:inline>
+  (function () {
+    var CLAVE = "baqtime_carga_vista";
+    var pantalla = document.getElementById("pantalla-carga");
+    if (!pantalla) return;
+
+    // Una sola vez por visita: ver la misma animación al volver del catálogo cansa y hace
+    // sentir el sitio más lento de lo que es.
+    try {
+      if (sessionStorage.getItem(CLAVE)) return;
+      sessionStorage.setItem(CLAVE, "1");
+    } catch (e) {
+      // Navegación privada puede bloquear sessionStorage. Se muestra igual: es preferible
+      // mostrarla de más que romper el arranque por no poder escribir una marca.
+    }
+
+    pantalla.hidden = false;
+    document.documentElement.classList.add("esta-cargando");
+
+    var cerrada = false;
+    function cerrar() {
+      if (cerrada) return;
+      cerrada = true;
+      pantalla.classList.add("is-lista");
+      document.documentElement.classList.remove("esta-cargando");
+      // Se saca del DOM al terminar el desvanecido para que no atrape ningún clic.
+      setTimeout(function () {
+        pantalla.remove();
+      }, 500);
+    }
+
+    // Un mínimo de 400 ms: si las imágenes ya están en caché, aparecer y desaparecer en
+    // 30 ms se ve como un parpadeo defectuoso, no como una intro.
+    var desde = Date.now();
+    function cerrarConMinimo() {
+      var falta = 400 - (Date.now() - desde);
+      setTimeout(cerrar, falta > 0 ? falta : 0);
+    }
+
+    var hero = document.getElementById("heroImg");
+    if (hero && !hero.complete) {
+      hero.addEventListener("load", cerrarConMinimo);
+      hero.addEventListener("error", cerrarConMinimo); // una foto rota no puede dejar tapada la tienda
+    } else {
+      cerrarConMinimo();
+    }
+
+    // Tope duro: pase lo que pase con las imágenes, a los 2,2 s se muestra la tienda.
+    setTimeout(cerrar, 2200);
+  })();
+</script>
+
+<style is:global>
+  .carga {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Red de seguridad en CSS puro: si el script que la cierra fallara, la animación la
+       retira igual a los 3 s. No depende de JavaScript. */
+    animation: carga-salir 0.45s ease 3s forwards;
+  }
+  .carga[hidden] {
+    display: none;
+  }
+  .carga.is-lista {
+    animation: carga-salir 0.45s ease forwards;
+  }
+  .carga-logo {
+    width: 190px;
+    height: auto;
+    animation: carga-latir 1.6s ease-in-out infinite;
+  }
+  @keyframes carga-salir {
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+  @keyframes carga-latir {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+  /* Bloquea el scroll mientras tapa, para que nadie se pierda desplazándose a ciegas. */
+  html.esta-cargando,
+  html.esta-cargando body {
+    overflow: hidden;
+  }
+
+  @media (max-width: 520px) {
+    .carga-logo { width: 150px; }
+  }
+  /* Quien pidió menos movimiento en su sistema no debería recibir un logo latiendo. */
+  @media (prefers-reduced-motion: reduce) {
+    .carga-logo { animation: none; opacity: 1; }
+    .carga, .carga.is-lista { animation-duration: 0.01s; }
+  }
+</style>
