@@ -36,3 +36,44 @@ export function recargoIniciales(categoria, cantidadIniciales) {
   if (categoria.extra_initials_price <= 0) return 0;
   return cantidadIniciales > categoria.free_initials ? categoria.extra_initials_price : 0;
 }
+
+/**
+ * Precio VIGENTE de una línea del carrito.
+ *
+ * El carrito vive en localStorage y guarda el precio del momento en que se agregó el
+ * producto. Ese número queda congelado en el navegador del cliente durante días: si el
+ * precio cambia, el carrito sigue mostrando el viejo.
+ *
+ * Antes eso era un error tolerable, porque el precio del carrito era también el que
+ * viajaba al mensaje de WhatsApp — equivocado, pero coherente consigo mismo. Ya no: el
+ * pedido lo cotiza el servidor contra el catálogo real, así que un carrito con el precio
+ * viejo le mostraría al cliente un total y le cobraría otro.
+ *
+ * Por eso el precio guardado se ignora y se recalcula acá, con la MISMA regla que usa
+ * src/pages/api/pedidos.ts. Lo que se ve es lo que se cobra.
+ *
+ * @param {{productId: string, initials?: string, price?: number, extra?: number}} item
+ * @param {import("./catalog").ProductoPublico[]} products
+ * @param {import("../types/database").Category[]} categories
+ */
+export function precioLinea(item, products, categories) {
+  const producto = products.find((p) => p.id === item.productId);
+
+  // Producto despublicado: se muestra lo último que se sabía de él y se marca como no
+  // disponible, para que el cliente entienda por qué no puede seguir. El endpoint también
+  // lo rechaza, pero enterarse en el carrito es mucho mejor que al confirmar.
+  if (!producto) {
+    const unit = item.price ?? 0;
+    const extra = item.extra ?? 0;
+    return { unit, extra, total: unit + extra, disponible: false };
+  }
+
+  const categoria = categories.find((c) => c.key === producto.category);
+  const extra = recargoIniciales(categoria, (item.initials ?? "").length);
+  return { unit: producto.price, extra, total: producto.price + extra, disponible: true };
+}
+
+/** Subtotal del carrito a precios de hoy. */
+export function subtotalCarrito(items, products, categories) {
+  return items.reduce((suma, i) => suma + precioLinea(i, products, categories).total, 0);
+}

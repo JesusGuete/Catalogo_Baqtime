@@ -28,19 +28,21 @@ export type ResultadoPedido =
   | { estado: "no-existe" }
   | { estado: "error" };
 
-export async function obtenerPedido(token: string): Promise<ResultadoPedido> {
-  if (!token || !token.trim()) return { estado: "no-existe" };
-
+/** Las dos formas de leer un pedido comparten todo salvo qué función llaman. */
+async function llamarRpc(
+  funcion: string,
+  args: Record<string, string>
+): Promise<ResultadoPedido> {
   let res: Response;
   try {
-    res = await fetch(`${BASE}/rest/v1/rpc/get_order_by_token`, {
+    res = await fetch(`${BASE}/rest/v1/rpc/${funcion}`, {
       method: "POST",
       headers: {
         apikey: KEY,
         Authorization: `Bearer ${KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ p_token: token }),
+      body: JSON.stringify(args),
     });
   } catch (e) {
     // fetch LANZA ante un fallo de red; no devuelve una respuesta con estado. Sin este
@@ -51,12 +53,34 @@ export async function obtenerPedido(token: string): Promise<ResultadoPedido> {
   }
 
   if (!res.ok) {
-    console.error(`[pedido] get_order_by_token ${res.status}: ${await res.text()}`);
+    console.error(`[pedido] ${funcion} ${res.status}: ${await res.text()}`);
     return { estado: "error" };
   }
 
   const datos = (await res.json()) as OrderPublic | null;
   return datos ? { estado: "ok", pedido: datos } : { estado: "no-existe" };
+}
+
+/** Por el enlace privado: el token es la autorización. */
+export async function obtenerPedido(token: string): Promise<ResultadoPedido> {
+  if (!token || !token.trim()) return { estado: "no-existe" };
+  return llamarRpc("get_order_by_token", { p_token: token });
+}
+
+/**
+ * Por número de pedido + teléfono, desde el buscador de la tienda.
+ *
+ * Los dos datos son obligatorios y el teléfono es lo que hace segura la consulta: el
+ * número solo son seis dígitos y se pueden probar todos. La normalización (mayúsculas,
+ * guiones, espacios) la hace la función de Postgres, no acá, para que valga igual venga
+ * de donde venga.
+ */
+export async function buscarPedido(
+  numero: string,
+  telefono: string
+): Promise<ResultadoPedido> {
+  if (!numero?.trim() || !telefono?.trim()) return { estado: "no-existe" };
+  return llamarRpc("buscar_pedido", { p_numero: numero, p_telefono: telefono });
 }
 
 /**

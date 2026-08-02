@@ -1,11 +1,13 @@
 ---
 // Confirmación inmediata, justo después de guardar el pedido.
 //
-// Existe por una razón concreta: el enlace de seguimiento también viaja dentro del mensaje
-// de WhatsApp, pero el mensaje lo tiene que ENVIAR el cliente. Si cierra WhatsApp sin
-// mandarlo, o lo edita, se queda sin enlace y el pedido —que ya está guardado— queda
-// huérfano de su dueño. Mostrarlo también acá, en pantalla y copiable, es la red de
-// seguridad.
+// Lo que el cliente tiene que llevarse de acá es SU NÚMERO DE PEDIDO: con eso y su
+// teléfono consulta el estado cuando quiera desde /pedido. Por eso el número es lo más
+// grande de la pantalla y no un dato más del resumen.
+//
+// El enlace directo sigue existiendo como botón —ahorra escribir dos datos a quien está
+// acá y ahora— pero ya no se muestra la URL en crudo: es larga, y el cliente no la
+// necesita si tiene su número.
 import PedidoHead from "../../components/astro/PedidoHead.astro";
 import Header from "../../components/astro/Header.astro";
 import Footer from "../../components/astro/Footer.astro";
@@ -32,9 +34,8 @@ if (resultado.estado === "no-existe") {
 }
 const pedido = resultado.pedido;
 
-const urlSeguimiento = new URL(`/pedido/${token}`, Astro.url.origin).href;
-const mensaje = buildOrderMessage(pedido, urlSeguimiento);
-const enlaceWhatsapp = whatsappUrl(mensaje);
+const urlSeguimiento = `/pedido/${encodeURIComponent(token)}`;
+const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
 ---
 
 <html lang="es-CO">
@@ -52,11 +53,13 @@ const enlaceWhatsapp = whatsappUrl(mensaje);
           Tu pedido quedó guardado. El siguiente paso es coordinar el pago por WhatsApp.
         </p>
 
+        <div class="ped-numero-caja">
+          <span class="ped-numero-label mono">TU NÚMERO DE PEDIDO</span>
+          <strong id="numero" class="ped-numero mono">{pedido.order_number}</strong>
+          <button id="copiar" class="ped-numero-btn mono" type="button">COPIAR</button>
+        </div>
+
         <div class="ped-resumen">
-          <div class="ped-dato">
-            <span class="ped-dato-label mono">NÚMERO DE PEDIDO</span>
-            <span class="ped-dato-valor mono">{pedido.order_number}</span>
-          </div>
           <div class="ped-dato">
             <span class="ped-dato-label mono">TOTAL A PAGAR</span>
             <span class="ped-dato-valor">{fmt(pedido.total)}</span>
@@ -66,21 +69,10 @@ const enlaceWhatsapp = whatsappUrl(mensaje);
         <a class="ped-btn-wa" href={enlaceWhatsapp}>Confirmar pago por WhatsApp</a>
 
         <div class="ped-enlace">
-          <p class="ped-enlace-titulo">Guardá este enlace para seguir tu pedido</p>
-          <div class="ped-enlace-caja">
-            <input
-              id="enlace"
-              class="ped-enlace-input mono"
-              type="text"
-              readonly
-              value={urlSeguimiento}
-              aria-label="Enlace de seguimiento de tu pedido"
-            />
-            <button id="copiar" class="ped-enlace-btn mono" type="button">COPIAR</button>
-          </div>
+          <a class="ped-btn-ver" href={urlSeguimiento}>Ver el estado de mi pedido</a>
           <p class="ped-nota">
-            Es tu enlace personal: solo quien lo tenga puede ver este pedido. También te
-            queda dentro del mensaje de WhatsApp.
+            Guardá tu número: con él y tu teléfono podés consultar el estado cuando quieras
+            desde <strong>Mi pedido</strong>, arriba en esta misma página.
           </p>
         </div>
       </section>
@@ -90,10 +82,10 @@ const enlaceWhatsapp = whatsappUrl(mensaje);
 
     <script is:inline>
       // Sin dependencias y con respaldo: clipboard.writeText no existe fuera de HTTPS ni
-      // en navegadores viejos, y quedarse sin forma de copiar el enlace sería justamente
+      // en navegadores viejos, y quedarse sin forma de copiar el número sería justamente
       // el problema que esta página vino a resolver.
       document.getElementById("copiar")?.addEventListener("click", function () {
-        var input = document.getElementById("enlace");
+        var numero = document.getElementById("numero").textContent.trim();
         var boton = this;
         function ok() {
           boton.textContent = "COPIADO ✓";
@@ -102,10 +94,15 @@ const enlaceWhatsapp = whatsappUrl(mensaje);
           }, 2000);
         }
         if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard.writeText(input.value).then(ok);
+          navigator.clipboard.writeText(numero).then(ok);
         } else {
-          input.select();
-          document.execCommand("copy");
+          // Sin API de portapapeles: se selecciona el número para que el cliente lo copie
+          // con el gesto de siempre.
+          var rango = document.createRange();
+          rango.selectNodeContents(document.getElementById("numero"));
+          var sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(rango);
           ok();
         }
       });
@@ -182,34 +179,34 @@ const enlaceWhatsapp = whatsappUrl(mensaje);
       .ped-btn-wa:hover {
         background: var(--mocha);
       }
-      .ped-enlace {
-        margin-top: 28px;
-        padding-top: 22px;
-        border-top: 1px solid var(--line);
-      }
-      .ped-enlace-titulo {
-        font-size: 13px;
-        color: var(--ink);
-        margin: 0 0 10px;
-      }
-      .ped-enlace-caja {
+      /* El número es lo único que el cliente necesita recordar, así que se lleva el
+         tamaño y el acento de la marca. */
+      .ped-numero-caja {
         display: flex;
-        gap: 8px;
-      }
-      .ped-enlace-input {
-        flex: 1;
-        min-width: 0;
-        /* 16px real: por debajo de eso Safari en iPhone hace zoom al enfocar el campo. */
-        font-size: 16px;
-        padding: 10px 12px;
-        border: 1px solid var(--line);
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 14px;
+        padding: 18px 20px;
+        margin-bottom: 16px;
+        background: var(--draft-bg);
+        border: 1px solid var(--draft-border);
         border-radius: var(--radius);
-        background: var(--cream);
-        color: var(--ink-soft);
       }
-      .ped-enlace-btn {
-        flex-shrink: 0;
-        padding: 0 16px;
+      .ped-numero-label {
+        flex: 1 0 100%;
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        color: var(--draft-text);
+      }
+      .ped-numero {
+        font-size: 30px;
+        letter-spacing: 0.06em;
+        color: var(--ink);
+        font-weight: 400;
+      }
+      .ped-numero-btn {
+        margin-left: auto;
+        padding: 8px 14px;
         font-size: 11px;
         letter-spacing: 0.08em;
         background: var(--white-card);
@@ -217,6 +214,26 @@ const enlaceWhatsapp = whatsappUrl(mensaje);
         border-radius: var(--radius);
         color: var(--ink);
         cursor: pointer;
+      }
+      .ped-enlace {
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid var(--line);
+      }
+      .ped-btn-ver {
+        display: block;
+        width: 100%;
+        padding: 13px;
+        text-align: center;
+        text-decoration: none;
+        background: var(--white-card);
+        border: 1px solid var(--ink);
+        border-radius: var(--radius);
+        color: var(--ink);
+        font-size: 14px;
+      }
+      .ped-btn-ver:hover {
+        background: var(--cream);
       }
       .ped-nota {
         font-size: 12px;

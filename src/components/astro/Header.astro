@@ -17,5 +17,11 @@ import CartBadge from "../react/CartBadge.jsx";
     height="297"
   />
   <div class="cart-note">Barranquilla y Cartagena, Colombia</div>
-  <CartBadge client:load />
+  <!-- "Mi pedido" y el carrito van juntos: son las dos acciones del encabezado, y
+       agruparlas evita que el `justify-content: space-between` del <header> las separe a
+       los extremos con la nota de ciudades en el medio. -->
+  <div class="header-acciones">
+    <a class="header-pedido mono" href="/pedido">MI PEDIDO</a>
+    <CartBadge client:load />
+  </div>
 </header>

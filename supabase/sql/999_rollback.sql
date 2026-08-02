@@ -3,7 +3,7 @@
 -- invoked: this destroys all catalog data and all uploaded Storage objects. It is a reset,
 -- not an undo.
 --
--- Drops everything created by 001-010. Destructive: read it before running it.
+-- Drops everything created by 001-011. Destructive: read it before running it.
 --
 -- Since 010 that includes ORDERS — real sales, not catalog data that can be retyped.
 -- There is no seed and no backup here either: running this discards every order, every
@@ -73,7 +73,12 @@ exception when others then
 end $$;
 
 drop function if exists public.create_order(jsonb, jsonb);
+drop function if exists public.buscar_pedido(text, text);
 drop function if exists public.get_order_by_token(text);
+-- Después de las dos anteriores: las dos la llaman.
+drop function if exists public.pedido_publico(uuid);
+-- El default de orders.order_number la referencia, así que va después del drop de la tabla.
+drop function if exists public.generar_numero_pedido();
 drop function if exists public.set_order_status(uuid, text, text);
 drop function if exists public.confirm_order_payment(uuid, text);
 drop function if exists public.expire_stale_orders();

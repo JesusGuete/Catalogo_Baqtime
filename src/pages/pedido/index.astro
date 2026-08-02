@@ -1,0 +1,230 @@
+---
+// "Consultá tu pedido" — la entrada pública, desde el encabezado de la tienda.
+//
+// POR QUÉ PIDE DOS DATOS Y NO SOLO EL NÚMERO: el número de pedido son seis dígitos, o sea
+// un millón de combinaciones, y un programa las prueba todas en minutos. Si alcanzara con
+// él, cualquiera podría listar los pedidos de todos los clientes con su nombre, su ciudad
+// y qué compraron. El teléfono es el segundo dato: algo que el cliente sabe de memoria y
+// que un extraño no tiene junto con el número.
+//
+// POR QUÉ POST Y NO GET: con GET los dos datos viajarían en la URL, y el teléfono del
+// cliente quedaría en su historial de navegación, en el "Referer" de cualquier enlace
+// saliente y en los registros del servidor. Un formulario que manda datos personales no
+// puede ser GET.
+import PedidoHead from "../../components/astro/PedidoHead.astro";
+import Header from "../../components/astro/Header.astro";
+import Footer from "../../components/astro/Footer.astro";
+import PedidoVista from "../../components/astro/PedidoVista.astro";
+import { buscarPedido, cabecerasPrivadas } from "../../lib/pedido";
+import "../../styles/site.css";
+
+export const prerender = false;
+
+cabecerasPrivadas(Astro.response.headers);
+
+let pedido = null;
+let error = "";
+// Se conserva solo el número para volver a pintarlo si falla; el teléfono NO se devuelve
+// al HTML, para no dejarlo escrito en una página que el navegador puede guardar.
+let numeroEscrito = "";
+
+if (Astro.request.method === "POST") {
+  const datos = await Astro.request.formData();
+  numeroEscrito = String(datos.get("numero") ?? "").trim();
+  const telefono = String(datos.get("telefono") ?? "").trim();
+
+  if (!numeroEscrito || !telefono) {
+    error = "Completá los dos campos para buscar tu pedido.";
+  } else {
+    const resultado = await buscarPedido(numeroEscrito, telefono);
+    if (resultado.estado === "ok") {
+      pedido = resultado.pedido;
+    } else if (resultado.estado === "error") {
+      error = "No pudimos consultar tu pedido en este momento. Intentá de nuevo en unos minutos.";
+    } else {
+      // EL MISMO MENSAJE para "ese número no existe" y para "el teléfono no coincide".
+      // Distinguirlos le confirmaría a quien prueba números al azar cuáles corresponden a
+      // un pedido real, que es justo lo que el segundo dato viene a impedir.
+      error = "No encontramos ningún pedido con esos datos. Revisá el número y el teléfono.";
+    }
+  }
+}
+---
+
+<html lang="es-CO">
+  <head>
+    <PedidoHead title="Consultá tu pedido — Baqtime" />
+  </head>
+  <body>
+    <Header />
+
+    <main class="seg-wrap">
+      {
+        pedido ? (
+          <>
+            <PedidoVista pedido={pedido} />
+            <p class="ped-otra">
+              <a href="/pedido">Consultar otro pedido</a>
+            </p>
+          </>
+        ) : (
+          <section class="ped-buscar">
+            <p class="ped-eyebrow mono">SEGUIMIENTO</p>
+            <h1 class="ped-titulo">Consultá tu pedido</h1>
+            <p class="ped-bajada">
+              Escribí el número que te dimos al hacer la compra y el teléfono con el que la
+              hiciste.
+            </p>
+
+            {error && <p class="ped-error" role="alert">{error}</p>}
+
+            <form method="POST" class="ped-form">
+              <label class="ped-campo">
+                <span class="ped-label mono">NÚMERO DE PEDIDO</span>
+                <input
+                  type="text"
+                  name="numero"
+                  value={numeroEscrito}
+                  placeholder="BQ-483920"
+                  autocomplete="off"
+                  required
+                />
+              </label>
+
+              <label class="ped-campo">
+                <span class="ped-label mono">TELÉFONO</span>
+                <input
+                  type="tel"
+                  name="telefono"
+                  inputmode="numeric"
+                  placeholder="3001234567"
+                  autocomplete="tel"
+                  required
+                />
+              </label>
+
+              <button type="submit" class="ped-btn">Ver mi pedido</button>
+            </form>
+
+            <p class="ped-ayuda">
+              ¿No encontrás tu número? Está en el mensaje de WhatsApp que nos enviaste al
+              hacer el pedido.
+            </p>
+          </section>
+        )
+      }
+    </main>
+
+    <Footer />
+
+    <style>
+      .seg-wrap {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 40px 20px 72px;
+      }
+      .ped-buscar {
+        background: var(--white-card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 32px 28px;
+      }
+      .ped-eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        color: var(--mocha);
+        margin: 0 0 8px;
+      }
+      .ped-titulo {
+        font-family: "Unna", serif;
+        font-size: 28px;
+        line-height: 1.15;
+        margin: 0 0 8px;
+        color: var(--ink);
+      }
+      .ped-bajada {
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--ink-soft);
+        margin: 0 0 22px;
+      }
+      .ped-error {
+        margin: 0 0 18px;
+        padding: 12px 14px;
+        background: var(--error-bg);
+        border-left: 2px solid var(--vino);
+        border-radius: var(--radius);
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--ink);
+      }
+      .ped-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .ped-campo {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .ped-label {
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        color: var(--ink-soft);
+      }
+      .ped-campo input {
+        /* 16px real: por debajo de eso Safari en iPhone hace zoom al enfocar el campo. */
+        font-size: 16px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--cream);
+        color: var(--ink);
+        width: 100%;
+      }
+      .ped-campo input:focus {
+        outline: 2px solid var(--mocha);
+        outline-offset: 1px;
+      }
+      .ped-btn {
+        padding: 14px;
+        background: var(--ink);
+        color: var(--cream);
+        border: 0;
+        border-radius: var(--radius);
+        font-size: 14px;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+      }
+      .ped-btn:hover {
+        background: var(--mocha);
+      }
+      .ped-ayuda {
+        margin: 18px 0 0;
+        font-size: 12px;
+        line-height: 1.55;
+        color: var(--ink-soft);
+      }
+      .ped-otra {
+        margin: 4px 0 0;
+        font-size: 13px;
+      }
+      .ped-otra a {
+        color: var(--ink-soft);
+      }
+
+      @media (max-width: 520px) {
+        .seg-wrap {
+          padding: 24px 16px 56px;
+        }
+        .ped-buscar {
+          padding: 24px 18px;
+        }
+        .ped-titulo {
+          font-size: 24px;
+        }
+      }
+    </style>
+  </body>
+</html>

@@ -18,20 +18,23 @@ import { fmt } from "./pricing.js";
 export const WHATSAPP_NUMBER = "573134954478";
 
 /**
+ * SIN ENLACE DE SEGUIMIENTO, a propósito. Antes el mensaje llevaba la URL con el token
+ * adentro: 60 caracteres de letras y números que ensuciaban el chat. El cliente ahora
+ * consulta su pedido desde /pedido con su número y su teléfono, así que en el mensaje
+ * alcanza con el número — que además es lo que el dueño necesita leer para atenderlo.
+ *
+ * Se usa `•` y no `*`: WhatsApp interpreta los asteriscos como marcas de negrita y el
+ * mensaje llegaría con formato raro.
+ *
  * @param {{ order_number: string, total: number }} pedido
- * @param {string} urlSeguimiento URL absoluta de la página de seguimiento del pedido
  */
-export function buildOrderMessage(pedido, urlSeguimiento) {
+export function buildOrderMessage(pedido) {
   return [
     `¡Hola! Acabo de hacer un pedido en Baqtime.`,
-    ``,
     `• Pedido: ${pedido.order_number}`,
     `• Total a pagar: ${fmt(pedido.total)}`,
     ``,
-    `Puedo seguirlo acá:`,
-    urlSeguimiento,
-    ``,
-    `¿Me comparten los medios de pago para confirmarlo?`,
+    `Me comparte los medios de pago para confirmar la compra`,
   ].join("\n");
 }
 
