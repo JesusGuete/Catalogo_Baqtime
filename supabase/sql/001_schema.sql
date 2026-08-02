@@ -9,7 +9,7 @@
 -- `create or replace function`. Re-pasting this file must never error.
 --
 -- Execution order in the SQL Editor: 001 -> 002 -> 003 -> 005 -> 006 -> 007 -> 008
--- -> 009 -> 010 -> 011.
+-- -> 009 -> 010 -> 011 -> 012.
 --
 -- Deliberate gap at 004: that slot held a seed file (6 categories + 30 factory products)
 -- which was REMOVED by owner decision on 2026-07-30. The catalog starts completely empty —

@@ -34,7 +34,6 @@ if (resultado.estado === "no-existe") {
 }
 const pedido = resultado.pedido;
 
-const urlSeguimiento = `/pedido/${encodeURIComponent(token)}`;
 const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
 ---
 
@@ -68,13 +67,10 @@ const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
 
         <a class="ped-btn-wa" href={enlaceWhatsapp}>Confirmar pago por WhatsApp</a>
 
-        <div class="ped-enlace">
-          <a class="ped-btn-ver" href={urlSeguimiento}>Ver el estado de mi pedido</a>
-          <p class="ped-nota">
-            Guardá tu número: con él y tu teléfono podés consultar el estado cuando quieras
-            desde <strong>Mi pedido</strong>, arriba en esta misma página.
-          </p>
-        </div>
+        <p class="ped-nota">
+          Guardá tu número: con él podés consultar el estado cuando quieras desde
+          <strong>Mi pedido</strong>, arriba en esta misma página.
+        </p>
       </section>
     </main>
 
@@ -215,27 +211,10 @@ const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
         color: var(--ink);
         cursor: pointer;
       }
-      .ped-enlace {
-        margin-top: 24px;
-        padding-top: 20px;
-        border-top: 1px solid var(--line);
-      }
-      .ped-btn-ver {
-        display: block;
-        width: 100%;
-        padding: 13px;
-        text-align: center;
-        text-decoration: none;
-        background: var(--white-card);
-        border: 1px solid var(--ink);
-        border-radius: var(--radius);
-        color: var(--ink);
-        font-size: 14px;
-      }
-      .ped-btn-ver:hover {
-        background: var(--cream);
-      }
       .ped-nota {
+        margin-top: 22px;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
         font-size: 12px;
         line-height: 1.55;
         color: var(--ink-soft);

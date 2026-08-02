@@ -68,19 +68,19 @@ export async function obtenerPedido(token: string): Promise<ResultadoPedido> {
 }
 
 /**
- * Por número de pedido + teléfono, desde el buscador de la tienda.
+ * Por número de pedido, desde el buscador de la tienda.
  *
- * Los dos datos son obligatorios y el teléfono es lo que hace segura la consulta: el
- * número solo son seis dígitos y se pueden probar todos. La normalización (mayúsculas,
- * guiones, espacios) la hace la función de Postgres, no acá, para que valga igual venga
- * de donde venga.
+ * Pide SOLO el número por decisión del dueño, tomada sabiendo que seis dígitos se pueden
+ * recorrer enteros — ver la nota de 012_consulta_solo_por_numero.sql. Lo que sigue
+ * acotando el daño es la lista blanca de `pedido_publico()`: ni con el número salen el
+ * documento, la dirección exacta ni las notas internas.
+ *
+ * La normalización (guiones, espacios, el prefijo BQ) la hace la función de Postgres y no
+ * acá, para que valga igual venga de donde venga la consulta.
  */
-export async function buscarPedido(
-  numero: string,
-  telefono: string
-): Promise<ResultadoPedido> {
-  if (!numero?.trim() || !telefono?.trim()) return { estado: "no-existe" };
-  return llamarRpc("buscar_pedido", { p_numero: numero, p_telefono: telefono });
+export async function buscarPedido(numero: string): Promise<ResultadoPedido> {
+  if (!numero?.trim()) return { estado: "no-existe" };
+  return llamarRpc("buscar_pedido", { p_numero: numero });
 }
 
 /**
