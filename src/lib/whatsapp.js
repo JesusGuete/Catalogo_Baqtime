@@ -30,9 +30,10 @@ export const WHATSAPP_NUMBER = "573134954478";
  */
 export function buildOrderMessage(pedido) {
   return [
-    `¡Hola! Acabo de hacer un pedido en Baqtime.`,
+    `¡Hola! Quiero finalizar mi pedido.`,
+    ``,
     `• Pedido: ${pedido.order_number}`,
-    `• Total a pagar: ${fmt(pedido.total)}`,
+    `• Total: ${fmt(pedido.total)}`,
     ``,
     `Me comparte los medios de pago para confirmar la compra`,
   ].join("\n");
