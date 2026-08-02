@@ -36,7 +36,7 @@ function cabeceras(autenticado: boolean): Record<string, string> {
   if (autenticado) {
     const token = getAccessToken();
     if (!token) {
-      throw new AdminError("Tu sesión expiró. Volvé a iniciar sesión.", {
+      throw new AdminError("Tu sesión expiró. Vuelve a iniciar sesión.", {
         code: "NO_SESSION",
         status: 401,
       });

@@ -150,7 +150,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     ]);
   } catch (e) {
     console.error("[/api/pedidos] No se pudo leer el catálogo:", e);
-    return json({ error: "No pudimos confirmar los precios. Intentá de nuevo." }, 502);
+    return json({ error: "No pudimos confirmar los precios. Intenta de nuevo." }, 502);
   }
 
   const porId = new Map(productos.map((p) => [p.id, p]));
@@ -164,7 +164,7 @@ export const POST: APIRoute = async ({ request, url }) => {
       // Pasa de verdad: un carrito viejo en localStorage puede nombrar un producto que ya
       // no está publicado. Mejor decirlo que cobrar algo que no existe.
       return json(
-        { error: "Uno de los productos ya no está disponible. Revisá tu carrito." },
+        { error: "Uno de los productos ya no está disponible. Revisa tu carrito." },
         409
       );
     }
@@ -232,7 +232,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     creado = (await res.json()) as typeof creado;
   } catch (e) {
     console.error("[/api/pedidos] No se pudo guardar el pedido:", e);
-    return json({ error: "No pudimos guardar tu pedido. Intentá de nuevo." }, 502);
+    return json({ error: "No pudimos guardar tu pedido. Intenta de nuevo." }, 502);
   }
 
   return json(

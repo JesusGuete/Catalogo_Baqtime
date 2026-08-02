@@ -101,7 +101,7 @@ export function subirImagen(
   const token = getAccessToken();
   if (!token) {
     return Promise.reject(
-      new AdminError("Tu sesión expiró. Volvé a iniciar sesión.", { code: "NO_SESSION" })
+      new AdminError("Tu sesión expiró. Vuelve a iniciar sesión.", { code: "NO_SESSION" })
     );
   }
 

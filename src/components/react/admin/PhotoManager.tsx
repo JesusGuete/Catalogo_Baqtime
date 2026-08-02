@@ -44,7 +44,7 @@ export default function PhotoManager({ rutas, onChange, categoryKey, deshabilita
         {
           nombreArchivo: archivos[0]!.name,
           error: {
-            message: "Elegí primero la categoría: define la carpeta donde se guarda la imagen.",
+            message: "Elige primero la categoría: define la carpeta donde se guarda la imagen.",
             etiqueta: "SIN CATEGORÍA",
           } as AdminError,
         },
@@ -94,7 +94,7 @@ export default function PhotoManager({ rutas, onChange, categoryKey, deshabilita
       <SectionHead numero="04" titulo="Fotos" />
 
       <p className="adm-nota">
-        Arrastrá o usá las flechas para reordenar. La primera es la que se ve en la
+        Arrastra o usa las flechas para reordenar. La primera es la que se ve en la
         tarjeta del catálogo.
       </p>
 
@@ -108,9 +108,9 @@ export default function PhotoManager({ rutas, onChange, categoryKey, deshabilita
                 aria-label={
                   deshabilitado
                     ? undefined
-                    : `Reordenar foto ${i + 1}. Usá las flechas arriba y abajo, o arrastrá.`
+                    : `Reordenar foto ${i + 1}. Usa las flechas arriba y abajo, o arrastra.`
                 }
-                title={deshabilitado ? undefined : "Arrastrá o usá las flechas para reordenar"}
+                title={deshabilitado ? undefined : "Arrastra o usa las flechas para reordenar"}
               >
                 <IconoAgarre />
               </span>
@@ -170,7 +170,7 @@ export default function PhotoManager({ rutas, onChange, categoryKey, deshabilita
         onDragLeave={() => setArrastrando(false)}
         onDrop={soltarArchivos}
       >
-        <span className="adm-mono">SOLTAR IMÁGENES ACÁ O HACER CLIC</span>
+        <span className="adm-mono">SOLTAR IMÁGENES AQUÍ O HACER CLIC</span>
         <span className="adm-mono adm-dropzone-sub">WEBP · JPG · PNG · HASTA 5 MB</span>
       </button>
 
@@ -189,7 +189,7 @@ export default function PhotoManager({ rutas, onChange, categoryKey, deshabilita
       />
 
       <Aviso
-        titulo="El nombre del archivo lo pone el panel, no vos."
+        titulo="El nombre del archivo lo pone el panel, no tú."
         meta="CATEGORÍA/TIMESTAMP.EXT · SE VALIDA ANTES DE SUBIR PARA NO DEJAR ARCHIVOS HUÉRFANOS"
       />
 

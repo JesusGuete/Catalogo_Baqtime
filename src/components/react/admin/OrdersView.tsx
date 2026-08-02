@@ -175,7 +175,7 @@ export default function OrdersView({ onAbrir, onConteo }: Props) {
       {!pedidos.length ? (
         <Vacio titulo="Todavía no hay pedidos.">
           <p>
-            Cuando alguien complete una compra en la tienda, el pedido aparece acá al
+            Cuando alguien complete una compra en la tienda, el pedido aparece aquí al
             instante — antes incluso de que te escriba por WhatsApp.
           </p>
         </Vacio>

@@ -34,7 +34,7 @@ const resultado = await obtenerPedido(token ?? "");
 // cliente que su pedido no existe sería mentirle sobre algo que le importa.
 if (resultado.estado === "error") {
   return new Response(
-    "No pudimos consultar tu pedido en este momento. Volvé a intentar en unos minutos.",
+    "No pudimos consultar tu pedido en este momento. Vuelve a intentar en unos minutos.",
     { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
   );
 }

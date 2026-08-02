@@ -68,31 +68,31 @@ const POR_CODIGO: Record<string, (ctx: ContextoError) => string> = {
         // Si aparece esto sobre un pedido, casi siempre es que algo intentó cambiar el
         // estado con un PATCH en vez de usar las funciones. Ver 010_orders.sql.
         "No se puede modificar eso directamente. El estado, el pago y la fecha de envío solo cambian con sus botones. Si el problema sigue, puede que la sesión haya expirado."
-      : "No tenés permiso para esto. Puede que la sesión haya expirado o que tu usuario no sea administrador.",
+      : "No tienes permiso para esto. Puede que la sesión haya expirado o que tu usuario no sea administrador.",
   "23503": (ctx) =>
     ctx === "categories"
-      ? "No se puede borrar la categoría porque todavía tiene productos. Movelos o borralos primero."
+      ? "No se puede borrar la categoría porque todavía tiene productos. Muévelos o bórralos primero."
       : ctx === "pedidos"
         ? "Ese pedido ya no existe. Puede que se haya borrado desde otra pestaña."
-        : "Estás apuntando a algo que no existe. Revisá la categoría del producto.",
+        : "Estás apuntando a algo que no existe. Revisa la categoría del producto.",
   "23505": (ctx) =>
     ctx === "categories"
       ? "Ya hay otra categoría en esa posición. Las posiciones no se pueden repetir."
       : "Ya hay otro producto con ese orden en la misma categoría. El orden no se puede repetir.",
   "23514": () =>
-    "Hay un dato con formato inválido. Revisá que el color sea #RRGGBB con los 6 dígitos y que el precio no sea negativo.",
-  "55P03": () => "Hay otra publicación en curso. Esperá unos segundos y volvé a intentar.",
+    "Hay un dato con formato inválido. Revisa que el color sea #RRGGBB con los 6 dígitos y que el precio no sea negativo.",
+  "55P03": () => "Hay otra publicación en curso. Espera unos segundos y vuelve a intentar.",
   P0001: () =>
-    "El borrador está vacío y el catálogo publicado tiene productos. La base se niega a publicar eso para no borrarte todo. Para vaciar el catálogo a propósito, ocultá cada producto y publicá.",
+    "El borrador está vacío y el catálogo publicado tiene productos. La base se niega a publicar eso para no borrarte todo. Para vaciar el catálogo a propósito, oculta cada producto y publica.",
   PGRST116: () => "Se esperaba un solo registro y vinieron cero o más de uno.",
   PGRST205: () => "Esa tabla no existe en la API. Puede ser un error de configuración del backend.",
 };
 
 // Storage responde con HTTP, no con códigos de Postgres.
 const POR_STATUS_STORAGE: Record<number, string> = {
-  403: "No tenés permiso para escribir en este bucket. Revisá que la sesión siga activa.",
+  403: "No tienes permiso para escribir en este bucket. Revisa que la sesión siga activa.",
   409: "Ya existe un archivo con ese nombre.",
-  413: "La imagen pesa más de 5 MB. Achicala antes de subirla.",
+  413: "La imagen pesa más de 5 MB. Redúcela antes de subirla.",
   415: "Ese tipo de archivo no está permitido. Solo WebP, JPG y PNG.",
 };
 
@@ -142,7 +142,7 @@ export function desdeStorage(
 
 /** Error de red: no hubo respuesta del servidor. Se distingue de un error de la base. */
 export function desdeRed(causa: unknown): AdminError {
-  return new AdminError("No se pudo conectar con el servidor. Revisá tu conexión.", {
+  return new AdminError("No se pudo conectar con el servidor. Revisa tu conexión.", {
     code: "NETWORK",
     causa,
   });

@@ -97,8 +97,8 @@ export default function AdminApp() {
           meta={faltantes.join(" · ")}
         >
           <p>
-            Copiá <code>.env.example</code> como <code>.env</code> y completá esas variables.
-            Después reiniciá el servidor de desarrollo: Astro lee el entorno al arrancar.
+            Copia <code>.env.example</code> como <code>.env</code> y completa esas variables.
+            Después reinicia el servidor de desarrollo: Astro lee el entorno al arrancar.
           </p>
         </Aviso>
       </div>
