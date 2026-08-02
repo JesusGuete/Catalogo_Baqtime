@@ -3,6 +3,7 @@
 //
 // Se renderiza por petición, no en el build: publicar desde el panel se ve en la
 // tienda sin reconstruir nada.
+import PantallaCarga from "../components/astro/PantallaCarga.astro";
 import Header from "../components/astro/Header.astro";
 import Hero from "../components/astro/Hero.astro";
 import CollectionsCarousel from "../components/astro/CollectionsCarousel.astro";
@@ -89,6 +90,9 @@ const datosEstructurados = {
   />
 </head>
 <body>
+  <!-- Primero de todo: su script tiene que correr antes de que el navegador empiece a
+       pintar el contenido, o se vería un destello de la tienda antes de taparla. -->
+  <PantallaCarga />
   <Header />
   <Hero />
   <CollectionsCarousel />
