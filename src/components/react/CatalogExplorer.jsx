@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SORTERS, matchesSearch, fmt } from "../../lib/search-utils.js";
 import { rutaProducto } from "../../lib/product-url.ts";
 
@@ -12,34 +12,24 @@ export default function CatalogExplorer({ catalog, onOpenProduct }) {
   const [category, setCategory] = useState(null);
   const [colorFilter, setColorFilter] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchExpanded, setSearchExpanded] = useState(false);
   const [sortBy, setSortBy] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const campoBusqueda = useRef(null);
 
-  // El botón de buscar se mudó al encabezado (SearchBadge), que es otra isla y no
+  // El buscador entero se mudó al encabezado (SearchBadge), que es otra isla y no
   // comparte estado con esta. Se comunican por evento, igual que el carrito.
   //
   // Abrir sin enfocar el campo dejaría al cliente mirando una caja vacía sin saber que
   // ya puede escribir, así que se enfoca y se trae a la vista de un solo movimiento.
+  // El campo de búsqueda vive en el encabezado (SearchBadge), que es otra isla. Acá solo
+  // llega el texto y se aplica al filtro; la grilla es lo único que este componente tiene
+  // que saber dibujar.
   useEffect(() => {
-    function abrir() {
-      setSearchExpanded(true);
-      document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    function alBuscar(e) {
+      setSearchQuery(e.detail ?? "");
     }
-    window.addEventListener("baqtime:toggle-search", abrir);
-    // Llegar desde otra página con /#buscar tiene que abrirlo igual: es el camino que usa
-    // el botón del encabezado cuando el catálogo no está en la página actual.
-    if (window.location.hash === "#buscar") abrir();
-    return () => window.removeEventListener("baqtime:toggle-search", abrir);
+    window.addEventListener("baqtime:buscar", alBuscar);
+    return () => window.removeEventListener("baqtime:buscar", alBuscar);
   }, []);
-
-  // El foco va en su propio efecto y no dentro de abrir(): ahí el input todavía tiene
-  // display:none —React no repintó— y focus() sobre un elemento oculto no hace nada.
-  // Acá el efecto corre después del render, con el campo ya visible.
-  useEffect(() => {
-    if (searchExpanded) campoBusqueda.current?.focus();
-  }, [searchExpanded]);
 
   // Puente con CollectionsCarousel.astro (componente Astro estático aparte): al hacer
   // clic en "Ver colección" ahí, dispara este evento en vez de llamar una función
@@ -80,24 +70,8 @@ export default function CatalogExplorer({ catalog, onOpenProduct }) {
       <div className="cat-bg-wrap" id="catBgWrap">
         <div className="section-title" id="catalogo">
           <h2>Catálogo</h2>
-          {/* Sin botón propio: lo abre el ícono del encabezado. Cuando está cerrado no
-              ocupa lugar, para no dejar un hueco al lado del título. */}
-          <div className={"search-box" + (searchExpanded ? " expanded" : "")}>
-            <input
-              ref={campoBusqueda}
-              type="search"
-              placeholder="Buscar productos..."
-              aria-label="Buscar productos"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onBlur={() => {
-                // Se cierra al salir solo si quedó vacío: si hay texto escrito, cerrarlo
-                // escondería el filtro que está recortando la grilla y el cliente no
-                // entendería por qué faltan productos.
-                if (!searchQuery.trim()) setSearchExpanded(false);
-              }}
-            />
-          </div>
+          {/* El campo de búsqueda ya no está acá: se despliega en el encabezado, donde
+              está su botón. Ver SearchBadge. */}
         </div>
 
         <div className="thread-strip">
