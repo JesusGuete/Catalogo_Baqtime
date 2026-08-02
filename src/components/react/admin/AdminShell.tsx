@@ -12,7 +12,7 @@ import { cerrarSesion, minutosRestantes, type Sesion } from "../../../lib/supaba
 // que solo puede mirar y nunca tocar no justifica un lugar en la navegación
 // principal; esas imágenes se suben desde el dashboard de Supabase.
 
-export type Vista = "pedidos" | "productos" | "categorias" | "publicar";
+export type Vista = "productos" | "categorias" | "pedidos" | "publicar";
 
 interface Props {
   vista: Vista;
@@ -52,12 +52,10 @@ export default function AdminShell({
     return () => clearInterval(id);
   }, []);
 
-  // PEDIDOS va primero a propósito: es lo único de este panel que tiene a alguien
-  // esperando del otro lado. El catálogo puede esperar; un pago sin confirmar, no.
   const items: { id: Vista; label: string; contador?: number; punto?: boolean }[] = [
-    { id: "pedidos", label: "PEDIDOS", punto: pedidosPendientes > 0 },
     { id: "productos", label: "PRODUCTOS", contador: conteoProductos },
     { id: "categorias", label: "CATEGORÍAS", contador: conteoCategorias },
+    { id: "pedidos", label: "PEDIDOS", punto: pedidosPendientes > 0 },
     { id: "publicar", label: "PUBLICAR", punto: cambiosPendientes > 0 },
   ];
 

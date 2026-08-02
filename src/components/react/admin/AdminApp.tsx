@@ -143,10 +143,11 @@ export default function AdminApp() {
     );
   }
 
+  // En el mismo orden que el menú lateral, para que se lean juntos.
   const encabezado: Record<Vista, { titulo: string; subtitulo: string }> = {
-    pedidos: { titulo: "Pedidos", subtitulo: "ORDERS · SE GUARDAN AL INSTANTE" },
     productos: { titulo: "Productos", subtitulo: "PRODUCTS_DRAFT" },
     categorias: { titulo: "Categorías", subtitulo: "CATEGORIES · SE PUBLICAN AL INSTANTE" },
+    pedidos: { titulo: "Pedidos", subtitulo: "ORDERS · SE GUARDAN AL INSTANTE" },
     publicar: { titulo: "Publicar", subtitulo: "RPC · PUBLISH_CATALOG" },
   };
 
