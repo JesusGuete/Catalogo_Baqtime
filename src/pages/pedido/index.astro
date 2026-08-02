@@ -13,6 +13,7 @@
 import PedidoHead from "../../components/astro/PedidoHead.astro";
 import Header from "../../components/astro/Header.astro";
 import Footer from "../../components/astro/Footer.astro";
+import WhatsappWidget from "../../components/react/WhatsappWidget.jsx";
 import PedidoVista from "../../components/astro/PedidoVista.astro";
 import { buscarPedido, cabecerasPrivadas } from "../../lib/pedido";
 import "../../styles/site.css";
@@ -64,7 +65,7 @@ if (Astro.request.method === "POST") {
         ) : (
           <section class="ped-buscar">
             <p class="ped-eyebrow mono">SEGUIMIENTO</p>
-            <h1 class="ped-titulo">Consultá tu pedido</h1>
+            <h1 class="ped-titulo">Consulta tu pedido</h1>
             <p class="ped-bajada">
               Escribe el número que te dimos al hacer la compra.
             </p>
@@ -98,6 +99,7 @@ if (Astro.request.method === "POST") {
     </main>
 
     <Footer />
+    <WhatsappWidget client:load />
 
     <style>
       .seg-wrap {

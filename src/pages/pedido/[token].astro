@@ -19,6 +19,7 @@
 import PedidoHead from "../../components/astro/PedidoHead.astro";
 import Header from "../../components/astro/Header.astro";
 import Footer from "../../components/astro/Footer.astro";
+import WhatsappWidget from "../../components/react/WhatsappWidget.jsx";
 import PedidoVista from "../../components/astro/PedidoVista.astro";
 import { obtenerPedido, cabecerasPrivadas } from "../../lib/pedido";
 import "../../styles/site.css";
@@ -54,6 +55,7 @@ const pedido = resultado.pedido;
       <PedidoVista pedido={pedido} />
     </main>
     <Footer />
+    <WhatsappWidget client:load />
 
     <style>
       .seg-wrap {

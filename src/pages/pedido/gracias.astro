@@ -11,6 +11,7 @@
 import PedidoHead from "../../components/astro/PedidoHead.astro";
 import Header from "../../components/astro/Header.astro";
 import Footer from "../../components/astro/Footer.astro";
+import WhatsappWidget from "../../components/react/WhatsappWidget.jsx";
 import { obtenerPedido, cabecerasPrivadas } from "../../lib/pedido";
 import { buildOrderMessage, whatsappUrl } from "../../lib/whatsapp.js";
 import { fmt } from "../../lib/pricing.js";
@@ -75,6 +76,7 @@ const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
     </main>
 
     <Footer />
+    <WhatsappWidget client:load />
 
     <script is:inline>
       // Sin dependencias y con respaldo: clipboard.writeText no existe fuera de HTTPS ni

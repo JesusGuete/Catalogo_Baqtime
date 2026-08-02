@@ -1,4 +1,5 @@
 import { useCart } from "../../lib/useCart.js";
+import { IconoBolsa } from "./Iconos.jsx";
 
 // Isla pequeñísima: solo el botón del carrito del encabezado con su contador.
 // Es una isla aparte (y no parte de ShopApp) porque vive dentro del <header>,
@@ -9,10 +10,11 @@ export default function CartBadge() {
     <button
       type="button"
       className="cart-icon-btn"
-      aria-label="Ver carrito"
+      aria-label={items.length ? `Ver carrito (${items.length})` : "Ver carrito"}
       onClick={() => window.dispatchEvent(new CustomEvent("baqtime:toggle-cart"))}
     >
-      🛒 <span className={"cart-count" + (items.length === 0 ? " hidden" : "")}>{items.length}</span>
+      <IconoBolsa />
+      <span className={"cart-count" + (items.length === 0 ? " hidden" : "")}>{items.length}</span>
     </button>
   );
 }
