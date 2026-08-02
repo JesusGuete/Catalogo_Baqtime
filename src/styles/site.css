@@ -202,12 +202,21 @@
   .hero-img-wrap{
     position:relative; width:100%; max-width:340px;
   }
-  .ig-btn-link{
-    position:absolute;
-    left:84.6%; top:7.5%; width:6.4%; height:5.33%;
-    border-radius:50%;
-    cursor:pointer;
+  /* Va anclado a la derecha y no por la izquierda: así queda a la misma distancia del
+     borde sea cual sea el ancho, que es lo que la posición porcentual del ícono viejo no
+     lograba. Los porcentajes vienen del sitio exacto donde estaba el ícono pintado. */
+  .ig-btn{
+    position:absolute; top:6%; right:6%;
+    display:inline-flex; align-items:center; gap:8px;
+    padding:9px 15px 9px 12px;
+    background:var(--ink); color:var(--cream);
+    border-radius:999px; text-decoration:none;
+    font-size:13px; letter-spacing:0.02em; line-height:1;
+    box-shadow:0 3px 10px rgba(38,34,29,0.22);
+    transition:background 0.15s ease;
   }
+  .ig-btn:hover{ background:var(--mocha); }
+  .ig-btn svg{ flex-shrink:0; }
   .hero-mono-tag{
     font-family:'JetBrains Mono', monospace;
     font-size:11px; color:var(--ink-soft);
@@ -663,6 +672,10 @@
     .hero-cta{ gap:10px; }
     .btn{ padding:12px 20px; font-size:13px; }
     .hero-visual{ padding:18px; }
+    /* Un poco más chico en el teléfono, pero se mantiene el texto: es lo que hace que se
+       entienda para qué sirve el botón. */
+    .ig-btn{ padding:8px 13px 8px 10px; font-size:12px; gap:6px; }
+    .ig-btn svg{ width:17px; height:17px; }
 
     .portada-heading{ padding:0 16px; font-size:21px; margin-bottom:14px; }
     .portada-carousel{ padding:0 16px 40px; gap:8px; }

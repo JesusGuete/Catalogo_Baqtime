@@ -4,7 +4,12 @@
 // ⚠️ TEMPORAL: imagen local en public/assets/img/, editada a mano para que su fondo
 // combine con la paleta gris del sitio. Se reemplaza en la Fase 2 por la imagen
 // optimizada (WebP/AVIF) que Astro genere en build desde Supabase Storage.
-const HERO_IMG = "/assets/img/hero_collage_v2.webp";
+//
+// v3: se le borraron las estrellas de abajo a la izquierda y el ícono de Instagram, que
+// venían pintados dentro del archivo. El ícono ahora es un botón de verdad (abajo), que
+// es lo que permite agrandarlo y ponerle texto — sobre píxeles no se podía.
+// La v2 con las estrellas queda en el historial de git por si alguna vez se quiere volver.
+const HERO_IMG = "/assets/img/hero_collage_v3.webp";
 ---
 <section class="hero">
   <div>
@@ -28,12 +33,23 @@ const HERO_IMG = "/assets/img/hero_collage_v2.webp";
         width="1000"
         height="1200"
       />
+      <!-- Antes esto era un área invisible encima del ícono que venía pintado en la
+           imagen. Ahora el botón es real: se puede agrandar, escribirle "Síguenos" y
+           leerlo un lector de pantalla. -->
       <a
-        class="ig-btn-link"
+        class="ig-btn"
         href="https://www.instagram.com/baqtime/"
         target="_blank"
         rel="noopener"
-        aria-label="Síguenos en Instagram"></a>
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="2.75" y="2.75" width="18.5" height="18.5" rx="5.25"
+                stroke="currentColor" stroke-width="1.8" />
+          <circle cx="12" cy="12" r="4.25" stroke="currentColor" stroke-width="1.8" />
+          <circle cx="17.4" cy="6.6" r="1.25" fill="currentColor" />
+        </svg>
+        <span>Síguenos</span>
+      </a>
     </div>
     <div class="hero-mono-tag">Tu estilo · Tus iniciales · Tu bolso</div>
   </div>
