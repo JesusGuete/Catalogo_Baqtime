@@ -9,6 +9,8 @@ import ProductsView from "./ProductsView";
 import ProductEditor from "./ProductEditor";
 import CategoriesView from "./CategoriesView";
 import PublishView from "./PublishView";
+import OrdersView from "./OrdersView";
+import OrderDetail from "./OrderDetail";
 import { Aviso, Boton, ErrorAviso } from "./ui";
 
 // Raíz del panel. Decide qué se ve y nada más: no hace fetch propio ni conoce las
@@ -20,12 +22,16 @@ type EdicionActiva = string | "nuevo" | null;
 interface EstadoNav {
   vista: Vista;
   editando: EdicionActiva;
+  /** Id del pedido abierto a pantalla completa, o `null`. */
+  pedido?: string | null;
 }
 
 export default function AdminApp() {
   const sesion = useSession();
-  const [vista, setVista] = useState<Vista>("productos");
+  const [vista, setVista] = useState<Vista>("pedidos");
   const [editando, setEditando] = useState<EdicionActiva>(null);
+  const [pedidoAbierto, setPedidoAbierto] = useState<string | null>(null);
+  const [pedidosPendientes, setPedidosPendientes] = useState(0);
 
   // Sin esto, el navegador no tiene ninguna entrada de historial propia del
   // panel: /admin es una sola entrada sin importar cuánto se navegue adentro,
@@ -33,26 +39,32 @@ export default function AdminApp() {
   // de golpe de toda la app. Cada pantalla visible pasa a ser una entrada:
   // "atrás" retrocede un paso adentro del panel antes de llegar a salir.
   useEffect(() => {
-    history.replaceState({ vista: "productos", editando: null } satisfies EstadoNav, "");
+    history.replaceState(
+      { vista: "pedidos", editando: null, pedido: null } satisfies EstadoNav,
+      ""
+    );
   }, []);
 
   useEffect(() => {
     // El historial ya se movió solo cuando llega este evento — acá solo hay
     // que reflejarlo en React, sin volver a empujar (si no, se duplica).
     function alPop(e: PopStateEvent) {
-      const s = (e.state ?? { vista: "productos", editando: null }) as EstadoNav;
+      const s = (e.state ?? { vista: "pedidos", editando: null, pedido: null }) as EstadoNav;
       setVista(s.vista);
       setEditando(s.editando);
+      setPedidoAbierto(s.pedido ?? null);
     }
     window.addEventListener("popstate", alPop);
     return () => window.removeEventListener("popstate", alPop);
   }, []);
 
   // Toda navegación iniciada desde la UI (nav del sidebar, abrir/cerrar el
-  // editor) pasa por acá: actualiza React Y empuja el historial.
+  // editor, abrir/cerrar un pedido) pasa por acá: actualiza React Y empuja el
+  // historial.
   function navegar(siguiente: EstadoNav) {
     setVista(siguiente.vista);
     setEditando(siguiente.editando);
+    setPedidoAbierto(siguiente.pedido ?? null);
     history.pushState(siguiente, "");
   }
 
@@ -118,7 +130,18 @@ export default function AdminApp() {
     );
   }
 
+  // Mismo criterio que el editor de productos: pantalla completa y barra propia.
+  if (pedidoAbierto !== null) {
+    return (
+      <OrderDetail
+        pedidoId={pedidoAbierto}
+        onCerrar={() => navegar({ vista: "pedidos", editando: null, pedido: null })}
+      />
+    );
+  }
+
   const encabezado: Record<Vista, { titulo: string; subtitulo: string }> = {
+    pedidos: { titulo: "Pedidos", subtitulo: "ORDERS · SE GUARDAN AL INSTANTE" },
     productos: { titulo: "Productos", subtitulo: "PRODUCTS_DRAFT" },
     categorias: { titulo: "Categorías", subtitulo: "CATEGORIES · SE PUBLICAN AL INSTANTE" },
     publicar: { titulo: "Publicar", subtitulo: "RPC · PUBLISH_CATALOG" },
@@ -131,11 +154,14 @@ export default function AdminApp() {
       sesion={sesion}
       conteoProductos={datos.borrador.length}
       conteoCategorias={datos.categorias.length}
+      pedidosPendientes={pedidosPendientes}
       cambiosPendientes={cambiosPendientes}
       titulo={encabezado[vista].titulo}
       subtitulo={encabezado[vista].subtitulo}
       acciones={
-        vista !== "publicar" && cambiosPendientes > 0 ? (
+        // Los pedidos no pasan por el borrador, así que en esa pantalla estos dos
+        // botones no aplican y solo agregarían ruido.
+        vista !== "publicar" && vista !== "pedidos" && cambiosPendientes > 0 ? (
           <>
             <Boton
               onClick={() => {
@@ -152,7 +178,10 @@ export default function AdminApp() {
             >
               DESHACER CAMBIOS
             </Boton>
-            <Boton onClick={() => setVista("publicar")} variante="primario">
+            <Boton
+              onClick={() => navegar({ vista: "publicar", editando: null, pedido: null })}
+              variante="primario"
+            >
               PUBLICAR
             </Boton>
           </>
@@ -160,6 +189,13 @@ export default function AdminApp() {
       }
     >
       <ErrorAviso error={datos.error ?? descartar.error} />
+
+      {vista === "pedidos" && (
+        <OrdersView
+          onAbrir={(id) => navegar({ vista: "pedidos", editando: null, pedido: id })}
+          onConteo={setPedidosPendientes}
+        />
+      )}
 
       {vista === "productos" && (
         <ProductsView

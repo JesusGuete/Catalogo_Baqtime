@@ -10,7 +10,7 @@
 // proyecto real.
 
 /** Dónde ocurrió el error. Cambia la traducción de los códigos ambiguos. */
-export type ContextoError = "categories" | "products" | "photos" | "publish" | "";
+export type ContextoError = "categories" | "products" | "photos" | "publish" | "pedidos" | "";
 
 export interface AdminErrorOpts {
   code?: string | null;
@@ -62,12 +62,19 @@ interface CuerpoPostgrest {
 // categorías es "posición repetida" y en productos es "orden repetido dentro de la
 // categoría". Son cosas distintas para quien las lee.
 const POR_CODIGO: Record<string, (ctx: ContextoError) => string> = {
-  "42501": () =>
-    "No tenés permiso para esto. Puede que la sesión haya expirado o que tu usuario no sea administrador.",
+  "42501": (ctx) =>
+    ctx === "pedidos"
+      ? // La base solo concede UPDATE sobre guía, transportadora, fecha estimada y nota.
+        // Si aparece esto sobre un pedido, casi siempre es que algo intentó cambiar el
+        // estado con un PATCH en vez de usar las funciones. Ver 010_orders.sql.
+        "No se puede modificar eso directamente. El estado, el pago y la fecha de envío solo cambian con sus botones. Si el problema sigue, puede que la sesión haya expirado."
+      : "No tenés permiso para esto. Puede que la sesión haya expirado o que tu usuario no sea administrador.",
   "23503": (ctx) =>
     ctx === "categories"
       ? "No se puede borrar la categoría porque todavía tiene productos. Movelos o borralos primero."
-      : "Estás apuntando a algo que no existe. Revisá la categoría del producto.",
+      : ctx === "pedidos"
+        ? "Ese pedido ya no existe. Puede que se haya borrado desde otra pestaña."
+        : "Estás apuntando a algo que no existe. Revisá la categoría del producto.",
   "23505": (ctx) =>
     ctx === "categories"
       ? "Ya hay otra categoría en esa posición. Las posiciones no se pueden repetir."
