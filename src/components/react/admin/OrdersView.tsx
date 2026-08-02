@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ORDER_STATUSES,
   ORDER_STATUS_LABEL,
@@ -6,8 +6,16 @@ import {
   type OrderStatus,
 } from "../../../types/database";
 import * as pedidosRepo from "../../../lib/admin/orders.repo";
-import { Cargando, ErrorAviso, Punto, Vacio, dinero, type EstadoPunto } from "./ui";
-import type { AdminError } from "../../../lib/supabase/errors";
+import {
+  Cargando,
+  ErrorAviso,
+  IconoPapelera,
+  Punto,
+  Vacio,
+  dinero,
+  type EstadoPunto,
+} from "./ui";
+import { comoAdminError, type AdminError } from "../../../lib/supabase/errors";
 
 // Lista de pedidos.
 //
@@ -44,34 +52,56 @@ export default function OrdersView({ onAbrir, onConteo }: Props) {
   const [filtro, setFiltro] = useState<OrderStatus | null>(null);
   const [busqueda, setBusqueda] = useState("");
 
-  useEffect(() => {
-    let vivo = true;
-    void (async () => {
-      setCargando(true);
-      setError(null);
-      try {
-        // Antes de listar, vencer lo que el reloj ya venció. Si pg_cron no está activo,
-        // esta llamada es lo único que marca los pedidos sin pagar — y si está, no hace
-        // nada porque el barrido ya pasó. Un fallo acá no puede impedir ver la lista:
-        // por eso va en su propio try y solo se registra.
+  const cargar = useCallback(async (vencer = true) => {
+    setCargando(true);
+    setError(null);
+    try {
+      // Antes de listar, vencer lo que el reloj ya venció. Si pg_cron no está activo, esta
+      // llamada es lo único que marca los pedidos sin pagar — y si está, no hace nada
+      // porque el barrido ya pasó. Un fallo acá no puede impedir ver la lista: por eso va
+      // en su propio try y solo se registra.
+      if (vencer) {
         try {
           await pedidosRepo.vencerPendientes();
         } catch (e) {
           console.warn("[pedidos] no se pudo vencer los pendientes:", e);
         }
-        const filas = await pedidosRepo.listar();
-        if (!vivo) return;
-        setPedidos(filas);
-      } catch (e) {
-        if (vivo) setError(e as AdminError);
-      } finally {
-        if (vivo) setCargando(false);
       }
-    })();
-    return () => {
-      vivo = false;
-    };
+      setPedidos(await pedidosRepo.listar());
+    } catch (e) {
+      setError(comoAdminError(e));
+    } finally {
+      setCargando(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void cargar();
+  }, [cargar]);
+
+  // Borrar desde la lista, sin abrir el pedido. Recarga después: quitar la fila a mano
+  // dejaría los contadores de los filtros contando algo que ya no está.
+  const [borrando, setBorrando] = useState<string | null>(null);
+  async function eliminar(p: Order) {
+    if (borrando) return;
+    if (
+      !window.confirm(
+        `¿Eliminar el pedido ${p.order_number} de ${p.customer_name}, por ${dinero(p.total)}?\n\n` +
+          `Se borra junto con sus productos y su historial, y no se puede recuperar.`
+      )
+    ) {
+      return;
+    }
+    setBorrando(p.id);
+    try {
+      await pedidosRepo.eliminar(p.id);
+      await cargar(false);
+    } catch (e) {
+      setError(comoAdminError(e));
+    } finally {
+      setBorrando(null);
+    }
+  }
 
   const pendientes = useMemo(
     () => pedidos.filter((p) => p.status === "pendiente_pago").length,
@@ -204,10 +234,27 @@ export default function OrdersView({ onAbrir, onConteo }: Props) {
                       {dinero(p.total)}
                     </td>
                     <td className="adm-td-estado" role="cell">
-                      <Punto
-                        estado={PUNTO_POR_ESTADO[p.status]}
-                        texto={ORDER_STATUS_LABEL[p.status].toUpperCase()}
-                      />
+                      <span className="adm-ped-estado-celda">
+                        <Punto
+                          estado={PUNTO_POR_ESTADO[p.status]}
+                          texto={ORDER_STATUS_LABEL[p.status].toUpperCase()}
+                        />
+                        {/* stopPropagation: la fila entera abre el pedido. Sin esto, un
+                            clic en la papelera abriría el detalle además de preguntar. */}
+                        <button
+                          type="button"
+                          className="adm-ped-borrar"
+                          title={`Eliminar el pedido ${p.order_number}`}
+                          aria-label={`Eliminar el pedido ${p.order_number}`}
+                          disabled={borrando === p.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void eliminar(p);
+                          }}
+                        >
+                          <IconoPapelera />
+                        </button>
+                      </span>
                     </td>
                   </tr>
                 ))}

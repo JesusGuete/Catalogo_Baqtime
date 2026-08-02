@@ -566,6 +566,29 @@ input.adm-input { display: block; }
 .adm-ped-dato { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
 .adm-ped-dato.is-ancho { grid-column: 1 / -1; }
 
+/* La papelera vive dentro de la celda de ESTADO, en la lista. Se mantiene apagada hasta
+   que el puntero pasa por la fila: es una acción sin vuelta atrás y no tiene por qué
+   llamar la atención mientras se está leyendo la lista. En pantallas táctiles no hay
+   hover, así que ahí se muestra siempre. */
+.adm-ped-estado-celda { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.adm-ped-borrar {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0;
+  background: none; border: 0; border-radius: var(--radius);
+  color: var(--ink-faint); cursor: pointer;
+  opacity: 0; transition: opacity 0.12s ease, color 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.adm-fila:hover .adm-ped-borrar,
+.adm-fila:focus-within .adm-ped-borrar { opacity: 1; }
+.adm-ped-borrar:hover { color: var(--vino); background: var(--error-bg); }
+.adm-ped-borrar:focus-visible { opacity: 1; outline: 2px solid var(--vino); outline-offset: 1px; }
+.adm-ped-borrar:disabled { opacity: 0.4; cursor: wait; }
+@media (hover: none) {
+  .adm-ped-borrar { opacity: 1; }
+}
+
 .adm-ped-items { list-style: none; margin: 0; padding: 0; }
 .adm-ped-item {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
