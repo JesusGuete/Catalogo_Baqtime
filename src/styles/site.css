@@ -254,19 +254,26 @@
   .portada-body p{ font-size:13px; color:var(--ink-soft); line-height:1.55; margin:0 0 16px; flex:1; }
 
   /* ===== BUSCADOR ===== */
-  /* Cerrado no ocupa nada: el botón que lo abre vive en el encabezado, así que sin
-     esto quedaba una cápsula vacía flotando al lado del título "Catálogo". */
-  .search-box{ display:none; }
-  .search-box input{
-    border:none; outline:none; background:transparent;
-    font-family:'JetBrains Mono', monospace; font-size:14px; color:var(--ink);
+  /* El campo se despliega en el encabezado, pegado a su botón. Se anima el ancho en vez
+     de mostrarlo de golpe para que se lea de dónde sale. */
+  .header-buscar{ display:flex; align-items:center; }
+  .header-buscar input{
+    width:0; padding:0; border:0 solid transparent; opacity:0;
+    outline:none; background:var(--white-card); color:var(--ink);
+    border-radius:20px;
+    /* 16px real: por debajo de eso Safari en iPhone hace zoom al enfocar. */
+    font-family:'JetBrains Mono', monospace; font-size:16px;
+    transition:width 0.2s ease, padding 0.2s ease, opacity 0.15s ease;
   }
-  .search-box.expanded{
-    display:flex; align-items:center;
-    border:1px solid var(--line); border-radius:20px; padding:6px 14px;
+  .header-buscar.is-abierto input{
+    width:190px; padding:8px 14px; opacity:1;
+    border:1px solid var(--line); margin-right:6px;
   }
-  .search-box.expanded input{ width:170px; }
-  .search-box input::placeholder{ color:var(--ink-soft); }
+  .header-buscar input:focus{ border-color:var(--mocha); }
+  @media (prefers-reduced-motion:reduce){
+    .header-buscar input{ transition:none; }
+  }
+  .header-buscar input::placeholder{ color:var(--ink-soft); }
 
   @media (max-width:860px){
     .portada-card{ flex:0 0 calc((100% - 22px)/2); } /* 2 tarjetas visibles en tablet */
@@ -666,8 +673,15 @@
     .portada-body p{ font-size:12.5px; }
 
     .section-title{ flex-wrap:wrap; }
-    .search-box.expanded{ flex:1 0 100%; margin-top:8px; }
-    .search-box.expanded input{ width:100%; }
+
+    /* En un teléfono no entran logo + MI PEDIDO + campo + carrito en una línea. Abierto,
+       el campo baja como una barra pegada al encabezado, a todo el ancho. El <header> es
+       sticky, o sea que ya es un elemento posicionado y sirve de referencia. */
+    .header-buscar.is-abierto input{
+      position:absolute; left:16px; right:16px; top:calc(100% - 4px);
+      width:auto; margin-right:0; z-index:5;
+      box-shadow:0 4px 12px rgba(38,34,29,0.12);
+    }
 
     .section-title{ padding:0 16px; margin-bottom:18px; }
     .section-title h2{ font-size:22px; }
