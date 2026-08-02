@@ -45,12 +45,19 @@
   .cart-note{
     font-size:12px; color:var(--ink-soft); font-family:'JetBrains Mono',monospace;
   }
-  .header-acciones{ display:flex; align-items:center; gap:16px; }
+  .header-acciones{ display:flex; align-items:center; gap:14px; }
+  /* Píldora sólida y no texto suelto: como enlace gris pasaba desapercibido al lado del
+     carrito, y es la única puerta que tiene el cliente para ver su pedido. */
   .header-pedido{
-    font-size:11px; letter-spacing:0.08em; color:var(--ink-soft);
+    display:inline-flex; align-items:center;
+    padding:9px 16px;
+    background:var(--ink); color:var(--cream);
+    border:1px solid var(--ink); border-radius:var(--radius);
+    font-size:11px; letter-spacing:0.08em;
     text-decoration:none; white-space:nowrap;
+    transition:background 0.15s ease, border-color 0.15s ease;
   }
-  .header-pedido:hover{ color:var(--ink); }
+  .header-pedido:hover{ background:var(--mocha); border-color:var(--mocha); }
 
   /* ===== CARRITO (Fase 1: ícono + contador + panel básico) ===== */
   .cart-icon-btn{
@@ -591,6 +598,23 @@
   .whatsapp-btn:hover{ background:#17553B; }
   .whatsapp-btn:disabled{ background:#9c9c9c; cursor:not-allowed; }
 
+  /* "Finalizar compra" desde la ficha del producto. Secundario a propósito: el camino
+     normal sigue siendo agregar y seguir mirando, así que este va delineado y no relleno,
+     para no competir con el verde de arriba. */
+  .finalizar-btn{
+    margin-top:10px;
+    width:100%;
+    background:transparent;
+    color:var(--ink);
+    border:1px solid var(--ink);
+    padding:15px;
+    border-radius:2px;
+    font-family:'Work Sans',sans-serif;
+    font-size:15px;
+    cursor:pointer;
+  }
+  .finalizar-btn:hover{ background:var(--ink); color:var(--cream); }
+
   .req-note{ font-size:11px; color:var(--vino); margin-top:8px; min-height:14px; }
   .field-error{ font-size:11px; color:var(--vino); margin-top:-6px; margin-bottom:6px; min-height:13px; }
 
@@ -619,8 +643,8 @@
     /* En celular no entran logo + ciudades + "Mi pedido" + carrito. La nota de ciudades
        es lo prescindible: es decorativa, y las otras dos son acciones. */
     .cart-note{ display:none; }
-    .header-acciones{ gap:12px; }
-    .header-pedido{ font-size:10px; }
+    .header-acciones{ gap:10px; }
+    .header-pedido{ font-size:10px; padding:8px 12px; }
 
     .hero{ padding:28px 16px 30px; gap:24px; }
     .hero h1{ font-size:30px; margin-bottom:14px; }

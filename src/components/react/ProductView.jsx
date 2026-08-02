@@ -19,6 +19,7 @@ export default function ProductView({
   product,
   onClose,
   onOpenProduct,
+  onCheckout,
   isProductPage = false,
 }) {
   const Title = isProductPage ? "h1" : "h2";
@@ -96,8 +97,9 @@ export default function ProductView({
     setInitials(e.target.value.toUpperCase().replace(/[^A-ZÑ]/g, "").slice(0, max));
   }
 
-  function handleAddToCart() {
-    addToCart({
+  /** La línea del carrito para lo que está configurado en pantalla ahora mismo. */
+  function lineaActual() {
+    return {
       productId: product.id,
       name: product.name,
       category: product.category,
@@ -107,10 +109,37 @@ export default function ProductView({
       initialsColorName: initialsColor ? initialsColor.name : "",
       price: product.price,
       extra,
-    });
+    };
+  }
+
+  function handleAddToCart() {
+    addToCart(lineaActual());
     setAddedMsg("Agregado al carrito ✓");
     clearTimeout(addedTimer.current);
     addedTimer.current = setTimeout(() => setAddedMsg(""), 2500);
+  }
+
+  /**
+   * "Finalizar compra" desde la ficha del producto: lo suma al carrito y abre el checkout.
+   *
+   * El carrito permite líneas repetidas a propósito (dos totes iguales con iniciales
+   * distintas, cart-store.js), así que "Agregar al carrito" nunca deduplica. Acá SÍ, y
+   * solo acá: el camino típico es tocar "Agregar al carrito" y después "Finalizar
+   * compra", y sin esta comprobación el cliente terminaría pagando el mismo bolso dos
+   * veces sin haberlo pedido. Se compara la configuración completa —producto, iniciales y
+   * color de bordado—, así que dos totes iguales con iniciales distintas siguen siendo
+   * dos líneas.
+   */
+  function handleFinalizarCompra() {
+    const linea = lineaActual();
+    const yaEstaIgual = cartItems.some(
+      (i) =>
+        i.productId === linea.productId &&
+        (i.initials || "") === (linea.initials || "") &&
+        (i.initialsColorName || "") === (linea.initialsColorName || "")
+    );
+    if (!yaEstaIgual) addToCart(linea);
+    if (onCheckout) onCheckout();
   }
 
   const initialsLabel =
@@ -301,6 +330,9 @@ export default function ProductView({
 
             <button className="whatsapp-btn" onClick={handleAddToCart}>
               Agregar al carrito
+            </button>
+            <button className="finalizar-btn" onClick={handleFinalizarCompra}>
+              Finalizar compra
             </button>
             <div className="req-note">{addedMsg}</div>
           </div>

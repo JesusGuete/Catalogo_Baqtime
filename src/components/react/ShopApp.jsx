@@ -75,6 +75,10 @@ export default function ShopApp({ catalog, initialProductId = null }) {
                 }
               : setOpenProduct
           }
+          // El checkout se abre ENCIMA de la ficha, sin cerrarla: al volver, el cliente
+          // sigue en el producto que estaba mirando. Cerrarla no es opción en
+          // /producto/[slug], donde cerrar significa irse a la portada.
+          onCheckout={() => setCheckoutOpen(true)}
         />
       )}
 
