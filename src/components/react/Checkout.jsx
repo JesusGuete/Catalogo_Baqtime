@@ -70,14 +70,14 @@ export default function Checkout({ items, products, categories = [], onClose }) 
       });
       const datos = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setErrorEnvio(datos.error || "No pudimos guardar tu pedido. Intentá de nuevo.");
+        setErrorEnvio(datos.error || "No pudimos guardar tu pedido. Intenta de nuevo.");
         setEnviando(false);
         return;
       }
       clearCart();
       window.location.href = `/pedido/gracias?p=${encodeURIComponent(datos.public_token)}`;
     } catch {
-      setErrorEnvio("No pudimos conectarnos. Revisá tu internet e intentá de nuevo.");
+      setErrorEnvio("No pudimos conectarnos. Revisa tu internet e intenta de nuevo.");
       setEnviando(false);
     }
   }

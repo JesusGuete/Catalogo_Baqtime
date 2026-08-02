@@ -82,7 +82,7 @@ export function validarProducto(p: Partial<Product>): ErroresCampo<Product> {
 
   if (!p.id?.trim()) e.id = "El identificador es obligatorio.";
 
-  if (!p.category_key?.trim()) e.category_key = "Elegí una categoría.";
+  if (!p.category_key?.trim()) e.category_key = "Elige una categoría.";
 
   // CHECK length(btrim(name)) > 0 (001_schema.sql:48) — un nombre de solo espacios
   // pasa un `required` de HTML pero lo rechaza la base.

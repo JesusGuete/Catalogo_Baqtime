@@ -235,8 +235,8 @@ export default function CategoriesView({
                         <span
                           className="adm-fila-agarre"
                           {...arrastre.propsAgarre(i)}
-                          aria-label={`Reordenar ${c.label}. Usá las flechas arriba y abajo, o arrastrá.`}
-                          title="Arrastrá o usá las flechas para reordenar"
+                          aria-label={`Reordenar ${c.label}. Usa las flechas arriba y abajo, o arrastra.`}
+                          title="Arrastra o usa las flechas para reordenar"
                         >
                           <IconoAgarre />
                         </span>
@@ -450,7 +450,7 @@ export default function CategoriesView({
                 onClick={() => {
                   if (conteo > 0) {
                     window.alert(
-                      `No se puede borrar "${form.label}": tiene ${conteo} producto(s) en el borrador. Movelos a otra categoría o borralos primero.`
+                      `No se puede borrar "${form.label}": tiene ${conteo} producto(s) en el borrador. Muévelos a otra categoría o bórralos primero.`
                     );
                     return;
                   }

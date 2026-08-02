@@ -290,7 +290,7 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
               >
                 <p>
                   Se marca así a mano, o solo cuando pasan 24 horas sin pago. Si el cliente
-                  pagó igual, confirmá el pago y vuelve a quedar activo.
+                  pagó igual, confirma el pago y vuelve a quedar activo.
                 </p>
               </Aviso>
             )}

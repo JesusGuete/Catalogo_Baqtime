@@ -168,12 +168,12 @@ export default function ProductsView({
         <Vacio titulo="Todavía no hay categorías.">
           <p>
             Sin una categoría no se puede crear ningún producto: la categoría es una
-            referencia obligatoria en la base. Creá la primera desde la sección Categorías.
+            referencia obligatoria en la base. Crea la primera desde la sección Categorías.
           </p>
         </Vacio>
       ) : !visibles.length ? (
         <Vacio titulo={borrador.length ? "Ningún producto coincide con el filtro." : "El borrador está vacío."}>
-          {!borrador.length && <p>Creá el primer producto con el botón de arriba.</p>}
+          {!borrador.length && <p>Crea el primer producto con el botón de arriba.</p>}
         </Vacio>
       ) : (
         <>
@@ -257,13 +257,13 @@ export default function ProductsView({
                             {...arrastre.propsAgarre(i)}
                             aria-label={
                               puedeReordenar
-                                ? `Reordenar ${p.name}. Usá las flechas arriba y abajo, o arrastrá.`
+                                ? `Reordenar ${p.name}. Usa las flechas arriba y abajo, o arrastra.`
                                 : undefined
                             }
                             title={
                               puedeReordenar
-                                ? "Arrastrá o usá las flechas para reordenar"
-                                : "Elegí una sola categoría (no TODAS) y vaciá el buscador para reordenar"
+                                ? "Arrastra o usa las flechas para reordenar"
+                                : "Elige una sola categoría (no TODAS) y vacía el buscador para reordenar"
                             }
                           >
                             <IconoAgarre />
@@ -290,8 +290,8 @@ export default function ProductsView({
           <p className="adm-mono adm-tabla-pie">
             MOSTRANDO {visibles.length} DE {borrador.length} · ORDENADO POR CATEGORÍA Y ORDEN
             {puedeReordenar
-              ? " · ARRASTRÁ O USÁ LAS FLECHAS PARA REORDENAR"
-              : " · ELEGÍ UNA SOLA CATEGORÍA Y VACIÁ LA BÚSQUEDA PARA REORDENAR"}
+              ? " · ARRASTRA O USA LAS FLECHAS PARA REORDENAR"
+              : " · ELIGE UNA SOLA CATEGORÍA Y VACÍA LA BÚSQUEDA PARA REORDENAR"}
           </p>
         </>
       )}
