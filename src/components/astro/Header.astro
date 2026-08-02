@@ -3,6 +3,7 @@
 // El botón del carrito es una isla React mínima (CartBadge) porque necesita
 // mostrar el contador en vivo; el resto del encabezado sigue siendo HTML estático.
 import CartBadge from "../react/CartBadge.jsx";
+import SearchBadge from "../react/SearchBadge.jsx";
 ---
 <header>
   <!-- width/height son las dimensiones reales del archivo (998x297). No fijan el
@@ -26,6 +27,7 @@ import CartBadge from "../react/CartBadge.jsx";
        los extremos con la nota de ciudades en el medio. -->
   <div class="header-acciones">
     <a class="header-pedido mono" href="/pedido">MI PEDIDO</a>
+    <SearchBadge client:load />
     <CartBadge client:load />
   </div>
 </header>

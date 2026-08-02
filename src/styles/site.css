@@ -60,10 +60,13 @@
   .header-pedido:hover{ background:var(--mocha); border-color:var(--mocha); }
 
   /* ===== CARRITO (Fase 1: ícono + contador + panel básico) ===== */
-  .cart-icon-btn{
+  .cart-icon-btn, .search-icon-header{
     position:relative; background:none; border:none; cursor:pointer;
-    font-size:18px; padding:4px; line-height:1; color:var(--ink);
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:4px; line-height:1; color:var(--ink);
+    -webkit-tap-highlight-color:transparent;
   }
+  .cart-icon-btn:hover, .search-icon-header:hover{ color:var(--mocha); }
   .cart-icon-btn-modal{
     position:fixed; top:14px; right:58px; z-index:5;
     width:34px; height:34px; border-radius:50%;
@@ -251,17 +254,18 @@
   .portada-body p{ font-size:13px; color:var(--ink-soft); line-height:1.55; margin:0 0 16px; flex:1; }
 
   /* ===== BUSCADOR ===== */
-  .search-box{
-    display:flex; align-items:center; gap:0;
-    border:1px solid var(--line); border-radius:20px; padding:8px;
-  }
-  .search-icon-btn{ background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1; }
+  /* Cerrado no ocupa nada: el botón que lo abre vive en el encabezado, así que sin
+     esto quedaba una cápsula vacía flotando al lado del título "Catálogo". */
+  .search-box{ display:none; }
   .search-box input{
-    display:none; border:none; outline:none; background:transparent;
-    font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--ink); width:0;
+    border:none; outline:none; background:transparent;
+    font-family:'JetBrains Mono', monospace; font-size:14px; color:var(--ink);
   }
-  .search-box.expanded{ gap:6px; padding:6px 14px; }
-  .search-box.expanded input{ display:block; width:170px; }
+  .search-box.expanded{
+    display:flex; align-items:center;
+    border:1px solid var(--line); border-radius:20px; padding:6px 14px;
+  }
+  .search-box.expanded input{ width:170px; }
   .search-box input::placeholder{ color:var(--ink-soft); }
 
   @media (max-width:860px){
@@ -712,6 +716,55 @@
 
   @media (max-width:380px){
     .grid{ grid-template-columns:1fr; }
+  }
+
+  /* ===== BOTÓN FLOTANTE DE WHATSAPP ===== */
+  .wa-widget{
+    position:fixed; right:20px; bottom:20px; z-index:120;
+    display:flex; flex-direction:column; align-items:flex-end; gap:12px;
+    /* La franja segura de iOS: sin esto el botón queda debajo de la barra de gestos. */
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .wa-btn{
+    width:58px; height:58px; border-radius:50%;
+    background:#25D366; color:#fff; border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 4px 14px rgba(38,34,29,0.28);
+    transition:transform 0.15s ease, background 0.15s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .wa-btn:hover{ transform:scale(1.05); }
+  .wa-btn.is-abierto{ background:#5aa87a; }
+
+  .wa-opciones{
+    display:flex; flex-direction:column; gap:10px;
+    /* Tope de ancho para que en un teléfono no toque los dos bordes de la pantalla. */
+    width:min(300px, calc(100vw - 40px));
+    animation:wa-entrar 0.16s ease-out;
+  }
+  @keyframes wa-entrar{
+    from{ opacity:0; transform:translateY(8px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  /* Quien pidió menos movimiento en su sistema no debería recibir animaciones. */
+  @media (prefers-reduced-motion:reduce){
+    .wa-opciones{ animation:none; }
+    .wa-btn{ transition:none; }
+  }
+
+  .wa-opcion{
+    display:flex; flex-direction:column; gap:3px;
+    padding:14px 16px; text-align:right; text-decoration:none;
+    background:var(--white-card); border:1px solid var(--line);
+    border-radius:12px; box-shadow:0 3px 12px rgba(38,34,29,0.14);
+  }
+  .wa-opcion:hover{ border-color:#25D366; }
+  .wa-opcion-titulo{ font-size:14px; color:#1F6B4A; font-weight:500; }
+  .wa-opcion-detalle{ font-size:12px; line-height:1.45; color:var(--ink-soft); }
+
+  @media (max-width:520px){
+    .wa-widget{ right:14px; bottom:14px; }
+    .wa-btn{ width:52px; height:52px; }
   }
 
   /* Boolean-visibility toggles (classList.toggle('hidden', …)) — must stay the last rule. */
