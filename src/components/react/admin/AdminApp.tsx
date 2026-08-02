@@ -28,7 +28,7 @@ interface EstadoNav {
 
 export default function AdminApp() {
   const sesion = useSession();
-  const [vista, setVista] = useState<Vista>("pedidos");
+  const [vista, setVista] = useState<Vista>("productos");
   const [editando, setEditando] = useState<EdicionActiva>(null);
   const [pedidoAbierto, setPedidoAbierto] = useState<string | null>(null);
   const [pedidosPendientes, setPedidosPendientes] = useState(0);
@@ -40,7 +40,7 @@ export default function AdminApp() {
   // "atrás" retrocede un paso adentro del panel antes de llegar a salir.
   useEffect(() => {
     history.replaceState(
-      { vista: "pedidos", editando: null, pedido: null } satisfies EstadoNav,
+      { vista: "productos", editando: null, pedido: null } satisfies EstadoNav,
       ""
     );
   }, []);
@@ -49,7 +49,7 @@ export default function AdminApp() {
     // El historial ya se movió solo cuando llega este evento — acá solo hay
     // que reflejarlo en React, sin volver a empujar (si no, se duplica).
     function alPop(e: PopStateEvent) {
-      const s = (e.state ?? { vista: "pedidos", editando: null, pedido: null }) as EstadoNav;
+      const s = (e.state ?? { vista: "productos", editando: null, pedido: null }) as EstadoNav;
       setVista(s.vista);
       setEditando(s.editando);
       setPedidoAbierto(s.pedido ?? null);
