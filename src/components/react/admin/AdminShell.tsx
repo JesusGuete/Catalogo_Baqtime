@@ -12,7 +12,7 @@ import { cerrarSesion, minutosRestantes, type Sesion } from "../../../lib/supaba
 // que solo puede mirar y nunca tocar no justifica un lugar en la navegación
 // principal; esas imágenes se suben desde el dashboard de Supabase.
 
-export type Vista = "productos" | "categorias" | "publicar";
+export type Vista = "productos" | "categorias" | "pedidos" | "publicar";
 
 interface Props {
   vista: Vista;
@@ -20,6 +20,8 @@ interface Props {
   sesion: Sesion;
   conteoProductos: number;
   conteoCategorias: number;
+  /** Pedidos esperando que confirmes el pago. Enciende el punto de PEDIDOS. */
+  pedidosPendientes: number;
   /** Cuántos cambios hay sin publicar. Enciende el punto del nav y la píldora. */
   cambiosPendientes: number;
   titulo: string;
@@ -35,6 +37,7 @@ export default function AdminShell({
   sesion,
   conteoProductos,
   conteoCategorias,
+  pedidosPendientes,
   cambiosPendientes,
   titulo,
   subtitulo,
@@ -52,6 +55,7 @@ export default function AdminShell({
   const items: { id: Vista; label: string; contador?: number; punto?: boolean }[] = [
     { id: "productos", label: "PRODUCTOS", contador: conteoProductos },
     { id: "categorias", label: "CATEGORÍAS", contador: conteoCategorias },
+    { id: "pedidos", label: "PEDIDOS", punto: pedidosPendientes > 0 },
     { id: "publicar", label: "PUBLICAR", punto: cambiosPendientes > 0 },
   ];
 
@@ -88,7 +92,16 @@ export default function AdminShell({
                 {it.contador !== undefined && (
                   <span className="adm-mono adm-nav-contador">{it.contador}</span>
                 )}
-                {it.punto && <span className="adm-nav-punto" aria-label="hay cambios sin publicar" />}
+                {it.punto && (
+                  <span
+                    className="adm-nav-punto"
+                    aria-label={
+                      it.id === "pedidos"
+                        ? "hay pedidos esperando confirmación de pago"
+                        : "hay cambios sin publicar"
+                    }
+                  />
+                )}
               </button>
             </li>
           ))}

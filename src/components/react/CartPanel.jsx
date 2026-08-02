@@ -1,5 +1,5 @@
-import { fmt, PRICE_SHIP } from "../../lib/pricing.js";
-import { removeFromCart, getCartSubtotal } from "../../lib/cart-store.js";
+import { fmt, PRICE_SHIP, precioLinea, subtotalCarrito } from "../../lib/pricing.js";
+import { removeFromCart } from "../../lib/cart-store.js";
 
 // Detalle legible de una línea (color/variante + iniciales). Portado de lineDetail().
 export function lineDetail(item) {
@@ -17,14 +17,24 @@ function lineImage(item, products) {
 
 // Una línea del carrito. Se usa igual en el panel lateral y en el checkout,
 // tal como hacía buildCartLineElement() en la versión vanilla.
-export function CartLine({ item, products }) {
+export function CartLine({ item, products, categories = [] }) {
+  // El precio NO sale de item.price: ese quedó congelado en localStorage cuando se agregó
+  // el producto y puede tener días. Se recalcula contra el catálogo de ahora, que es lo
+  // que el servidor va a cobrar. Ver precioLinea() en pricing.js.
+  const { total, disponible } = precioLinea(item, products, categories);
   return (
     <div className="cart-line">
       <img className="cart-line-img" src={lineImage(item, products)} alt={item.name} />
       <div className="cart-line-body">
         <p className="cart-line-name">{item.name}</p>
         <p className="cart-line-detail">{lineDetail(item)}</p>
-        <p className="cart-line-price mono">{fmt(item.price + item.extra)}</p>
+        {disponible ? (
+          <p className="cart-line-price mono">{fmt(total)}</p>
+        ) : (
+          <p className="cart-line-price mono cart-line-agotado">
+            Ya no está disponible · quitalo para continuar
+          </p>
+        )}
       </div>
       <button
         type="button"
@@ -40,8 +50,8 @@ export function CartLine({ item, products }) {
 
 // Los 3 totales (subtotal / envío / total). El envío se cobra una sola vez
 // sobre todo el carrito, y solo si hay algo dentro.
-export function CartTotals({ items }) {
-  const subtotal = getCartSubtotal(items);
+export function CartTotals({ items, products = [], categories = [] }) {
+  const subtotal = subtotalCarrito(items, products, categories);
   const shipping = items.length ? PRICE_SHIP : 0;
   return (
     <>
@@ -62,7 +72,7 @@ export function CartTotals({ items }) {
 }
 
 // Panel lateral: vistazo rápido (lista + totales + "Finalizar compra").
-export default function CartPanel({ items, products, onClose, onCheckout }) {
+export default function CartPanel({ items, products, categories = [], onClose, onCheckout }) {
   return (
     <div className="cart-panel">
       <div className="cart-panel-head">
@@ -75,10 +85,12 @@ export default function CartPanel({ items, products, onClose, onCheckout }) {
         {items.length === 0 ? (
           <p className="cart-empty">Tu carrito está vacío.</p>
         ) : (
-          items.map((item) => <CartLine key={item.id} item={item} products={products} />)
+          items.map((item) => (
+            <CartLine key={item.id} item={item} products={products} categories={categories} />
+          ))
         )}
       </div>
-      <CartTotals items={items} />
+      <CartTotals items={items} products={products} categories={categories} />
       {items.length > 0 && (
         <button className="whatsapp-btn" onClick={onCheckout}>
           Finalizar compra

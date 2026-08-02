@@ -9,13 +9,23 @@ import CartBadge from "../react/CartBadge.jsx";
        tamaño en pantalla — de eso se encarga `.brand-logo` con height:38px y el
        `img{height:auto}` global. Sirven para que el navegador reserve el espacio
        antes de que la imagen cargue y el encabezado no salte. -->
-  <img
-    src="/assets/img/logo.png"
-    alt="Baqtime"
-    class="brand-logo"
-    width="998"
-    height="297"
-  />
+  <!-- El logo vuelve al inicio, igual que en el panel. Es lo que todo el mundo intenta
+       tocar para volver, y hasta ahora no hacía nada. -->
+  <a href="/" class="brand-link" aria-label="Ir al inicio">
+    <img
+      src="/assets/img/logo.png"
+      alt="Baqtime"
+      class="brand-logo"
+      width="998"
+      height="297"
+    />
+  </a>
   <div class="cart-note">Barranquilla y Cartagena, Colombia</div>
-  <CartBadge client:load />
+  <!-- "Mi pedido" y el carrito van juntos: son las dos acciones del encabezado, y
+       agruparlas evita que el `justify-content: space-between` del <header> las separe a
+       los extremos con la nota de ciudades en el medio. -->
+  <div class="header-acciones">
+    <a class="header-pedido mono" href="/pedido">MI PEDIDO</a>
+    <CartBadge client:load />
+  </div>
 </header>

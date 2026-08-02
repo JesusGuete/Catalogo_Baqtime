@@ -56,9 +56,14 @@ export function getCart() {
   return cart;
 }
 
-export function getCartSubtotal(items = cart) {
-  return items.reduce((sum, item) => sum + item.price + item.extra, 0);
-}
+// getCartSubtotal() vivía acá y sumaba item.price + item.extra, o sea los precios
+// congelados en localStorage. Se eliminó a propósito: dejarlo sería tener dos formas de
+// calcular el mismo subtotal, una correcta y otra desactualizada, y tarde o temprano
+// alguien usa la equivocada. El subtotal ahora lo calcula subtotalCarrito() en pricing.js,
+// contra el catálogo vigente.
+//
+// `price` y `extra` se siguen guardando en cada línea, pero solo como último recurso para
+// mostrar algo si el producto se despublicó.
 
 export function addToCart(item) {
   const id = "line_" + Date.now() + "_" + Math.random().toString(36).slice(2);

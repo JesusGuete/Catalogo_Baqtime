@@ -16,3 +16,19 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/**
+ * El entorno del Worker de Cloudflare: variables y secretos que NUNCA llegan al navegador.
+ *
+ * Es un módulo virtual del runtime, así que no existe en disco y ningún @types instalado
+ * lo declara — sin esto `astro check` falla aunque en ejecución funcione perfecto.
+ *
+ * Acá vive SUPABASE_SERVICE_ROLE_KEY. Que esté en este módulo y no en ImportMetaEnv es la
+ * frontera: `import { env } from "cloudflare:workers"` solo se puede resolver dentro del
+ * servidor, así que un componente de React que intente leer el secreto no compila.
+ *
+ * (Reemplaza a Astro.locals.runtime.env, que se eliminó en Astro 6.)
+ */
+declare module "cloudflare:workers" {
+  export const env: Record<string, string | undefined>;
+}

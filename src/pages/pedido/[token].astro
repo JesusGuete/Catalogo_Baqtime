@@ -1,0 +1,71 @@
+---
+// Seguimiento del pedido por su enlace privado.
+//
+// SU ÚNICA LLAVE ES EL TOKEN DE LA URL. No hay login, y no debería haberlo: pedirle una
+// cuenta a alguien para ver en qué va su propia compra es fricción que nadie atraviesa.
+// Lo que sostiene la privacidad es que el token tiene 122 bits al azar y que
+// pedido_publico() devuelve una lista blanca de campos — el documento, la dirección exacta
+// y las notas internas de pago no salen de la base.
+//
+// Este enlace ya NO viaja en el mensaje de WhatsApp: el cliente llega por el buscador de
+// /pedido. Sigue existiendo porque el panel lo usa para reenviárselo a quien se pierda, y
+// porque la página de gracias lleva acá con un botón, sin que nadie escriba nada.
+//
+// Tres cosas de esta página no son opcionales:
+//   1. `private, no-store` (cabecerasPrivadas): el resto del sitio se cachea en el borde
+//      de Cloudflare. Sin esto el pedido de un cliente podría servirse a otro.
+//   2. noindex + X-Robots-Tag: un token indexado es un pedido público para siempre.
+//   3. 404 —no 200 vacío— cuando el token no corresponde a nada.
+import PedidoHead from "../../components/astro/PedidoHead.astro";
+import Header from "../../components/astro/Header.astro";
+import Footer from "../../components/astro/Footer.astro";
+import PedidoVista from "../../components/astro/PedidoVista.astro";
+import { obtenerPedido, cabecerasPrivadas } from "../../lib/pedido";
+import "../../styles/site.css";
+
+export const prerender = false;
+
+cabecerasPrivadas(Astro.response.headers);
+
+const { token } = Astro.params;
+const resultado = await obtenerPedido(token ?? "");
+
+// 503 y 404 son respuestas distintas a propósito: si la base no contesta, decirle al
+// cliente que su pedido no existe sería mentirle sobre algo que le importa.
+if (resultado.estado === "error") {
+  return new Response(
+    "No pudimos consultar tu pedido en este momento. Volvé a intentar en unos minutos.",
+    { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
+  );
+}
+if (resultado.estado === "no-existe") {
+  return new Response(null, { status: 404, statusText: "Pedido no encontrado" });
+}
+const pedido = resultado.pedido;
+---
+
+<html lang="es-CO">
+  <head>
+    <PedidoHead title={`Pedido ${pedido.order_number} — Baqtime`} />
+  </head>
+  <body>
+    <Header />
+    <main class="seg-wrap">
+      <PedidoVista pedido={pedido} />
+    </main>
+    <Footer />
+
+    <style>
+      .seg-wrap {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 40px 20px 72px;
+      }
+      @media (max-width: 520px) {
+        .seg-wrap {
+          padding: 24px 16px 56px;
+        }
+      }
+    </style>
+  </body>
+</html>

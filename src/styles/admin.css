@@ -538,6 +538,69 @@ input.adm-input { display: block; }
 
   .adm-td-orden { grid-area: agarre; }
   .adm-fila-orden-num { display: none; }
+
+  /* Pedidos: no hay foto ni agarre de arrastre, así que la tarjeta se arma con lo que
+     importa para decidir a cuál entrar — número y estado arriba, cliente a lo ancho,
+     y destino con el total abajo. */
+  .adm-tabla--pedidos tr.adm-fila {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "pedido  estado"
+      "cliente cliente"
+      "destino total";
+  }
+  .adm-td-pedido { grid-area: pedido; }
+  .adm-td-cliente { grid-area: cliente; font-size: 13px; }
+  .adm-td-destino { grid-area: destino; font-size: 12px; color: var(--ink-soft); }
+  .adm-tabla--pedidos .adm-td-precio { grid-area: total; text-align: right; }
+  .adm-tabla--pedidos .adm-td-estado { grid-area: estado; justify-self: end; }
+}
+
+/* ============================================================ PEDIDOS */
+
+/* Datos del cliente: una grilla que se acomoda sola. `is-ancho` es para la dirección,
+   que casi nunca entra en media línea. */
+.adm-ped-datos {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px;
+}
+.adm-ped-dato { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.adm-ped-dato.is-ancho { grid-column: 1 / -1; }
+
+/* La papelera vive dentro de la celda de ESTADO, en la lista.
+   SIEMPRE VISIBLE, no solo al pasar el mouse: en un celular no hay puntero que pasar, y
+   una acción que solo aparece con hover simplemente no existe para quien usa el panel
+   desde el teléfono. Lo que la mantiene discreta es el color, no esconderla. */
+.adm-ped-estado-celda { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.adm-ped-borrar {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; padding: 0;
+  background: none; border: 0; border-radius: var(--radius);
+  color: var(--ink-faint); cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.adm-ped-borrar:hover { color: var(--vino); background: var(--error-bg); }
+.adm-ped-borrar:focus-visible { outline: 2px solid var(--vino); outline-offset: 1px; }
+.adm-ped-borrar:disabled { opacity: 0.4; cursor: wait; }
+
+.adm-ped-items { list-style: none; margin: 0; padding: 0; }
+.adm-ped-item {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding: 12px 0; border-bottom: 1px solid var(--line-soft);
+}
+.adm-ped-item:last-child { border-bottom: 0; }
+.adm-ped-item-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.adm-ped-item-precio { flex-shrink: 0; font-size: 14px; }
+
+.adm-ped-totales { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-solid); }
+.adm-ped-total-fila {
+  display: flex; justify-content: space-between; padding: 4px 0;
+  font-size: 13px; color: var(--ink-soft);
+}
+.adm-ped-total-fila.is-final {
+  margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--line-soft);
+  font-size: 17px; color: var(--ink);
 }
 
 /* ============================================================ EDITOR */

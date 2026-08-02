@@ -28,5 +28,12 @@ export default defineConfig({
   // bloquea es peor que no decir nada: la URL bloqueada nunca se rastrea, así que el
   // `noindex` del panel jamás se lee, y Google puede terminar indexando la dirección
   // pelada de todos modos.
-  integrations: [react(), sitemap({ filter: (page) => !page.includes("/admin") })]
+  // /pedido/* queda fuera por la misma razón que /admin, y con más urgencia: esas URLs
+  // llevan adentro el token de acceso del cliente. Hoy son rutas SSR, así que el
+  // integrador no las vería igual; el filtro está para que siga siendo cierto si alguna
+  // vez alguna se pre-construye.
+  integrations: [
+    react(),
+    sitemap({ filter: (page) => !page.includes("/admin") && !page.includes("/pedido") }),
+  ]
 });

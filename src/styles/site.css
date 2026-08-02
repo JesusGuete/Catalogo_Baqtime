@@ -38,12 +38,19 @@
     padding:16px 20px;
     display:flex; align-items:center; justify-content:space-between;
   }
+  .brand-link{ display:block; line-height:0; }
   .brand-logo{
     height:38px; width:auto; display:block;
   }
   .cart-note{
     font-size:12px; color:var(--ink-soft); font-family:'JetBrains Mono',monospace;
   }
+  .header-acciones{ display:flex; align-items:center; gap:16px; }
+  .header-pedido{
+    font-size:11px; letter-spacing:0.08em; color:var(--ink-soft);
+    text-decoration:none; white-space:nowrap;
+  }
+  .header-pedido:hover{ color:var(--ink); }
 
   /* ===== CARRITO (Fase 1: ícono + contador + panel básico) ===== */
   .cart-icon-btn{
@@ -85,6 +92,9 @@
   .cart-line-name{ font-size:14px; font-weight:500; margin:0 0 4px; }
   .cart-line-detail{ font-size:12px; color:var(--ink-soft); margin:0 0 4px; }
   .cart-line-price{ font-size:13px; }
+  /* Producto que se despublicó mientras estaba en el carrito. El pedido lo rechazaría
+     igual, pero avisar acá es mejor que dejarlo enterarse al confirmar. */
+  .cart-line-agotado{ color:var(--vino); font-size:11px; }
   .cart-line-remove{
     background:none; border:none; color:var(--ink-soft); cursor:pointer;
     font-size:16px; line-height:1; padding:2px 4px; flex-shrink:0;
@@ -606,7 +616,11 @@
   @media (max-width:600px){
     header{ padding:14px 16px; }
     .brand-logo{ height:30px; }
-    .cart-note{ font-size:10px; text-align:right; }
+    /* En celular no entran logo + ciudades + "Mi pedido" + carrito. La nota de ciudades
+       es lo prescindible: es decorativa, y las otras dos son acciones. */
+    .cart-note{ display:none; }
+    .header-acciones{ gap:12px; }
+    .header-pedido{ font-size:10px; }
 
     .hero{ padding:28px 16px 30px; gap:24px; }
     .hero h1{ font-size:30px; margin-bottom:14px; }

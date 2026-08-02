@@ -51,6 +51,28 @@ export function IconoAgarre({ className = "" }: { className?: string }) {
   );
 }
 
+/** Papelera. Se usa para borrar un pedido desde la lista, sin abrirlo. */
+export function IconoPapelera({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="15"
+      height="15"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M2.5 4h11M6.5 4V2.75h3V4M4 4l.6 9.2h6.8L12 4M6.5 6.5v4.5M9.5 6.5v4.5"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function SectionHead({ numero, titulo }: { numero?: string; titulo: string }) {
   return (
     <div className="adm-sechead">

@@ -1,0 +1,38 @@
+---
+// El <head> de las páginas de pedido.
+//
+// NO reusa SiteHead a propósito. SiteHead publica canonical + Open Graph, que es
+// exactamente lo contrario de lo que hace falta acá: estas URLs llevan el token de acceso
+// del cliente adentro, así que no pueden anunciarse, ni indexarse, ni archivarse.
+//
+// El `noindex` va acompañado de la cabecera X-Robots-Tag (ver cabecerasPrivadas en
+// src/lib/pedido.ts): la etiqueta sirve si el rastreador llega a leer el HTML, la cabecera
+// sirve aunque no lo lea.
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{title}</title>
+<meta name="robots" content="noindex, nofollow, noarchive" />
+<!-- same-origin: hacia afuera no viaja NADA (si el cliente toca el rastreo de la
+     transportadora, el token no puede irse en la cabecera Referer), pero dentro del sitio
+     el navegador se sigue comportando normal.
+     NO usar `no-referrer`: además del Referer, hace que el navegador mande `Origin: null`
+     incluso en peticiones al propio sitio, y la protección anti-CSRF de Astro rechaza el
+     formulario de consulta con "Cross-site POST form submissions are forbidden". -->
+<meta name="referrer" content="same-origin" />
+
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+<meta name="theme-color" content="#F2F2F2" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Unna:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+  rel="stylesheet"
+/>

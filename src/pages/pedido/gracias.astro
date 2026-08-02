@@ -1,0 +1,236 @@
+---
+// Confirmación inmediata, justo después de guardar el pedido.
+//
+// Lo que el cliente tiene que llevarse de acá es SU NÚMERO DE PEDIDO: con eso y su
+// teléfono consulta el estado cuando quiera desde /pedido. Por eso el número es lo más
+// grande de la pantalla y no un dato más del resumen.
+//
+// El enlace directo sigue existiendo como botón —ahorra escribir dos datos a quien está
+// acá y ahora— pero ya no se muestra la URL en crudo: es larga, y el cliente no la
+// necesita si tiene su número.
+import PedidoHead from "../../components/astro/PedidoHead.astro";
+import Header from "../../components/astro/Header.astro";
+import Footer from "../../components/astro/Footer.astro";
+import { obtenerPedido, cabecerasPrivadas } from "../../lib/pedido";
+import { buildOrderMessage, whatsappUrl } from "../../lib/whatsapp.js";
+import { fmt } from "../../lib/pricing.js";
+import "../../styles/site.css";
+
+export const prerender = false;
+
+cabecerasPrivadas(Astro.response.headers);
+
+const token = Astro.url.searchParams.get("p") ?? "";
+const resultado = await obtenerPedido(token);
+
+// Acá un fallo de la base es especialmente feo: el pedido ACABA de guardarse, así que
+// existe seguro. Mandarlo al enlace de seguimiento es mejor que un 404 que lo asuste
+// después de haber comprado.
+if (resultado.estado === "error") {
+  return Astro.redirect(`/pedido/${encodeURIComponent(token)}`, 302);
+}
+if (resultado.estado === "no-existe") {
+  return new Response(null, { status: 404, statusText: "Pedido no encontrado" });
+}
+const pedido = resultado.pedido;
+
+const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
+---
+
+<html lang="es-CO">
+  <head>
+    <PedidoHead title={`Pedido ${pedido.order_number} — Baqtime`} />
+  </head>
+  <body>
+    <Header />
+
+    <main class="ped-wrap">
+      <section class="ped-card">
+        <p class="ped-eyebrow mono">PEDIDO REGISTRADO</p>
+        <h1 class="ped-titulo">¡Gracias, {pedido.customer_name.split(" ")[0]}!</h1>
+        <p class="ped-bajada">
+          Tu pedido quedó guardado. El siguiente paso es coordinar el pago por WhatsApp.
+        </p>
+
+        <div class="ped-numero-caja">
+          <span class="ped-numero-label mono">TU NÚMERO DE PEDIDO</span>
+          <strong id="numero" class="ped-numero mono">{pedido.order_number}</strong>
+          <button id="copiar" class="ped-numero-btn mono" type="button">COPIAR</button>
+        </div>
+
+        <div class="ped-resumen">
+          <div class="ped-dato">
+            <span class="ped-dato-label mono">TOTAL A PAGAR</span>
+            <span class="ped-dato-valor">{fmt(pedido.total)}</span>
+          </div>
+        </div>
+
+        <a class="ped-btn-wa" href={enlaceWhatsapp}>Confirmar pago por WhatsApp</a>
+
+        <p class="ped-nota">
+          Guardá tu número: con él podés consultar el estado cuando quieras desde
+          <strong>Mi pedido</strong>, arriba en esta misma página.
+        </p>
+      </section>
+    </main>
+
+    <Footer />
+
+    <script is:inline>
+      // Sin dependencias y con respaldo: clipboard.writeText no existe fuera de HTTPS ni
+      // en navegadores viejos, y quedarse sin forma de copiar el número sería justamente
+      // el problema que esta página vino a resolver.
+      document.getElementById("copiar")?.addEventListener("click", function () {
+        var numero = document.getElementById("numero").textContent.trim();
+        var boton = this;
+        function ok() {
+          boton.textContent = "COPIADO ✓";
+          setTimeout(function () {
+            boton.textContent = "COPIAR";
+          }, 2000);
+        }
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(numero).then(ok);
+        } else {
+          // Sin API de portapapeles: se selecciona el número para que el cliente lo copie
+          // con el gesto de siempre.
+          var rango = document.createRange();
+          rango.selectNodeContents(document.getElementById("numero"));
+          var sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(rango);
+          ok();
+        }
+      });
+    </script>
+
+    <style>
+      .ped-wrap {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 48px 20px 72px;
+      }
+      .ped-card {
+        background: var(--white-card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 32px 28px;
+      }
+      .ped-eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        color: var(--mocha);
+        margin: 0 0 10px;
+      }
+      .ped-titulo {
+        font-family: "Unna", serif;
+        font-size: 30px;
+        line-height: 1.15;
+        margin: 0 0 8px;
+        color: var(--ink);
+      }
+      .ped-bajada {
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--ink-soft);
+        margin: 0 0 24px;
+      }
+      .ped-resumen {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      .ped-dato {
+        flex: 1 1 180px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 14px 16px;
+        background: var(--cream);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+      }
+      .ped-dato-label {
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        color: var(--ink-soft);
+      }
+      .ped-dato-valor {
+        font-size: 20px;
+        color: var(--ink);
+      }
+      .ped-btn-wa {
+        display: block;
+        width: 100%;
+        padding: 15px;
+        text-align: center;
+        text-decoration: none;
+        background: var(--ink);
+        color: var(--cream);
+        border-radius: var(--radius);
+        font-size: 14px;
+        letter-spacing: 0.04em;
+      }
+      .ped-btn-wa:hover {
+        background: var(--mocha);
+      }
+      /* El número es lo único que el cliente necesita recordar, así que se lleva el
+         tamaño y el acento de la marca. */
+      .ped-numero-caja {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 14px;
+        padding: 18px 20px;
+        margin-bottom: 16px;
+        background: var(--draft-bg);
+        border: 1px solid var(--draft-border);
+        border-radius: var(--radius);
+      }
+      .ped-numero-label {
+        flex: 1 0 100%;
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        color: var(--draft-text);
+      }
+      .ped-numero {
+        font-size: 30px;
+        letter-spacing: 0.06em;
+        color: var(--ink);
+        font-weight: 400;
+      }
+      .ped-numero-btn {
+        margin-left: auto;
+        padding: 8px 14px;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        background: var(--white-card);
+        border: 1px solid var(--ink);
+        border-radius: var(--radius);
+        color: var(--ink);
+        cursor: pointer;
+      }
+      .ped-nota {
+        margin-top: 22px;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+        font-size: 12px;
+        line-height: 1.55;
+        color: var(--ink-soft);
+        margin: 10px 0 0;
+      }
+      @media (max-width: 520px) {
+        .ped-wrap {
+          padding: 28px 16px 56px;
+        }
+        .ped-card {
+          padding: 24px 18px;
+        }
+        .ped-titulo {
+          font-size: 25px;
+        }
+      }
+    </style>
+  </body>
+</html>

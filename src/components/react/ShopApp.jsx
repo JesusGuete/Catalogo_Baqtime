@@ -82,6 +82,7 @@ export default function ShopApp({ catalog, initialProductId = null }) {
         <CartPanel
           items={items}
           products={catalog.products}
+          categories={catalog.categories}
           onClose={() => setCartOpen(false)}
           onCheckout={() => {
             setCartOpen(false);
@@ -91,7 +92,12 @@ export default function ShopApp({ catalog, initialProductId = null }) {
       )}
 
       {checkoutOpen && (
-        <Checkout items={items} products={catalog.products} onClose={() => setCheckoutOpen(false)} />
+        <Checkout
+          items={items}
+          products={catalog.products}
+          categories={catalog.categories}
+          onClose={() => setCheckoutOpen(false)}
+        />
       )}
     </>
   );
