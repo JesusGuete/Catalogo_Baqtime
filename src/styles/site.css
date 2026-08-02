@@ -38,6 +38,7 @@
     padding:16px 20px;
     display:flex; align-items:center; justify-content:space-between;
   }
+  .brand-link{ display:block; line-height:0; }
   .brand-logo{
     height:38px; width:auto; display:block;
   }

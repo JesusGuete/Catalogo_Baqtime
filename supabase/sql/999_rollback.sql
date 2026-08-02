@@ -73,6 +73,7 @@ exception when others then
 end $$;
 
 drop function if exists public.create_order(jsonb, jsonb);
+drop function if exists public.eliminar_pedido(uuid);
 -- Las dos firmas: la de 011 (número + teléfono) y la de 012 (solo número). Según hasta
 -- dónde se haya corrido la numeración, existe una u otra.
 drop function if exists public.buscar_pedido(text, text);

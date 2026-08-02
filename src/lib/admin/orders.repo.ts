@@ -81,6 +81,16 @@ export async function confirmarPago(id: string, nota?: string): Promise<void> {
 }
 
 /**
+ * Borra el pedido, sus productos y su historial. DEFINITIVO: no hay papelera.
+ *
+ * Pasa por una función y no por un DELETE de PostgREST porque la tabla no le concede
+ * borrado a nadie (010_orders.sql). Ver 013_eliminar_pedido.sql.
+ */
+export async function eliminar(id: string): Promise<void> {
+  await rpc<void>("eliminar_pedido", { p_order_id: id }, CTX);
+}
+
+/**
  * Pasa a `no_confirmado` lo que lleve más de 24 h sin pago.
  *
  * El panel la llama al abrir la lista. También la corre pg_cron si la extensión está

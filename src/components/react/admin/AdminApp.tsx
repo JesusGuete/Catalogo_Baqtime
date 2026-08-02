@@ -136,6 +136,9 @@ export default function AdminApp() {
       <OrderDetail
         pedidoId={pedidoAbierto}
         onCerrar={() => navegar({ vista: "pedidos", editando: null, pedido: null })}
+        // Volver a la lista después de borrar: el pedido que se estaba viendo ya no
+        // existe, y quedarse en su pantalla mostraría datos de algo que no está.
+        onEliminado={() => navegar({ vista: "pedidos", editando: null, pedido: null })}
       />
     );
   }

@@ -27,9 +27,11 @@ import {
 interface Props {
   pedidoId: string;
   onCerrar: () => void;
+  /** Después de borrar hay que volver a la lista: este pedido ya no existe. */
+  onEliminado: () => void;
 }
 
-export default function OrderDetail({ pedidoId, onCerrar }: Props) {
+export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) {
   const [pedido, setPedido] = useState<OrderWithDetail | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<AdminError | null>(null);
@@ -74,6 +76,11 @@ export default function OrderDetail({ pedidoId, onCerrar }: Props) {
   const cambiar = useAccion(async (estado: OrderStatus) => {
     await pedidosRepo.cambiarEstado(pedidoId, estado);
     await cargar();
+  });
+
+  const eliminar = useAccion(async () => {
+    await pedidosRepo.eliminar(pedidoId);
+    onEliminado();
   });
 
   const guardarLogistica = useAccion(async () => {
@@ -176,7 +183,11 @@ export default function OrderDetail({ pedidoId, onCerrar }: Props) {
         </div>
       </div>
 
-      <ErrorAviso error={error ?? confirmar.error ?? cambiar.error ?? guardarLogistica.error} />
+      <ErrorAviso
+        error={
+          error ?? confirmar.error ?? cambiar.error ?? guardarLogistica.error ?? eliminar.error
+        }
+      />
 
       <div className="adm-editor-cols">
         <div className="adm-editor-form">
@@ -339,6 +350,39 @@ export default function OrderDetail({ pedidoId, onCerrar }: Props) {
             <p className="adm-mono adm-hint">
               NO LO PUBLIQUES: QUIEN LO TENGA VE ESTE PEDIDO
             </p>
+          </section>
+
+          <section className="adm-card">
+            <p className="adm-mono adm-peligro-titulo">ZONA DE RIESGO</p>
+            <p className="adm-nota">
+              Eliminar borra el pedido, sus productos y su historial. No se puede deshacer y
+              no queda registro de la venta.
+            </p>
+            <Boton
+              onClick={() => {
+                // Dos datos en la pregunta —número y total— para que sea evidente CUÁL se
+                // está por borrar. Un "¿estás seguro?" a secas se contesta que sí por reflejo.
+                if (
+                  window.confirm(
+                    `¿Eliminar el pedido ${pedido.order_number} de ${pedido.customer_name}, por ${dinero(pedido.total)}?\n\n` +
+                      `Se borra junto con sus productos y su historial, y no se puede recuperar.`
+                  )
+                ) {
+                  void eliminar.ejecutar();
+                }
+              }}
+              variante="peligro"
+              ancho
+              cargando={eliminar.enCurso}
+            >
+              ELIMINAR PEDIDO
+            </Boton>
+            {pagado && (
+              <p className="adm-mono adm-hint">
+                ESTE PEDIDO YA TIENE EL PAGO CONFIRMADO · BORRARLO ELIMINA LA CONSTANCIA DE
+                LA VENTA
+              </p>
+            )}
           </section>
         </div>
       </div>
