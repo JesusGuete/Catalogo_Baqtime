@@ -31,15 +31,15 @@ if (Astro.request.method === "POST") {
   numeroEscrito = String(datos.get("numero") ?? "").trim();
 
   if (!numeroEscrito) {
-    error = "Escribí tu número de pedido.";
+    error = "Escribe tu número de pedido.";
   } else {
     const resultado = await buscarPedido(numeroEscrito);
     if (resultado.estado === "ok") {
       pedido = resultado.pedido;
     } else if (resultado.estado === "error") {
-      error = "No pudimos consultar tu pedido en este momento. Intentá de nuevo en unos minutos.";
+      error = "No pudimos consultar tu pedido en este momento. Intenta de nuevo en unos minutos.";
     } else {
-      error = "No encontramos ningún pedido con ese número. Revisalo e intentá de nuevo.";
+      error = "No encontramos ningún pedido con ese número. Revisalo e intenta de nuevo.";
     }
   }
 }
@@ -47,7 +47,7 @@ if (Astro.request.method === "POST") {
 
 <html lang="es-CO">
   <head>
-    <PedidoHead title="Consultá tu pedido — Baqtime" />
+    <PedidoHead title="Consulta tu pedido — Baqtime" />
   </head>
   <body>
     <Header />
@@ -66,7 +66,7 @@ if (Astro.request.method === "POST") {
             <p class="ped-eyebrow mono">SEGUIMIENTO</p>
             <h1 class="ped-titulo">Consultá tu pedido</h1>
             <p class="ped-bajada">
-              Escribí el número que te dimos al hacer la compra.
+              Escribe el número que te dimos al hacer la compra.
             </p>
 
             {error && <p class="ped-error" role="alert">{error}</p>}
@@ -89,7 +89,7 @@ if (Astro.request.method === "POST") {
             </form>
 
             <p class="ped-ayuda">
-              ¿No encontrás tu número? Está en el mensaje de WhatsApp que nos enviaste al
+              ¿No encuentras tu número? Está en el mensaje de WhatsApp que nos enviaste al
               hacer el pedido.
             </p>
           </section>
