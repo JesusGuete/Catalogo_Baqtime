@@ -8,11 +8,13 @@
 //    —nacer visible y ocultarse con JS— cualquier fallo dejaría la tienda tapada para
 //    siempre, que es la peor falla posible en una página de ventas.
 //
-// 2. EL CSS LA RETIRA SOLO A LOS 3 SEGUNDOS, pase lo que pase. Es la red por si el script
-//    que la oculta se rompe: la animación corre por su cuenta, sin depender de nada.
+// 2. EL CSS LA RETIRA SOLA A LOS 3,5 SEGUNDOS, pase lo que pase. Es la red por si el
+//    script que la oculta se rompe: la animación corre por su cuenta, sin depender de
+//    nada. Siempre tiene que quedar POR ENCIMA del tope duro del script (2,5 s), o se
+//    dispararía antes y taparía el cierre normal.
 //
 // 3. NO ESPERA A QUE CARGUE TODO. Espera la imagen del hero —lo único que se ve al
-//    entrar— con un tope de 2,2 s. Esperar las 32 fotos del catálogo haría al sitio más
+//    entrar— con un tope de 2,5 s. Esperar las 32 fotos del catálogo haría al sitio más
 //    lento de lo que ya se siente, que es justo lo contrario de lo que se busca.
 //
 // El contenido real sigue en el HTML detrás de la pantalla: Google lo lee igual, porque
@@ -48,17 +50,20 @@
       cerrada = true;
       pantalla.classList.add("is-lista");
       document.documentElement.classList.remove("esta-cargando");
-      // Se saca del DOM al terminar el desvanecido para que no atrape ningún clic.
+      // Se saca del DOM al TERMINAR el desvanecido (0,6 s) para que no atrape ningún
+      // clic. Si este número quedara por debajo de esa duración, la pantalla
+      // desaparecería de golpe a mitad del fundido.
       setTimeout(function () {
         pantalla.remove();
-      }, 500);
+      }, 700);
     }
 
-    // Un mínimo de 400 ms: si las imágenes ya están en caché, aparecer y desaparecer en
-    // 30 ms se ve como un parpadeo defectuoso, no como una intro.
+    // El mínimo tiene que alcanzar para que el logo TERMINE de aparecer (0,7 s de
+    // fundido). Con menos, en una carga rápida se cortaría a mitad de la entrada y se
+    // vería justo lo que se quiere evitar: un salto.
     var desde = Date.now();
     function cerrarConMinimo() {
-      var falta = 400 - (Date.now() - desde);
+      var falta = 1000 - (Date.now() - desde);
       setTimeout(cerrar, falta > 0 ? falta : 0);
     }
 
@@ -70,8 +75,8 @@
       cerrarConMinimo();
     }
 
-    // Tope duro: pase lo que pase con las imágenes, a los 2,2 s se muestra la tienda.
-    setTimeout(cerrar, 2200);
+    // Tope duro: pase lo que pase con las imágenes, a los 2,5 s se muestra la tienda.
+    setTimeout(cerrar, 2500);
   })();
 </script>
 
@@ -85,19 +90,25 @@
     align-items: center;
     justify-content: center;
     /* Red de seguridad en CSS puro: si el script que la cierra fallara, la animación la
-       retira igual a los 3 s. No depende de JavaScript. */
-    animation: carga-salir 0.45s ease 3s forwards;
+       retira igual a los 3,5 s. No depende de JavaScript. */
+    animation: carga-salir 0.6s ease 3.5s forwards;
   }
   .carga[hidden] {
     display: none;
   }
   .carga.is-lista {
-    animation: carga-salir 0.45s ease forwards;
+    animation: carga-salir 0.6s ease forwards;
   }
   .carga-logo {
     width: 190px;
     height: auto;
-    animation: carga-latir 1.6s ease-in-out infinite;
+    /* Dos animaciones encadenadas: primero el logo APARECE con un fundido —antes surgía
+       de golpe, que era lo brusco—, y recién después empieza un latido lento que dice
+       "sigue trabajando" sin llamar la atención. El `both` hace que se quede en el
+       estado final en vez de volver a saltar a opacidad 0. */
+    animation:
+      carga-logo-entra 0.7s ease-out both,
+      carga-latir 2.4s ease-in-out 0.7s infinite;
   }
   @keyframes carga-salir {
     to {
@@ -105,9 +116,13 @@
       visibility: hidden;
     }
   }
+  @keyframes carga-logo-entra {
+    from { opacity: 0; transform: scale(0.94); }
+    to   { opacity: 1; transform: scale(1); }
+  }
   @keyframes carga-latir {
-    0%, 100% { opacity: 0.55; }
-    50% { opacity: 1; }
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.62; }
   }
   /* Bloquea el scroll mientras tapa, para que nadie se pierda desplazándose a ciegas. */
   html.esta-cargando,
@@ -118,9 +133,10 @@
   @media (max-width: 520px) {
     .carga-logo { width: 150px; }
   }
-  /* Quien pidió menos movimiento en su sistema no debería recibir un logo latiendo. */
+  /* Quien pidió menos movimiento en su sistema no debería recibir un logo latiendo ni
+     escalando: se muestra quieto y la pantalla se retira sin animación. */
   @media (prefers-reduced-motion: reduce) {
-    .carga-logo { animation: none; opacity: 1; }
+    .carga-logo { animation: none; opacity: 1; transform: none; }
     .carga, .carga.is-lista { animation-duration: 0.01s; }
   }
 </style>
