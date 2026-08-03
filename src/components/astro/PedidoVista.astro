@@ -25,19 +25,29 @@ const { pedido } = Astro.props;
 const interrumpido = pedido.status === "no_confirmado";
 const pasoActual = ORDER_FLOW.indexOf(pedido.status as (typeof ORDER_FLOW)[number]);
 
-const FORMATO = { day: "2-digit", month: "long", year: "numeric" } as const;
+// Sin `timeZone`, `toLocaleDateString` usa la zona del SERVIDOR (Cloudflare, en UTC), no
+// la del cliente en Colombia. Un pedido creado a las 10:30 p.m. en Barranquilla ya es
+// 3:30 a.m. UTC del día siguiente, así que sin fijarla acá la fecha se veía un día
+// adelantada por las noches. Se fija a America/Bogota siempre, sin importar dónde corra
+// el servidor ni desde qué huso lo abra el cliente.
+const FORMATO = {
+  day: "2-digit",
+  month: "long",
+  year: "numeric",
+  timeZone: "America/Bogota",
+} as const;
 
 /** Para `timestamptz` (created_at, cada fila del historial): sí lleva hora, sí se convierte. */
 const fechaDe = (iso: string): string => new Date(iso).toLocaleDateString("es-CO", FORMATO);
 
 /**
- * Para `date` (estimated_date): NO lleva hora, y por eso no se puede pasar por new Date()
- * a secas. "2026-08-12" se interpreta como medianoche UTC, y en Colombia (UTC-5) eso es
- * el 11 a las 19:00 — la fecha estimada aparecía un día antes de la que cargó el dueño.
- * Agregar la hora local fuerza que se lea en el huso del visitante, sin corrimiento.
+ * Para `date` (estimated_date): NO lleva hora, así que no hay ninguna zona horaria que
+ * convertir — mostrarla tal cual quedó guardada es lo correcto. Por eso se parsea y se
+ * formatea las dos veces en UTC ("Z" y `timeZone: "UTC"`): así ninguna de las dos
+ * conversiones la corre un día, sin importar el huso del servidor ni el de `FORMATO`.
  */
 const fechaSolaDe = (fecha: string): string =>
-  new Date(`${fecha}T00:00:00`).toLocaleDateString("es-CO", FORMATO);
+  new Date(`${fecha}T00:00:00Z`).toLocaleDateString("es-CO", { ...FORMATO, timeZone: "UTC" });
 
 const enlaceRastreo = urlRastreo(pedido.carrier, pedido.tracking_number);
 const estaEnviado = pedido.status === "enviado" || pedido.status === "entregado";
