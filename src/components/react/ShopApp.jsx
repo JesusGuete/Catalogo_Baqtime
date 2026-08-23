@@ -77,6 +77,56 @@ export default function ShopApp({ catalog, initialProductId = null }) {
     return () => window.removeEventListener("popstate", alVolver);
   }, [isProductPage]);
 
+  // LA FICHA ABIERTA SOBRE LA PORTADA TAMBIÉN ES UNA "PÁGINA" PARA EL VISITANTE.
+  //
+  // En la portada, abrir un producto no cambia la URL: es un modal encima de la grilla.
+  // Para el navegador no pasó nada, así que "atrás" hace lo único que puede —salir del
+  // sitio— cuando lo que el cliente esperaba era volver al catálogo. Peor todavía en
+  // celular, donde "atrás" es el gesto principal para cerrar cualquier cosa.
+  //
+  // Se arregla dándole a la ficha su propia entrada de historial al abrirse. Se empuja
+  // solo al ABRIR desde la grilla (`!openProduct`): cambiar de color o saltar a un
+  // relacionado con la ficha ya abierta no apila entradas, así que un solo "atrás"
+  // siempre cierra, sin importar cuántos productos haya mirado el cliente por dentro.
+  function abrirProducto(p) {
+    if (!isProductPage && !openProduct) {
+      history.pushState({ baqtimeFicha: true }, "");
+    }
+    setOpenProduct(p);
+  }
+
+  function cerrarProducto() {
+    // Si esta página ES la del producto, cerrar tiene que devolver al catálogo. Solo
+    // ocultar el modal dejaría la URL diciendo /producto/x sobre una grilla.
+    if (isProductPage) {
+      window.location.href = "/";
+      return;
+    }
+    // Cerrar con la ✕ consume la entrada que agregamos, en vez de dejarla suelta: si no,
+    // el siguiente "atrás" se gastaría en una entrada que ya no muestra nada distinto y
+    // parecería que el botón no funciona.
+    if (history.state?.baqtimeFicha) {
+      history.back();
+      return;
+    }
+    setOpenProduct(null);
+  }
+
+  useEffect(() => {
+    if (isProductPage) return;
+    function alVolver() {
+      // Se cierra TODO lo que está encima del catálogo, no solo la ficha. El checkout se
+      // abre sobre ella sin cerrarla, así que cerrar únicamente la ficha dejaría el
+      // formulario de envío flotando sobre la grilla, sin el producto que lo explicaba.
+      // "Atrás" significa una sola cosa acá: volver al catálogo.
+      setOpenProduct(null);
+      setCheckoutOpen(false);
+      setCartOpen(false);
+    }
+    window.addEventListener("popstate", alVolver);
+    return () => window.removeEventListener("popstate", alVolver);
+  }, [isProductPage]);
+
   return (
     <>
       {/* En /producto/[slug] el catálogo no se renderiza. `.modal-overlay` tiene fondo
@@ -85,7 +135,7 @@ export default function ShopApp({ catalog, initialProductId = null }) {
           en las 32 páginas de producto. Para un buscador, 32 páginas casi idénticas son
           candidatas a que elija una sola canónica y descarte el resto. */}
       {!isProductPage && (
-        <CatalogExplorer catalog={catalog} onOpenProduct={setOpenProduct} />
+        <CatalogExplorer catalog={catalog} onOpenProduct={abrirProducto} />
       )}
 
       {openProduct && (
@@ -93,15 +143,7 @@ export default function ShopApp({ catalog, initialProductId = null }) {
           catalog={catalog}
           product={openProduct}
           isProductPage={isProductPage}
-          onClose={() => {
-            // Si esta página ES la del producto, cerrar tiene que devolver al catálogo.
-            // Solo ocultar el modal dejaría la URL diciendo /producto/x sobre una grilla.
-            if (isProductPage) {
-              window.location.href = "/";
-              return;
-            }
-            setOpenProduct(null);
-          }}
+          onClose={cerrarProducto}
           // Cambiar de producto en la portada es cambiar de estado; en /producto/[slug]
           // es cambiar de página. Antes era estado en los dos casos, así que elegir otro
           // color o un relacionado dejaba la URL nombrando el producto anterior.
@@ -110,7 +152,7 @@ export default function ShopApp({ catalog, initialProductId = null }) {
               ? (p) => {
                   window.location.href = rutaProducto(p);
                 }
-              : setOpenProduct
+              : abrirProducto
           }
           // El checkout se abre ENCIMA de la ficha, sin cerrarla: al volver, el cliente
           // sigue en el producto que estaba mirando. Cerrarla no es opción en
