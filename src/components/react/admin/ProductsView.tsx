@@ -1,10 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { RefObject } from "react";
 import type { Category, Product, ProductWithPhotos } from "../../../types/database";
 import { calcularDiff, type TipoCambio } from "../../../lib/admin/diff";
 import { useOrdenOptimista } from "../../../lib/admin/useAdminData";
 import { useArrastreOrden } from "../../../lib/admin/useArrastreOrden";
 import * as productosRepo from "../../../lib/admin/products.repo";
+import { rutaProducto } from "../../../lib/product-url";
+import { buildProductInviteMessage } from "../../../lib/whatsapp.js";
 import { publicImageUrl, PLACEHOLDER_IMAGE } from "../../../lib/supabase/config";
 import { Boton, Punto, Cargando, ErrorAviso, IconoAgarre, Vacio, dinero, type EstadoPunto } from "./ui";
 
@@ -29,6 +31,16 @@ interface Props {
   onNuevo: () => void;
   onCambio: () => void;
 }
+
+/**
+ * El dominio público de la tienda, NO el del panel.
+ *
+ * `import.meta.env.SITE` es el `site` de astro.config.mjs. Se usa en vez de
+ * `location.origin` porque este enlace se copia para mandárselo a un cliente por
+ * WhatsApp: con el panel abierto en localhost, `location.origin` daría
+ * http://localhost:4321 y ese enlace no le sirve a nadie más que a quien lo copió.
+ */
+const SITIO: string = import.meta.env.SITE ?? "https://baqtime.store";
 
 const ESTADO_UI: Record<TipoCambio | "sin-cambios", { punto: EstadoPunto; texto: string }> = {
   nuevo: { punto: "borrador", texto: "NUEVO" },
@@ -56,6 +68,53 @@ export default function ProductsView({
     () => Object.fromEntries(categorias.map((c) => [c.key, c.label])),
     [categorias]
   );
+
+  /** Id del producto cuyo enlace se acaba de copiar, para confirmarlo en el botón. */
+  const [copiado, setCopiado] = useState<string | null>(null);
+
+  /**
+   * Qué productos tienen hoy una página que un cliente pueda abrir.
+   *
+   * Se mira lo PUBLICADO y no el borrador: un producto recién creado, o uno oculto,
+   * tiene fila en `products_draft` pero su URL responde 404 hasta que se publica. Mandar
+   * ese enlace por WhatsApp es peor que no mandarlo, así que el botón se apaga.
+   */
+  const enVivo = useMemo(
+    () => new Set(publicado.filter((p) => p.is_active).map((p) => p.id)),
+    [publicado]
+  );
+
+  /**
+   * Copia el MENSAJE COMPLETO, no solo la dirección.
+   *
+   * El enlace suelto obliga a escribir a mano las instrucciones cada vez, y ahí es donde
+   * se pierden: sin ellas, mucha gente abre la ficha, no encuentra el botón y vuelve al
+   * chat a preguntar. Con el texto ya armado son dos gestos —copiar y pegar— y el
+   * cliente sabe exactamente qué tocar. La URL va dentro, así que no se pierde nada.
+   */
+  async function copiarEnlace(p: Product) {
+    const url = `${SITIO.replace(/\/$/, "")}${rutaProducto(p)}`;
+    const mensaje = buildProductInviteMessage(p, url);
+    try {
+      await navigator.clipboard.writeText(mensaje);
+    } catch {
+      // `navigator.clipboard` no existe fuera de HTTPS ni en navegadores viejos. Quedarse
+      // sin forma de copiar sería justamente el problema que este botón vino a resolver.
+      const caja = document.createElement("textarea");
+      caja.value = mensaje;
+      caja.setAttribute("readonly", "");
+      caja.style.position = "fixed";
+      caja.style.opacity = "0";
+      document.body.appendChild(caja);
+      caja.select();
+      document.execCommand("copy");
+      caja.remove();
+    }
+    setCopiado(p.id);
+    // Se compara el id antes de limpiar: si mientras tanto se copió OTRO producto, este
+    // temporizador no debe apagarle la confirmación al segundo.
+    setTimeout(() => setCopiado((actual) => (actual === p.id ? null : actual)), 2000);
+  }
 
   // Para que "TODAS" agrupe por categoría en el mismo orden que la pestaña
   // Categorías (position), no alfabético por category_key.
@@ -197,6 +256,7 @@ export default function ProductsView({
                   <th className="adm-mono adm-num" scope="col" role="columnheader">ORDEN</th>
                   <th className="adm-mono adm-num" scope="col" role="columnheader">FOTOS</th>
                   <th className="adm-mono" scope="col" role="columnheader">ESTADO</th>
+                  <th className="adm-mono" scope="col" role="columnheader">MENSAJE</th>
                 </tr>
               </thead>
               <tbody
@@ -279,6 +339,29 @@ export default function ProductsView({
                       </td>
                       <td className="adm-td-estado" role="cell">
                         <Punto estado={ui.punto} texto={ui.texto} />
+                      </td>
+                      {/* Para mandarle el enlace a un cliente por WhatsApp sin tener que
+                          abrir la tienda, buscar el producto y copiar la barra de
+                          direcciones con el cliente esperando en el chat. */}
+                      <td className="adm-td-enlace" role="cell">
+                        <button
+                          type="button"
+                          className="adm-mono adm-btn-enlace"
+                          // La fila entera abre el editor al hacer clic. Sin esto, copiar
+                          // el enlace también te sacaría de la lista.
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void copiarEnlace(p);
+                          }}
+                          disabled={!enVivo.has(p.id)}
+                          title={
+                            enVivo.has(p.id)
+                              ? `${SITIO.replace(/\/$/, "")}${rutaProducto(p)}`
+                              : "Este producto todavía no está publicado: su enlace daría error"
+                          }
+                        >
+                          {copiado === p.id ? "COPIADO ✓" : "COPIAR"}
+                        </button>
                       </td>
                     </tr>
                   );

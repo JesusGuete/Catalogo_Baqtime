@@ -66,3 +66,45 @@ export function buildOrderMessage(pedido) {
 export function whatsappUrl(message) {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
+
+/**
+ * EL MENSAJE QUE MANDA LA DUEÑA, no el cliente. Va al revés que el de arriba.
+ *
+ * Muchos clientes no entran a la tienda: escriben por WhatsApp diciendo qué bolso les
+ * gustó. La respuesta es el enlace de ese producto, y este texto es lo que lo acompaña.
+ * Se copia desde el panel (columna MENSAJE en PRODUCTOS) y se pega en el chat.
+ *
+ * NOMBRA LOS BOTONES TAL COMO SE LEEN EN PANTALLA. Es la diferencia entre que el cliente
+ * busque una palabra concreta y que tenga que interpretar una descripción. Si alguno se
+ * renombra en la tienda, hay que cambiarlo también acá:
+ *   ProductView.jsx   → "Finalizar compra"
+ *   Checkout.jsx      → "Confirmar pedido"
+ *   pedido/gracias    → "Confirmar pago por WhatsApp"
+ *
+ * Los asteriscos son la negrita de WhatsApp. Acá SÍ se usan, al contrario que en
+ * buildOrderMessage: este texto no lleva ninguna lista con viñetas que se pueda
+ * confundir con marcas de formato.
+ *
+ * @param {{ name: string, variant?: string | null, personalizable: boolean }} producto
+ * @param {string} url  La dirección pública de la ficha.
+ */
+export function buildProductInviteMessage(producto, url) {
+  const nombre = producto.variant ? `${producto.name} – ${producto.variant}` : producto.name;
+
+  // Sin iniciales no hay nada que escribir ni ningún color que elegir: ese paso no
+  // existe y los demás se corren. Dejarlo igual mandaría a buscar un campo que no está.
+  const pasos = producto.personalizable
+    ? [
+        `1. Escribir y elegir el color de las iniciales.`,
+        `2. Tocar *Finalizar compra* llenar sus datos de envío y *Confirmar pedido*.`,
+        `3. Luego presionar *Confirmar pago por WhatsApp* y será redirigida a este chat.`,
+      ]
+    : [
+        `1. Tocar *Finalizar compra* llenar sus datos de envío y *Confirmar pedido*.`,
+        `2. Luego presionar *Confirmar pago por WhatsApp* y será redirigida a este chat.`,
+      ];
+
+  return [`Aquí puedes agendar el ${nombre} 👇`, url, ``, `En ese enlace puedes:`, ...pasos].join(
+    "\n"
+  );
+}
