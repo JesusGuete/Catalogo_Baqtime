@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
-import type { Category } from "../../../types/database";
+import type { Category, InitialsColor } from "../../../types/database";
 import * as categoriasRepo from "../../../lib/admin/categories.repo";
 import { validarCategoria, esValido } from "../../../lib/admin/validation";
 import { useAccion, useOrdenOptimista } from "../../../lib/admin/useAdminData";
@@ -33,6 +33,8 @@ import {
 
 interface Props {
   categorias: Category[];
+  /** La paleta real, de la tabla `initials_colors`. Se edita en la pantalla Colores. */
+  colores: InitialsColor[];
   conteoPorCategoria: Record<string, number>;
   cargando: boolean;
   onCambio: () => void;
@@ -52,17 +54,17 @@ const CATEGORIA_NUEVA: Category = {
   initials_palette: [],
 };
 
-/** La paleta de la marca. Vive en el front porque no cambia por categoría — 008 §"DELIBERATELY NOT SOLVED". */
-const COLORES_MARCA = [
-  { nombre: "Plateado", hex: "#C9C9C9" },
-  { nombre: "Dorado", hex: "#9C7A3C" },
-  { nombre: "Vino", hex: "#6E1F2A" },
-  { nombre: "Blush", hex: "#E7BEC1" },
-  { nombre: "Negro", hex: "#26221D" },
-];
+// ACÁ ESTABA `COLORES_MARCA`, cinco colores escritos a mano. Era la mitad equivocada de
+// una paleta duplicada: la tienda pintaba otros nueve, desde src/lib/initials.js, con
+// hex distintos para los nombres que sí compartían. Esta pantalla ofrecía "Blush" y
+// "Plateado", que la tienda no tenía, así que marcar cualquiera de los dos dejaba a la
+// categoría sin ningún color de bordado que mostrar.
+//
+// Desde 014_initials_colors.sql la paleta es una tabla y llega por props. Ver ColorsView.
 
 export default function CategoriesView({
   categorias,
+  colores,
   conteoPorCategoria,
   cargando,
   onCambio,
@@ -412,23 +414,30 @@ export default function CategoriesView({
                   <p className="adm-mono adm-campo-label">
                     COLORES DE BORDADO PERMITIDOS · VACÍO = TODOS
                   </p>
-                  <div className="adm-paleta-chips">
-                    {COLORES_MARCA.map((c) => {
-                      const elegido = form.initials_palette.includes(c.nombre);
-                      return (
-                        <button
-                          key={c.nombre}
-                          type="button"
-                          className={`adm-mono adm-color-chip ${elegido ? "is-activo" : ""}`}
-                          onClick={() => alternarColor(c.nombre)}
-                          aria-pressed={elegido}
-                        >
-                          <span className="adm-color-swatch" style={{ background: c.hex }} />
-                          {c.nombre.toUpperCase()}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {colores.length === 0 ? (
+                    <p className="adm-campo-ayuda">
+                      Todavía no hay ningún color en la paleta. Se crean en COLORES, en el
+                      menú de la izquierda.
+                    </p>
+                  ) : (
+                    <div className="adm-paleta-chips">
+                      {colores.map((c) => {
+                        const elegido = form.initials_palette.includes(c.name);
+                        return (
+                          <button
+                            key={c.name}
+                            type="button"
+                            className={`adm-mono adm-color-chip ${elegido ? "is-activo" : ""}`}
+                            onClick={() => alternarColor(c.name)}
+                            aria-pressed={elegido}
+                          >
+                            <span className="adm-color-swatch" style={{ background: c.hex }} />
+                            {c.name.toUpperCase()}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </>
             )}

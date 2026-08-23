@@ -12,7 +12,7 @@ import { cerrarSesion, minutosRestantes, type Sesion } from "../../../lib/supaba
 // que solo puede mirar y nunca tocar no justifica un lugar en la navegación
 // principal; esas imágenes se suben desde el dashboard de Supabase.
 
-export type Vista = "productos" | "categorias" | "pedidos" | "publicar";
+export type Vista = "productos" | "categorias" | "colores" | "pedidos" | "publicar";
 
 interface Props {
   vista: Vista;
@@ -20,6 +20,8 @@ interface Props {
   sesion: Sesion;
   conteoProductos: number;
   conteoCategorias: number;
+  /** Cuántos colores de bordado tiene la paleta. */
+  conteoColores: number;
   /** Pedidos esperando que confirmes el pago. Enciende el punto de PEDIDOS. */
   pedidosPendientes: number;
   /** Cuántos cambios hay sin publicar. Enciende el punto del nav y la píldora. */
@@ -37,6 +39,7 @@ export default function AdminShell({
   sesion,
   conteoProductos,
   conteoCategorias,
+  conteoColores,
   pedidosPendientes,
   cambiosPendientes,
   titulo,
@@ -55,6 +58,9 @@ export default function AdminShell({
   const items: { id: Vista; label: string; contador?: number; punto?: boolean }[] = [
     { id: "productos", label: "PRODUCTOS", contador: conteoProductos },
     { id: "categorias", label: "CATEGORÍAS", contador: conteoCategorias },
+    // Va pegada a Categorías porque se usan juntas: acá se crean los colores y allá se
+    // elige cuáles admite cada categoría.
+    { id: "colores", label: "COLORES", contador: conteoColores },
     { id: "pedidos", label: "PEDIDOS", punto: pedidosPendientes > 0 },
     { id: "publicar", label: "PUBLICAR", punto: cambiosPendientes > 0 },
   ];

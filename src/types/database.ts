@@ -52,6 +52,33 @@ export type CategoryInsert = Category;
 export type CategoryUpdate = Partial<Omit<Category, "key">>;
 
 // ============================================================================
+// initials_colors — 014_initials_colors.sql
+// ============================================================================
+
+/**
+ * Un color de bordado de la paleta de la marca.
+ *
+ * Hasta 014 esta lista estaba escrita a mano en el código, y en DOS lugares con valores
+ * distintos: `src/lib/initials.js` (9 colores, los que pintaba la tienda) y
+ * `admin/CategoriesView.tsx` (5 colores, los que ofrecía el panel). Ahora es una tabla
+ * que leen los dos.
+ */
+export interface InitialsColor {
+  /** PK. Es el nombre que guardan `categories.initials_palette` y `order_items.initials_color`. */
+  name: string;
+  /** `#RRGGBB`. CHECK en la base: llega al navegador como `--swatch-color`. */
+  hex: string;
+  /** smallint. Orden de los círculos en la ficha. NO es único — ver 014. */
+  position: number;
+}
+
+/** Lo que se manda al crear. El nombre es la PK y después no se puede cambiar. */
+export type InitialsColorInsert = InitialsColor;
+
+/** Lo que se manda al editar: el hex y la posición; el nombre, no. */
+export type InitialsColorUpdate = Partial<Omit<InitialsColor, "name">>;
+
+// ============================================================================
 // products / products_draft — 001_schema.sql:45-63
 // products_draft se crea con LIKE products INCLUDING CONSTRAINTS (línea 91-93),
 // así que comparten forma y restricciones exactamente.
@@ -378,6 +405,12 @@ const columnasCategoria = [
   "initials_palette",
 ] as const satisfies readonly (keyof Category)[];
 
+const columnasColorIniciales = [
+  "name",
+  "hex",
+  "position",
+] as const satisfies readonly (keyof InitialsColor)[];
+
 const columnasPublicacion = [
   "id",
   "published_by_email",
@@ -442,6 +475,7 @@ const columnasPedidoHistorial = [
 
 export const SELECT_PRODUCTO = columnasProducto.join(",");
 export const SELECT_CATEGORIA = columnasCategoria.join(",");
+export const SELECT_COLOR_INICIALES = columnasColorIniciales.join(",");
 export const SELECT_PUBLICACION = columnasPublicacion.join(",");
 export const SELECT_PEDIDO_LISTA = columnasPedidoLista.join(",");
 export const SELECT_PEDIDO_ITEM = columnasPedidoItem.join(",");

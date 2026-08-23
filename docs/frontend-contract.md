@@ -62,7 +62,8 @@ Lo que hace falta saber para trabajar con esto:
 
 ## 2. Lo que el front PUEDE leer
 
-Estas tres tablas son legibles con la `anon key`. Verificado con `curl` el 2026-07-30.
+Estas cuatro tablas son legibles con la `anon key`. Verificado con `curl` el 2026-07-30;
+`initials_colors` se sumó después, en `014_initials_colors.sql`.
 
 ### `categories`
 
@@ -82,6 +83,23 @@ Estas tres tablas son legibles con la `anon key`. Verificado con `curl` el 2026-
 
 Las últimas cuatro se agregaron en `008_category_rules.sql` justamente para sacar del
 código las reglas por categoría. Ver §6.
+
+`initials_palette` guarda NOMBRES sueltos, sin foreign key contra `initials_colors`. Un
+nombre que ya no exista en la paleta no rompe nada: `initialsColorsFor` descarta el
+filtro entero y muestra la paleta completa antes que dejar una ficha sin ningún color
+que elegir.
+
+### `initials_colors`
+
+La paleta de bordado de la marca. Hasta `014_initials_colors.sql` era una constante del
+front (`INITIALS_COLORS` en `src/lib/initials.js`) duplicada —con otros valores— en el
+panel. Ahora la edita el dueño desde la pantalla COLORES.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `name` | `text` PK | Es lo que referencian `categories.initials_palette` y `order_items.initials_color`. Por eso no se renombra. |
+| `hex` | `text` | `#RRGGBB`, con CHECK. Llega al navegador como `--swatch-color`. |
+| `position` | `smallint` | Orden de los círculos. **NO** es único: hay que desempatar por `name` al ordenar. |
 
 ### `products`
 
@@ -152,6 +170,15 @@ GET /rest/v1/categories
   &order=position
 ```
 
+```
+GET /rest/v1/initials_colors
+  ?select=name,hex,position
+  &order=position,name
+```
+
+El `,name` del `order` no es decorativo: `position` no es única en esta tabla, y sin el
+desempate el orden de los círculos cambia entre peticiones.
+
 Las fotos embebidas **no vienen ordenadas**; hay que ordenarlas por `position` en el
 cliente, o pedir `product_photos(storage_path,position.order(position))`.
 
@@ -188,7 +215,8 @@ Esta es la parte que hay que mirar con atención. Los nombres no coinciden.
 | `IMPORTED_CATEGORIES` | `categories.is_imported` | Deja de ser una constante |
 | `category === "tote"` (subtítulo) | `categories.has_variant` | Deja de ser un `if` por clave |
 | `category === "tote"` (recargo) | `free_initials` + `extra_initials_price` | Idem |
-| `category === "makeup-bag"` (plateado) | `categories.initials_palette` | Idem |
+| `category === "makeup-bag"` (plateado) | `categories.initials_palette` | Idem. Hecho en 014: hasta entonces la columna existía y el front la ignoraba. |
+| `INITIALS_COLORS` (constante) | `initials_colors` | **Nuevo en 014.** Viaja en `catalog.initialsColors`. |
 
 La recomendación es adaptar en el borde: una función que traiga de Supabase y
 devuelva exactamente la forma que los componentes ya consumen. Así `CatalogExplorer`,
@@ -210,9 +238,10 @@ async function q(path) {
 }
 
 export async function loadCatalog() {
-  const [cats, prods] = await Promise.all([
+  const [cats, prods, initialsColors] = await Promise.all([
     q("categories?select=key,label,default_price,personalizable,max_initials,has_variant,position,is_imported,free_initials,extra_initials_price,initials_palette&order=position"),
     q("products?select=id,category_key,name,color,variant,hex,price,personalizable,max_initials,group_key,sort_order,product_photos(storage_path,position)&order=sort_order"),
+    q("initials_colors?select=name,hex,position&order=position,name"),
   ]);
 
   const products = prods.map((p) => {
@@ -239,6 +268,7 @@ export async function loadCatalog() {
   return {
     products,
     categories: cats,
+    initialsColors,
     CATEGORY_LABELS: Object.fromEntries(cats.map((c) => [c.key, c.label])),
     CATS: [{ key: null, label: "Todos" }, ...cats.map((c) => ({ key: c.key, label: c.label }))],
   };

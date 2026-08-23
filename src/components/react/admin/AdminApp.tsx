@@ -8,6 +8,7 @@ import AdminShell, { type Vista } from "./AdminShell";
 import ProductsView from "./ProductsView";
 import ProductEditor from "./ProductEditor";
 import CategoriesView from "./CategoriesView";
+import ColorsView from "./ColorsView";
 import PublishView from "./PublishView";
 import OrdersView from "./OrdersView";
 import OrderDetail from "./OrderDetail";
@@ -147,6 +148,10 @@ export default function AdminApp() {
   const encabezado: Record<Vista, { titulo: string; subtitulo: string }> = {
     productos: { titulo: "Productos", subtitulo: "PRODUCTS_DRAFT" },
     categorias: { titulo: "Categorías", subtitulo: "CATEGORIES · SE PUBLICAN AL INSTANTE" },
+    colores: {
+      titulo: "Colores de bordado",
+      subtitulo: "INITIALS_COLORS · SE PUBLICAN AL INSTANTE",
+    },
     pedidos: { titulo: "Pedidos", subtitulo: "ORDERS · SE GUARDAN AL INSTANTE" },
     publicar: { titulo: "Publicar", subtitulo: "RPC · PUBLISH_CATALOG" },
   };
@@ -158,6 +163,7 @@ export default function AdminApp() {
       sesion={sesion}
       conteoProductos={datos.borrador.length}
       conteoCategorias={datos.categorias.length}
+      conteoColores={datos.colores.length}
       pedidosPendientes={pedidosPendientes}
       cambiosPendientes={cambiosPendientes}
       titulo={encabezado[vista].titulo}
@@ -220,7 +226,17 @@ export default function AdminApp() {
       {vista === "categorias" && (
         <CategoriesView
           categorias={datos.categorias}
+          colores={datos.colores}
           conteoPorCategoria={datos.conteoPorCategoria}
+          cargando={datos.cargando}
+          onCambio={() => void datos.recargar()}
+        />
+      )}
+
+      {vista === "colores" && (
+        <ColorsView
+          colores={datos.colores}
+          categorias={datos.categorias}
           cargando={datos.cargando}
           onCambio={() => void datos.recargar()}
         />
