@@ -496,17 +496,41 @@
   .gallery-arrow:disabled{ opacity:0; cursor:default; } /* se oculta si solo hay 1 foto */
   .gallery-arrow-left{ left:10px; }
   .gallery-arrow-right{ right:10px; }
-  .gallery-thumbs{ display:flex; gap:8px; }
-  .gallery-thumbs img{
-    width:56px; height:56px; object-fit:cover; border-radius:2px;
-    border:1.5px solid transparent; cursor:pointer; opacity:.65;
-    transition:.15s;
+  /* El visor: miniaturas en columna a la izquierda y la foto grande al lado, como en
+     cualquier tienda. En celular se da vuelta (ver el media query de abajo). */
+  .gallery-visor{ display:flex; gap:10px; align-items:flex-start; }
+  .gallery-main{ flex:1 1 auto; min-width:0; } /* min-width:0 o el flex no deja encoger la foto */
+
+  .gallery-thumbs{
+    display:flex; flex-direction:column; gap:8px;
+    flex:0 0 60px;
+    /* Con muchas fotos la columna no puede pasarse de alto de la foto grande: se
+       desborda hacia adentro en vez de estirar la tarjeta. */
+    max-height:min(72vh, 520px); overflow-y:auto; scrollbar-width:none;
   }
+  .gallery-thumbs::-webkit-scrollbar{ display:none; }
+  .gallery-thumbs img{
+    width:60px; height:60px; object-fit:cover; border-radius:2px;
+    border:1.5px solid transparent; cursor:pointer; opacity:.65;
+    transition:.15s; flex:0 0 auto;
+  }
+  .gallery-thumbs img:hover{ opacity:1; }
   .gallery-thumbs img.active{ opacity:1; border-color:var(--ink); }
   .zoom-hint{ font-size:11px; color:var(--ink-soft); font-family:'JetBrains Mono',monospace; text-align:center;}
 
   @media (max-width:820px){
     .modal-gallery{ position:static; } /* en 1 sola columna, sticky no tiene sentido */
+    /* column-reverse y no reordenar el HTML: en el DOM las miniaturas van antes que la
+       foto grande porque son su control, pero en pantalla angosta la foto tiene que ir
+       arriba —es lo que el cliente vino a ver— y la tira debajo. */
+    .gallery-visor{ flex-direction:column-reverse; gap:8px; }
+    .gallery-thumbs{
+      flex-direction:row; flex:0 0 auto;
+      max-height:none; overflow-x:auto; overflow-y:hidden;
+    }
+    .gallery-thumbs img{ width:52px; height:52px; }
+    /* Las flechas sobran donde se pasa con el dedo, y encima tapan la foto. */
+    .gallery-arrow{ display:none; }
   }
 
   .modal-info{

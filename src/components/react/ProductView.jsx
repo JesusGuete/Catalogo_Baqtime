@@ -39,7 +39,9 @@ export default function ProductView({
   const [initialsColor, setInitialsColor] = useState(initialsColors[0]);
   const [addedMsg, setAddedMsg] = useState("");
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [fotoActiva, setFotoActiva] = useState(0);
   const addedTimer = useRef(null);
+  const slidesRef = useRef(null);
 
   // Al cambiar de producto (ej. clic en un color o en un relacionado) se reinicia
   // la configuración, igual que hacía openModal().
@@ -51,6 +53,17 @@ export default function ProductView({
     setInitialsColor(initialsColors[0]);
     setAddedMsg("");
   }, [product, initialsColors]);
+
+  // Al cambiar de producto la galería vuelve a la primera foto. Aparte del efecto de
+  // arriba y no dentro: aquel también corre cuando cambia la paleta de bordado, y eso no
+  // tiene por qué mover la foto que el cliente está mirando.
+  //
+  // `behavior: "auto"` a propósito: es un producto distinto, no hay nada que animar, y
+  // "smooth" mostraría un barrido por fotos del producto anterior.
+  useEffect(() => {
+    setFotoActiva(0);
+    slidesRef.current?.scrollTo({ left: 0, behavior: "auto" });
+  }, [product]);
 
   // Bloquea el scroll del fondo mientras la vista está abierta, y cierra con Escape.
   useEffect(() => {
@@ -70,6 +83,29 @@ export default function ProductView({
   useEffect(() => () => clearTimeout(addedTimer.current), []);
 
   const photos = product.gallery && product.gallery.length ? product.gallery : [product.img];
+
+  /**
+   * Qué foto se está viendo. Se mueve desde tres lados —flechas, miniaturas y el dedo en
+   * el celular— y la fuente de verdad es el scroll: `alDesplazar` lo recalcula pase lo
+   * que pase, así que los tres caminos terminan de acuerdo.
+   */
+  function irAFoto(i) {
+    const cont = slidesRef.current;
+    const destino = Math.max(0, Math.min(i, photos.length - 1));
+    setFotoActiva(destino);
+    // `scrollTo` con behavior smooth dispara varios eventos de scroll: no pasa nada,
+    // alDesplazar recalcula el mismo índice cada vez.
+    cont?.scrollTo({ left: cont.clientWidth * destino, behavior: "smooth" });
+  }
+
+  function alDesplazar(e) {
+    const cont = e.currentTarget;
+    // `clientWidth` y no un ancho fijo: cada slide mide 100% del contenedor (flex:0 0 100%
+    // en site.css), así que esta división vale igual en un celular que en un monitor.
+    if (cont.clientWidth === 0) return;
+    const i = Math.round(cont.scrollLeft / cont.clientWidth);
+    setFotoActiva((actual) => (i !== actual ? i : actual));
+  }
 
   // Opciones de color: solo para categorías distintas de tote (el tote usa variantes
   // de cordones, no colores sueltos). Portado de openModal().
@@ -189,14 +225,71 @@ export default function ProductView({
           </button>
 
           <div className="modal-gallery">
-            <div className="gallery-main" onClick={() => setZoomOpen(true)}>
-              <div className="gallery-slides">
-                {photos.map((src, i) => (
-                  <img key={i} src={src} alt={product.name} />
-                ))}
+            {/* MINIATURAS Y FLECHAS. La tira de fotos siempre existió, pero era solo un
+                contenedor con scroll horizontal y la barra oculta: en un celular se pasa
+                con el dedo y se descubre sola; en un computador con mouse no hay gesto ni
+                control, así que el cliente veía UNA foto y creía que era la única. Las
+                clases .gallery-arrow y .gallery-thumbs ya estaban escritas en site.css
+                desde el diseño original, sin nadie que las usara. */}
+            <div className="gallery-visor">
+              {photos.length > 1 && (
+                <div className="gallery-thumbs">
+                  {photos.map((src, i) => (
+                    <img
+                      key={i}
+                      src={src}
+                      alt={`${product.name} — foto ${i + 1} de ${photos.length}`}
+                      className={i === fotoActiva ? "active" : ""}
+                      onClick={() => irAFoto(i)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              <div className="gallery-main">
+                {/* El scroll manda sobre el índice y no al revés: en el celular el dedo
+                    mueve la tira sin pasar por irAFoto(), y si el índice no siguiera al
+                    scroll la miniatura marcada se quedaría en la foto anterior. */}
+                <div className="gallery-slides" ref={slidesRef} onScroll={alDesplazar}>
+                  {photos.map((src, i) => (
+                    <img
+                      key={i}
+                      src={src}
+                      alt={product.name}
+                      onClick={() => setZoomOpen(true)}
+                    />
+                  ))}
+                </div>
+
+                {photos.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      className="gallery-arrow gallery-arrow-left"
+                      onClick={() => irAFoto(fotoActiva - 1)}
+                      disabled={fotoActiva === 0}
+                      aria-label="Foto anterior"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      type="button"
+                      className="gallery-arrow gallery-arrow-right"
+                      onClick={() => irAFoto(fotoActiva + 1)}
+                      disabled={fotoActiva === photos.length - 1}
+                      aria-label="Foto siguiente"
+                    >
+                      ›
+                    </button>
+                  </>
+                )}
               </div>
             </div>
-            <div className="zoom-hint">Toca la imagen para ampliarla</div>
+            <div className="zoom-hint">
+              {photos.length > 1
+                ? `${fotoActiva + 1} / ${photos.length} · toca la imagen para ampliarla`
+                : "Toca la imagen para ampliarla"}
+            </div>
           </div>
 
           <div className="modal-info">
@@ -356,7 +449,9 @@ export default function ProductView({
           <button className="zoom-close" onClick={() => setZoomOpen(false)} aria-label="Cerrar zoom">
             ✕
           </button>
-          <img src={photos[0]} alt={product.name} />
+          {/* La que se está viendo, no `photos[0]`. Antes ampliaba siempre la primera:
+              pasabas a la tercera foto, tocabas para ampliar y aparecía otra distinta. */}
+          <img src={photos[fotoActiva]} alt={product.name} />
         </div>
       )}
     </>
