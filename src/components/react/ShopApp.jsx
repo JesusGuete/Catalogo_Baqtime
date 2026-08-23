@@ -40,6 +40,43 @@ export default function ShopApp({ catalog, initialProductId = null }) {
     return () => window.removeEventListener("baqtime:toggle-cart", onToggleCart);
   }, []);
 
+  // "ATRÁS" EN UNA PÁGINA DE PRODUCTO NO DEBERÍA SACAR DE LA TIENDA.
+  //
+  // /producto/[slug] es una página de verdad, así que el botón del navegador hace lo
+  // suyo: volver a la entrada anterior del historial. El problema es a quién le pasa
+  // eso. Los enlaces de producto se mandan por WhatsApp, o los encuentra Google: para
+  // esa visita la ficha es la PRIMERA página, no hay entrada anterior del sitio, y
+  // "atrás" la devuelve al chat o al buscador sin haber visto nunca el catálogo.
+  //
+  // Solo se toca ese caso. Si llegó desde el catálogo, "atrás" ya lo devuelve ahí —y
+  // conservando la posición del scroll, que es mejor de lo que se puede imitar acá.
+  //
+  // Cómo: se agrega una entrada extra al historial al abrir. "Atrás" cae en ella, se
+  // escucha el `popstate` y se manda a la portada. La URL no cambia (pushState sin
+  // tercer argumento), así que compartir el enlace sigue funcionando igual.
+  useEffect(() => {
+    if (!isProductPage) return;
+
+    let vieneDeFuera = true;
+    try {
+      // Sin referrer (enlace pegado a mano, WhatsApp, un QR) también cuenta como fuera.
+      vieneDeFuera =
+        !document.referrer ||
+        new URL(document.referrer).origin !== window.location.origin;
+    } catch {
+      // Un referrer con formato raro no debería romper la página entera.
+      vieneDeFuera = true;
+    }
+    if (!vieneDeFuera) return;
+
+    history.pushState({ baqtimeAtras: true }, "");
+    function alVolver() {
+      window.location.href = "/";
+    }
+    window.addEventListener("popstate", alVolver);
+    return () => window.removeEventListener("popstate", alVolver);
+  }, [isProductPage]);
+
   return (
     <>
       {/* En /producto/[slug] el catálogo no se renderiza. `.modal-overlay` tiene fondo

@@ -285,11 +285,13 @@ export default function ProductView({
                 )}
               </div>
             </div>
-            <div className="zoom-hint">
-              {photos.length > 1
-                ? `${fotoActiva + 1} / ${photos.length} · toca la imagen para ampliarla`
-                : "Toca la imagen para ampliarla"}
-            </div>
+            {/* Solo el contador. La frase "toca la imagen para ampliarla" se quitó: con
+                miniaturas y flechas a la vista, el pie ya no tiene que explicar nada. */}
+            {photos.length > 1 && (
+              <div className="zoom-hint">
+                {fotoActiva + 1} / {photos.length}
+              </div>
+            )}
           </div>
 
           <div className="modal-info">
