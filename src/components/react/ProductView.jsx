@@ -23,15 +23,18 @@ export default function ProductView({
   isProductPage = false,
 }) {
   const Title = isProductPage ? "h1" : "h2";
-  const { products: CATALOG, IMPORTED_CATEGORIES, categories } = catalog;
+  const { products: CATALOG, IMPORTED_CATEGORIES, categories, initialsColors: paleta } = catalog;
   // La categoría del producto trae las reglas de bordado (free_initials,
-  // extra_initials_price) que el dueño edita desde el panel.
+  // extra_initials_price, initials_palette) que el dueño edita desde el panel.
   const categoria = useMemo(
     () => categories.find((c) => c.key === product.category),
     [categories, product]
   );
   const cartItems = useCart();
-  const initialsColors = useMemo(() => initialsColorsFor(product), [product]);
+  const initialsColors = useMemo(
+    () => initialsColorsFor(paleta, categoria),
+    [paleta, categoria]
+  );
   const [initials, setInitials] = useState("");
   const [initialsColor, setInitialsColor] = useState(initialsColors[0]);
   const [addedMsg, setAddedMsg] = useState("");
@@ -40,11 +43,14 @@ export default function ProductView({
 
   // Al cambiar de producto (ej. clic en un color o en un relacionado) se reinicia
   // la configuración, igual que hacía openModal().
+  // `initialsColors` y no `product`: la paleta también cambia cuando el dueño agrega o
+  // quita un color desde el panel, y el color elegido tiene que volver a uno que siga
+  // existiendo. Con `[product]` se quedaba seleccionado un color ya borrado.
   useEffect(() => {
     setInitials("");
-    setInitialsColor(initialsColorsFor(product)[0]);
+    setInitialsColor(initialsColors[0]);
     setAddedMsg("");
-  }, [product]);
+  }, [product, initialsColors]);
 
   // Bloquea el scroll del fondo mientras la vista está abierta, y cierra con Escape.
   useEffect(() => {
@@ -221,8 +227,34 @@ export default function ProductView({
               </div>
             )}
 
+            {/* Las iniciales van PRIMERO y el color del bordado después. Con el orden al
+                revés, la fila de colores quedaba pegada abajo del nombre del producto y
+                encima del campo de texto: el cliente la leía como si fuera el color del
+                bolso —que ya había elegido arriba, en "Opciones disponibles"— y no como
+                el color del hilo. Poniéndola debajo del campo, se lee en el orden en que
+                se decide: qué letras, y de qué color. */}
             {product.personalizable && (
               <div>
+                <div className="field">
+                  <label htmlFor="initialsInput">{initialsLabel}</label>
+                  <input
+                    id="initialsInput"
+                    type="text"
+                    className="initials-input"
+                    placeholder="Ej. MM"
+                    value={initials}
+                    onChange={handleInitialsChange}
+                  />
+                  {/* También salía de la regla escrita a mano ("/ 7 · hasta 3 incluidas",
+                      solo para tote). Ahora el aviso aparece en cualquier categoría que
+                      tenga recargo configurado, con SUS números. */}
+                  <div className={"initials-count mono" + (extra > 0 ? " warn" : "")}>
+                    {categoria && categoria.extra_initials_price > 0
+                      ? `${count} / ${product.maxInitials} · hasta ${categoria.free_initials} incluidas`
+                      : `${count} / ${product.maxInitials}`}
+                  </div>
+                </div>
+
                 <div className="field">
                   <span className="field-label" id="pv-color-iniciales">
                     Color de las iniciales
@@ -243,26 +275,6 @@ export default function ProductView({
                     </div>
                   )}
                   <div className="initials-count mono">{initialsColor?.name}</div>
-                </div>
-
-                <div className="field">
-                  <label htmlFor="initialsInput">{initialsLabel}</label>
-                  <input
-                    id="initialsInput"
-                    type="text"
-                    className="initials-input"
-                    placeholder="Ej. MM"
-                    value={initials}
-                    onChange={handleInitialsChange}
-                  />
-                  {/* También salía de la regla escrita a mano ("/ 7 · hasta 3 incluidas",
-                      solo para tote). Ahora el aviso aparece en cualquier categoría que
-                      tenga recargo configurado, con SUS números. */}
-                  <div className={"initials-count mono" + (extra > 0 ? " warn" : "")}>
-                    {categoria && categoria.extra_initials_price > 0
-                      ? `${count} / ${product.maxInitials} · hasta ${categoria.free_initials} incluidas`
-                      : `${count} / ${product.maxInitials}`}
-                  </div>
                 </div>
               </div>
             )}

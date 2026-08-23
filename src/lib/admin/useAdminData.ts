@@ -11,7 +11,8 @@ import { comoAdminError, type AdminError } from "../supabase/errors";
 import * as categoriasRepo from "./categories.repo";
 import * as productosRepo from "./products.repo";
 import * as publishRepo from "./publish.repo";
-import type { Category, ProductWithPhotos } from "../../types/database";
+import * as coloresRepo from "./initials-colors.repo";
+import type { Category, InitialsColor, ProductWithPhotos } from "../../types/database";
 
 /**
  * Conecta un componente al store de sesión.
@@ -32,6 +33,8 @@ export function useSession(): Sesion | null {
 
 export interface AdminData {
   categorias: Category[];
+  /** La paleta de bordado completa (014). La edita Colores y la lee Categorías. */
+  colores: InitialsColor[];
   borrador: ProductWithPhotos[];
   publicado: ProductWithPhotos[];
   /** Cuántos productos del borrador cuelgan de cada categoría. */
@@ -42,13 +45,14 @@ export interface AdminData {
 }
 
 /**
- * Carga el estado completo del panel: categorías, borrador y publicado.
+ * Carga el estado completo del panel: categorías, paleta de bordado, borrador y publicado.
  *
- * Las tres van en paralelo porque no dependen entre sí. En serie el panel tardaría
- * el triple en abrir sin ninguna razón.
+ * Las cuatro van en paralelo porque no dependen entre sí. En serie el panel tardaría
+ * cuatro veces más en abrir sin ninguna razón.
  */
 export function useAdminData(activo: boolean): AdminData {
   const [categorias, setCategorias] = useState<Category[]>([]);
+  const [colores, setColores] = useState<InitialsColor[]>([]);
   const [borrador, setBorrador] = useState<ProductWithPhotos[]>([]);
   const [publicado, setPublicado] = useState<ProductWithPhotos[]>([]);
   const [cargando, setCargando] = useState(false);
@@ -58,12 +62,14 @@ export function useAdminData(activo: boolean): AdminData {
     setCargando(true);
     setError(null);
     try {
-      const [cats, draft, pub] = await Promise.all([
+      const [cats, cols, draft, pub] = await Promise.all([
         categoriasRepo.listar(),
+        coloresRepo.listar(),
         productosRepo.listar(),
         publishRepo.cargarPublicado(),
       ]);
       setCategorias(cats);
+      setColores(cols);
       setBorrador(draft);
       setPublicado(pub);
     } catch (e) {
@@ -84,7 +90,7 @@ export function useAdminData(activo: boolean): AdminData {
     conteoPorCategoria[p.category_key] = (conteoPorCategoria[p.category_key] ?? 0) + 1;
   }
 
-  return { categorias, borrador, publicado, conteoPorCategoria, cargando, error, recargar };
+  return { categorias, colores, borrador, publicado, conteoPorCategoria, cargando, error, recargar };
 }
 
 /**

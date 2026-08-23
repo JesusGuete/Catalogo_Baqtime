@@ -11,7 +11,7 @@
 // es justo donde un typo no se nota.
 //
 // Mapeo campo por campo: docs/frontend-contract.md §5.
-import type { Category } from "../types/database";
+import type { Category, InitialsColor } from "../types/database";
 
 const BASE = import.meta.env.PUBLIC_SUPABASE_URL;
 const KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
@@ -42,6 +42,13 @@ export interface ProductoPublico {
 export interface Catalogo {
   products: ProductoPublico[];
   categories: Category[];
+  /**
+   * La paleta de bordado completa, en orden. Antes era una constante del front
+   * (`INITIALS_COLORS`); desde 014 la edita el dueño desde el panel, así que viaja con
+   * el catálogo. Qué colores ve cada categoría lo decide `initials_palette` — ver
+   * `initialsColorsFor` en lib/initials.js.
+   */
+  initialsColors: InitialsColor[];
   CATEGORY_LABELS: Record<string, string>;
   CATS: { key: string | null; label: string }[];
   IMPORTED_CATEGORIES: string[];
@@ -73,12 +80,18 @@ async function q<T>(path: string): Promise<T> {
 }
 
 export async function loadCatalog(): Promise<Catalogo> {
-  const [categories, prods] = await Promise.all([
+  const [categories, prods, initialsColors] = await Promise.all([
     q<Category[]>(
       "categories?select=key,label,default_price,personalizable,max_initials,has_variant,position,is_imported,free_initials,extra_initials_price,initials_palette&order=position"
     ),
     q<FilaProducto[]>(
       "products?select=id,category_key,name,color,variant,hex,price,personalizable,max_initials,group_key,sort_order,product_photos(storage_path,position)&order=category_key,sort_order"
+    ),
+    // Se ordena también por `name` porque `position` no es única (014): sin el desempate,
+    // dos colores con el mismo número saldrían en un orden que cambia entre peticiones y
+    // los círculos bailarían de lugar al recargar.
+    q<InitialsColor[]>(
+      "initials_colors?select=name,hex,position&order=position,name"
     ),
   ]);
 
@@ -118,6 +131,7 @@ export async function loadCatalog(): Promise<Catalogo> {
   return {
     products,
     categories,
+    initialsColors,
     CATEGORY_LABELS: Object.fromEntries(categories.map((c) => [c.key, c.label])),
     CATS: [
       { key: null, label: "Todos" },

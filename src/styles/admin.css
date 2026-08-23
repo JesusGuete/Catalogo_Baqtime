@@ -777,3 +777,48 @@ input.adm-input { display: block; }
     order: -1;
   }
 }
+
+/* ============================================================ COLORES DE BORDADO */
+/* Pantalla de la paleta (014_initials_colors.sql). Reusa .adm-card, .adm-campo y
+   ColorHex; lo de acá es solo el layout de la lista. */
+
+.adm-colores { display: flex; flex-direction: column; gap: 20px; max-width: 760px; }
+
+.adm-color-nuevo-campos { display: flex; gap: 16px; flex-wrap: wrap; }
+/* El nombre se lleva el espacio sobrante y el hex se queda en su ancho: el input de
+   color es una muestra fija, estirarlo no lo hace más útil. */
+.adm-color-nuevo-campos > :first-child { flex: 1 1 220px; }
+.adm-color-nuevo-campos > :last-child { flex: 0 0 180px; }
+
+.adm-color-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+
+.adm-color-fila {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--white-card); border: 1px solid var(--line-solid);
+  border-radius: var(--radius); padding: 12px 16px;
+}
+
+/* Más grande que el .adm-color-swatch de los chips: acá el color ES el contenido de la
+   fila, no una marca al lado de un nombre. */
+.adm-color-muestra {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  border: 1px solid var(--line-solid);
+}
+
+.adm-color-datos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.adm-color-nombre { font-size: 14px; color: var(--ink); }
+.adm-color-usos { font-size: 9px; color: var(--ink-faint); letter-spacing: 0.05em; }
+
+.adm-color-hex { flex: 0 0 180px; }
+.adm-color-acciones { display: flex; gap: 8px; flex-shrink: 0; }
+
+@media (max-width: 720px) {
+  /* En una sola columna la fila se apila y la muestra pasa a encabezarla junto al
+     nombre, para que no queden tres bloques sueltos sin relación visible. */
+  .adm-color-fila { flex-wrap: wrap; }
+  .adm-color-datos { flex: 1 1 auto; }
+  .adm-color-hex { flex: 1 1 100%; }
+  .adm-color-acciones { flex: 1 1 100%; }
+  .adm-color-nuevo-campos > :first-child,
+  .adm-color-nuevo-campos > :last-child { flex: 1 1 100%; }
+}

@@ -10,7 +10,14 @@
 // proyecto real.
 
 /** Dónde ocurrió el error. Cambia la traducción de los códigos ambiguos. */
-export type ContextoError = "categories" | "products" | "photos" | "publish" | "pedidos" | "";
+export type ContextoError =
+  | "categories"
+  | "products"
+  | "photos"
+  | "publish"
+  | "pedidos"
+  | "initials_colors"
+  | "";
 
 export interface AdminErrorOpts {
   code?: string | null;
@@ -78,9 +85,15 @@ const POR_CODIGO: Record<string, (ctx: ContextoError) => string> = {
   "23505": (ctx) =>
     ctx === "categories"
       ? "Ya hay otra categoría en esa posición. Las posiciones no se pueden repetir."
-      : "Ya hay otro producto con ese orden en la misma categoría. El orden no se puede repetir.",
-  "23514": () =>
-    "Hay un dato con formato inválido. Revisa que el color sea #RRGGBB con los 6 dígitos y que el precio no sea negativo.",
+      : ctx === "initials_colors"
+        ? // El nombre es la PK de la paleta (014), así que acá `23505` siempre es
+          // "ese color ya existe" y nunca un choque de posiciones: `position` no es única.
+          "Ya tienes un color de bordado con ese nombre. Usa otro, o edita el que ya existe."
+        : "Ya hay otro producto con ese orden en la misma categoría. El orden no se puede repetir.",
+  "23514": (ctx) =>
+    ctx === "initials_colors"
+      ? "El color tiene que ser #RRGGBB con los 6 dígitos, y el nombre no puede quedar vacío."
+      : "Hay un dato con formato inválido. Revisa que el color sea #RRGGBB con los 6 dígitos y que el precio no sea negativo.",
   "55P03": () => "Hay otra publicación en curso. Espera unos segundos y vuelve a intentar.",
   P0001: () =>
     "El borrador está vacío y el catálogo publicado tiene productos. La base se niega a publicar eso para no borrarte todo. Para vaciar el catálogo a propósito, oculta cada producto y publica.",
