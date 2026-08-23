@@ -460,6 +460,19 @@ input.adm-input { display: block; }
    agarre enfocable que además responde a las flechas del teclado, así que ya
    no hacen falta botones ↑/↓ aparte. */
 .adm-fila-orden { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+
+/* Boton de copiar el enlace publico del producto. Discreto a proposito: la fila ya
+   tiene bastante, y esto se usa cuando hace falta, no todo el rato. */
+.adm-btn-enlace {
+  padding: 5px 10px;
+  font-size: 9px; letter-spacing: 0.08em;
+  background: var(--white-card); border: 1px solid var(--line-solid);
+  border-radius: var(--radius); color: var(--ink-soft);
+  cursor: pointer; white-space: nowrap; transition: .15s;
+}
+.adm-btn-enlace:hover:not(:disabled) { background: var(--ink); border-color: var(--ink); color: var(--cream); }
+/* Sin publicar no hay pagina que abrir: el enlace daria 404. */
+.adm-btn-enlace:disabled { opacity: .35; cursor: not-allowed; }
 .adm-fila-agarre {
   display: inline-flex; align-items: center; justify-content: center;
   width: 24px; height: 24px; color: var(--ink-faint); border-radius: var(--radius);
@@ -499,7 +512,8 @@ input.adm-input { display: block; }
     grid-template-columns: 44px 1fr auto;
     grid-template-areas:
       "foto nombre agarre"
-      "precio precio estado";
+      "precio precio estado"
+      "enlace enlace enlace";
     align-items: center;
     column-gap: 12px;
     row-gap: 6px;
@@ -515,6 +529,10 @@ input.adm-input { display: block; }
   .adm-td-nombre { grid-area: nombre; }
   .adm-td-precio { grid-area: precio; text-align: left; font-family: "Unna", serif; font-size: 15px; }
   .adm-td-estado { grid-area: estado; }
+  /* Fila propia y a todo el ancho: en el teléfono es un botón que hay que poder tocar
+     sin apuntar, y comprimido en una cuarta columna no se podría. */
+  .adm-td-enlace { grid-area: enlace; justify-self: stretch; }
+  .adm-btn-enlace { width: 100%; padding: 9px; }
   .adm-td-categoria { grid-area: categoria; grid-column: 1 / -1; padding-left: 56px; font-size: 11px; color: var(--ink-soft); }
   .adm-tabla--filtrada .adm-td-categoria { display: none; }
   /* Prefijo td. para ganarle en especificidad a ".adm-tabla td { display:
