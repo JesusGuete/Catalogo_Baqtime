@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
-import type { Category, ProductInsert, ProductWithPhotos } from "../../../types/database";
+import type {
+  Category,
+  InitialsColor,
+  ProductInsert,
+  ProductWithPhotos,
+} from "../../../types/database";
 import * as productosRepo from "../../../lib/admin/products.repo";
 import * as fotosRepo from "../../../lib/admin/photos.repo";
 import { validarProducto, esValido, nuevoIdProducto } from "../../../lib/admin/validation";
@@ -34,6 +39,8 @@ interface Props {
   /** `null` = producto nuevo. */
   producto: ProductWithPhotos | null;
   categorias: Category[];
+  /** La paleta completa, para elegir los colores de bordado de este producto. */
+  colores: InitialsColor[];
   productosExistentes: ProductWithPhotos[];
   onCerrar: () => void;
   onGuardado: () => void;
@@ -53,6 +60,8 @@ interface Formulario {
   group_key: string;
   is_active: boolean;
   sort_order: number | null;
+  /** Colores de bordado propios (015). Vacío = heredar la regla de la categoría. */
+  initials_palette: string[];
 }
 
 function desdeProducto(p: ProductWithPhotos): Formulario {
@@ -69,6 +78,7 @@ function desdeProducto(p: ProductWithPhotos): Formulario {
     group_key: p.group_key,
     is_active: p.is_active,
     sort_order: p.sort_order,
+    initials_palette: p.initials_palette ?? [],
   };
 }
 
@@ -88,12 +98,16 @@ function formularioNuevo(categoria: Category | undefined, siguienteOrden: number
     group_key: "",
     is_active: true,
     sort_order: siguienteOrden,
+    // Vacío a propósito: un producto nuevo hereda la regla de su categoría hasta que
+    // el dueño decida otra cosa para ESTE bolso.
+    initials_palette: [],
   };
 }
 
 export default function ProductEditor({
   producto,
   categorias,
+  colores,
   productosExistentes,
   onCerrar,
   onGuardado,
@@ -173,6 +187,7 @@ export default function ProductEditor({
         origin: producto?.origin ?? "custom",
         is_active: form.is_active,
         sort_order: form.sort_order!,
+        initials_palette: form.initials_palette,
       };
 
       // Paso 1: la fila. Tiene que existir antes de asociarle fotos.
@@ -352,6 +367,59 @@ export default function ProductEditor({
                 titulo={`${categoria.label} cobra ${dinero(categoria.extra_initials_price)} a partir de la inicial ${categoria.free_initials + 1}.`}
                 meta={`REGLA DE LA CATEGORÍA · FREE_INITIALS ${categoria.free_initials} · EXTRA_INITIALS_PRICE ${categoria.extra_initials_price} · SE EDITA EN CATEGORÍAS`}
               />
+            )}
+
+            {/* Solo si es personalizable: en un producto sin iniciales, elegir con qué
+                hilo bordarlas no significa nada y ocuparía media pantalla. */}
+            {form.personalizable && (
+              <div className="adm-paleta">
+                <p className="adm-mono adm-campo-label">
+                  COLORES DE BORDADO DE ESTE PRODUCTO · VACÍO = LOS DE LA CATEGORÍA
+                </p>
+                <p className="adm-hint">
+                  Deja fuera los que no se vean sobre esta tela. Un hilo beige sobre lona
+                  beige no se distingue, y el cliente no tiene cómo saberlo desde la foto.
+                </p>
+                {colores.length === 0 ? (
+                  <p className="adm-campo-ayuda">
+                    Todavía no hay ningún color en la paleta. Se crean en COLORES.
+                  </p>
+                ) : (
+                  <div className="adm-paleta-chips">
+                    {colores.map((c) => {
+                      const elegido = form.initials_palette.includes(c.name);
+                      return (
+                        <button
+                          key={c.name}
+                          type="button"
+                          className={`adm-mono adm-color-chip ${elegido ? "is-activo" : ""}`}
+                          onClick={() =>
+                            actualizar(
+                              "initials_palette",
+                              elegido
+                                ? form.initials_palette.filter((n) => n !== c.name)
+                                : [...form.initials_palette, c.name]
+                            )
+                          }
+                          aria-pressed={elegido}
+                        >
+                          <span className="adm-color-swatch" style={{ background: c.hex }} />
+                          {c.name.toUpperCase()}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {/* Decir cuál gana evita la pregunta obvia: el dueño ve dos lugares donde
+                    configurar lo mismo y necesita saber cuál de los dos manda. */}
+                {form.initials_palette.length === 0 &&
+                categoria &&
+                categoria.initials_palette.length > 0 ? (
+                  <p className="adm-campo-ayuda">
+                    Ahora hereda de {categoria.label}: {categoria.initials_palette.join(", ")}.
+                  </p>
+                ) : null}
+              </div>
             )}
           </section>
         </div>

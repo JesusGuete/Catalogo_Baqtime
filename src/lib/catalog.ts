@@ -33,6 +33,8 @@ export interface ProductoPublico {
   maxInitials: number;
   groupKey: string;
   sortOrder: number;
+  /** Colores de bordado propios de este producto (015). Vacío = heredar de la categoría. */
+  initialsPalette: string[];
   /** URLs públicas, ya ordenadas por posición. Puede venir vacía. */
   gallery: string[];
   /** La primera foto, o el placeholder si el producto no tiene ninguna. */
@@ -67,6 +69,7 @@ interface FilaProducto {
   max_initials: number;
   group_key: string;
   sort_order: number;
+  initials_palette: string[];
   product_photos?: { storage_path: string; position: number }[];
 }
 
@@ -85,7 +88,7 @@ export async function loadCatalog(): Promise<Catalogo> {
       "categories?select=key,label,default_price,personalizable,max_initials,has_variant,position,is_imported,free_initials,extra_initials_price,initials_palette&order=position"
     ),
     q<FilaProducto[]>(
-      "products?select=id,category_key,name,color,variant,hex,price,personalizable,max_initials,group_key,sort_order,product_photos(storage_path,position)&order=category_key,sort_order"
+      "products?select=id,category_key,name,color,variant,hex,price,personalizable,max_initials,group_key,sort_order,initials_palette,product_photos(storage_path,position)&order=category_key,sort_order"
     ),
     // Se ordena también por `name` porque `position` no es única (014): sin el desempate,
     // dos colores con el mismo número saldrían en un orden que cambia entre peticiones y
@@ -123,6 +126,7 @@ export async function loadCatalog(): Promise<Catalogo> {
       maxInitials: p.max_initials,
       groupKey: p.group_key,
       sortOrder: p.sort_order,
+      initialsPalette: p.initials_palette ?? [],
       gallery,
       img: gallery[0] ?? PLACEHOLDER, // producto sin fotos: placeholder, no romper
     };

@@ -63,6 +63,22 @@ function mismasFotos(a: string[], b: string[]): boolean {
 }
 
 /**
+ * `initials_palette` (015) NO PUEDE entrar en CAMPOS_COMPARABLES: esa lista compara con
+ * `!==`, y dos arrays traídos por consultas distintas nunca son la misma referencia. Si
+ * se agregara ahí, TODOS los productos aparecerían como editados para siempre y la
+ * pantalla de publicar dejaría de servir para nada.
+ *
+ * Acá el orden NO importa, al revés que en las fotos: la tienda pinta los colores en el
+ * orden de la paleta (`position`), no en el que quedaron guardados en esta columna, así
+ * que un reordenamiento no es un cambio que nadie pueda ver.
+ */
+function mismaPaleta(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const ordenadaB = [...b].sort();
+  return [...a].sort().every((n, i) => n === ordenadaB[i]);
+}
+
+/**
  * Arma la frase del detalle priorizando lo que más le importa a quien mira: primero
  * el precio (es lo que cobra), después las fotos, y recién al final "otros campos".
  * Mostrar los 11 campos que cambiaron no ayuda a decidir si publicar.
@@ -81,6 +97,16 @@ function describirCambios(borrador: ProductWithPhotos, publicado: ProductWithPho
       fotosB.length === fotosP.length
         ? "fotos reordenadas"
         : `${fotosP.length} fotos → ${fotosB.length} fotos`
+    );
+  }
+
+  if (!mismaPaleta(borrador.initials_palette ?? [], publicado.initials_palette ?? [])) {
+    // Se nombra aparte y no como "un campo más" porque cambia lo que el cliente puede
+    // elegir en la ficha, que es más visible que la mayoría de las columnas.
+    partes.push(
+      borrador.initials_palette.length === 0
+        ? "colores de bordado: vuelve a los de la categoría"
+        : `colores de bordado: ${borrador.initials_palette.join(", ")}`
     );
   }
 
@@ -158,8 +184,9 @@ export function calcularDiff(
 
     const camposDistintos = CAMPOS_COMPARABLES.some((c) => b[c] !== p[c]);
     const fotosDistintas = !mismasFotos(fotosDe(b), fotosDe(p));
+    const paletaDistinta = !mismaPaleta(b.initials_palette ?? [], p.initials_palette ?? []);
 
-    if (camposDistintos || fotosDistintas) {
+    if (camposDistintos || fotosDistintas || paletaDistinta) {
       cambios.push({ ...base, tipo: "editado", detalle: describirCambios(b, p) });
     } else {
       sinCambios++;
