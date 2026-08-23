@@ -32,8 +32,8 @@ export default function ProductView({
   );
   const cartItems = useCart();
   const initialsColors = useMemo(
-    () => initialsColorsFor(paleta, categoria),
-    [paleta, categoria]
+    () => initialsColorsFor(paleta, categoria, product),
+    [paleta, categoria, product]
   );
   const [initials, setInitials] = useState("");
   const [initialsColor, setInitialsColor] = useState(initialsColors[0]);

@@ -121,6 +121,7 @@ el front no necesita filtrar y **no puede** ver las inactivas aunque lo intente.
 | `origin` | `text` | `factory` \| `custom`. El front puede ignorarlo. |
 | `is_active` | `boolean` | Siempre `true` en lo que llega al front. |
 | `sort_order` | `integer` | Orden dentro de la categoría. Es el orden "Relevancia". |
+| `initials_palette` | `text[]` | Colores de bordado de ESTE producto (015). Vacío = usar los de la categoría. |
 | `created_at` / `updated_at` | `timestamptz` | |
 
 ### `product_photos`
@@ -159,7 +160,7 @@ petición**:
 
 ```
 GET /rest/v1/products
-  ?select=id,category_key,name,color,variant,hex,price,personalizable,max_initials,group_key,sort_order,product_photos(storage_path,position)
+  ?select=id,category_key,name,color,variant,hex,price,personalizable,max_initials,group_key,sort_order,initials_palette,product_photos(storage_path,position)
   &order=sort_order
 Headers: apikey: <anon key>
 ```
@@ -217,6 +218,7 @@ Esta es la parte que hay que mirar con atención. Los nombres no coinciden.
 | `category === "tote"` (recargo) | `free_initials` + `extra_initials_price` | Idem |
 | `category === "makeup-bag"` (plateado) | `categories.initials_palette` | Idem. Hecho en 014: hasta entonces la columna existía y el front la ignoraba. |
 | `INITIALS_COLORS` (constante) | `initials_colors` | **Nuevo en 014.** Viaja en `catalog.initialsColors`. |
+| — | `products.initials_palette` | **Nuevo en 015.** Los colores se eligen por producto; la categoría queda de respaldo. |
 
 La recomendación es adaptar en el borde: una función que traiga de Supabase y
 devuelva exactamente la forma que los componentes ya consumen. Así `CatalogExplorer`,
@@ -240,7 +242,7 @@ async function q(path) {
 export async function loadCatalog() {
   const [cats, prods, initialsColors] = await Promise.all([
     q("categories?select=key,label,default_price,personalizable,max_initials,has_variant,position,is_imported,free_initials,extra_initials_price,initials_palette&order=position"),
-    q("products?select=id,category_key,name,color,variant,hex,price,personalizable,max_initials,group_key,sort_order,product_photos(storage_path,position)&order=sort_order"),
+    q("products?select=id,category_key,name,color,variant,hex,price,personalizable,max_initials,group_key,sort_order,initials_palette,product_photos(storage_path,position)&order=sort_order"),
     q("initials_colors?select=name,hex,position&order=position,name"),
   ]);
 
@@ -260,6 +262,7 @@ export async function loadCatalog() {
       maxInitials: p.max_initials,
       groupKey: p.group_key,
       sortOrder: p.sort_order,
+      initialsPalette: p.initials_palette,
       gallery,
       img: gallery[0] ?? PLACEHOLDER,  // compatibilidad con el código actual
     };

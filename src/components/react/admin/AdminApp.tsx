@@ -121,6 +121,7 @@ export default function AdminApp() {
       <ProductEditor
         producto={productoEnEdicion}
         categorias={datos.categorias}
+        colores={datos.colores}
         productosExistentes={datos.borrador}
         onCerrar={() => navegar({ vista, editando: null })}
         onGuardado={() => {

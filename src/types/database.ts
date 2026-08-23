@@ -108,6 +108,11 @@ export interface Product {
   is_active: boolean;
   /** UNIQUE junto con category_key. Diferible en products_draft. */
   sort_order: number;
+  /**
+   * Colores de bordado de ESTE producto, por nombre (015). Vacío = usar la regla de la
+   * categoría, que a su vez vacía significa toda la paleta. Ver `initialsColorsFor`.
+   */
+  initials_palette: string[];
   created_at: Timestamptz;
   updated_at: Timestamptz;
 }
@@ -387,6 +392,7 @@ const columnasProducto = [
   "origin",
   "is_active",
   "sort_order",
+  "initials_palette",
   "created_at",
   "updated_at",
 ] as const satisfies readonly (keyof Product)[];
