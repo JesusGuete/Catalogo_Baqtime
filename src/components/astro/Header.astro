@@ -1,17 +1,40 @@
 ---
-// Portado desde <header> en index.html.
-// El botón del carrito es una isla React mínima (CartBadge) porque necesita
-// mostrar el contador en vivo; el resto del encabezado sigue siendo HTML estático.
+// PRUEBA — rama prueba/catalogo-y-menu. No está en main.
+//
+// La barra superior en tres zonas, con el logo centrado: acciones a los lados, marca en
+// el medio. A la izquierda el lado de "ir a" (menú y buscador), a la derecha el de "lo
+// mío" (mi pedido, mi carrito).
+//
+// TRES ZONAS Y NO `space-between`. Con el espacio repartido, el logo se "centra" respecto
+// al hueco que le dejan sus vecinos: basta con que algo crezca un píxel para que la marca
+// se corra. La rejilla `1fr auto 1fr` de site.css le da al centro su propia columna.
+//
+// El menú, el buscador y el carrito son islas React porque necesitan estado en vivo (el
+// panel desplegado, el contador); el resto del encabezado es HTML estático.
 import CartBadge from "../react/CartBadge.jsx";
+import MenuBadge from "../react/MenuBadge.jsx";
 import SearchBadge from "../react/SearchBadge.jsx";
+
+interface Props {
+  /** Categorías para el panel del menú. Las páginas sin catálogo no las pasan. */
+  categorias?: { key: string | null; label: string }[];
+  /** Productos para el panel del buscador: se muestran antes de escribir nada. */
+  destacados?: { id: string; name: string; price: number; img: string }[];
+}
+const { categorias = [], destacados = [] } = Astro.props as Props;
 ---
 <header>
-  <!-- width/height son las dimensiones reales del archivo (998x297). No fijan el
-       tamaño en pantalla — de eso se encarga `.brand-logo` con height:38px y el
-       `img{height:auto}` global. Sirven para que el navegador reserve el espacio
-       antes de que la imagen cargue y el encabezado no salte. -->
-  <!-- El logo vuelve al inicio, igual que en el panel. Es lo que todo el mundo intenta
-       tocar para volver, y hasta ahora no hacía nada. -->
+  <div class="header-zona header-zona--izq">
+    <MenuBadge client:load categorias={categorias} />
+    <SearchBadge client:load destacados={destacados} />
+  </div>
+
+  <!-- width/height son las dimensiones reales del archivo (998x297). No fijan el tamaño
+       en pantalla —de eso se encarga `.brand-logo`—: reservan el espacio antes de que la
+       imagen cargue, para que el encabezado no salte.
+
+       El logo vuelve al inicio, igual que en el panel. Es lo que todo el mundo intenta
+       tocar para volver. -->
   <a href="/" class="brand-link" aria-label="Ir al inicio">
     <img
       src="/assets/img/logo.png"
@@ -21,13 +44,9 @@ import SearchBadge from "../react/SearchBadge.jsx";
       height="297"
     />
   </a>
-  <div class="cart-note">Barranquilla y Cartagena, Colombia</div>
-  <!-- "Mi pedido" y el carrito van juntos: son las dos acciones del encabezado, y
-       agruparlas evita que el `justify-content: space-between` del <header> las separe a
-       los extremos con la nota de ciudades en el medio. -->
-  <div class="header-acciones">
+
+  <div class="header-zona header-zona--der">
     <a class="header-pedido mono" href="/pedido">MI PEDIDO</a>
-    <SearchBadge client:load />
     <CartBadge client:load />
   </div>
 </header>
