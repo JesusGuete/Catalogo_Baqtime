@@ -675,12 +675,38 @@
     .ig-btn svg{ width:19px; height:19px; }
 
     .portada-heading{ padding:0 16px; font-size:21px; margin-bottom:14px; }
-    .portada-carousel{ padding:0 16px 40px; gap:8px; }
-    .portada-card{ flex:0 0 100%; } /* 1 tarjeta visible en móvil */
-    .portada-arrow{ width:30px; height:30px; font-size:15px; }
-    .portada-body{ padding:16px 16px 20px; }
-    .portada-body h3{ font-size:17px; }
-    .portada-body p{ font-size:12.5px; }
+
+    /* EN CELULAR EL CARRUSEL SE VUELVE REJILLA DE DOS COLUMNAS.
+       Deslizando se veía UNA colección por vez, con foto grande, párrafo y botón: casi
+       una pantalla entera por colección y cinco gestos para verlas todas, así que casi
+       nadie llegaba al final. En rejilla se ven cuatro de un golpe y las seis con un
+       scroll corto — la diferencia entre "hay una colección" y "hay un catálogo".
+
+       En computador NO cambia nada: sigue siendo el carrusel de tres tarjetas. */
+    .portada-carousel{ padding:0 16px 40px; gap:0; display:block; }
+    .portada-viewport{ overflow:visible; }
+    .portada{
+      display:grid; grid-template-columns:repeat(2, 1fr); gap:14px 12px;
+      overflow:visible;
+    }
+    .portada-card{
+      flex:none; width:auto; scroll-snap-align:none;
+      border:0; background:transparent; box-shadow:none;
+    }
+    .portada-card:hover{ transform:none; box-shadow:none; }
+    /* Solo foto y nombre. La descripción y el botón sobran cuando la tarjeta entera ya
+       es tocable, y el párrafo era lo que hacía cada tarjeta tan alta. */
+    .portada-body{ padding:8px 2px 0; text-align:center; }
+    .portada-body h3{ font-size:14px; margin:0; }
+    .portada-body p{ display:none; }
+    .portada-body .btn{ display:none; }
+    /* Sin tira que desplazar, las flechas no llevan a ninguna parte. */
+    .portada-arrow{ display:none; }
+
+    /* "MI PEDIDO" fuera del encabezado en celular: el menú ya lleva al mismo sitio, y en
+       una barra angosta cada píxel cuenta. En computador se queda, que ahí sobra espacio
+       y es la única puerta visible para consultar un pedido. */
+    .header-pedido{ display:none; }
 
     .section-title{ flex-wrap:wrap; }
 
