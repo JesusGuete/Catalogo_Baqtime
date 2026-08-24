@@ -95,7 +95,7 @@ const datosEstructurados = {
   <PantallaCarga />
   <Header categorias={catalog.CATS} destacados={catalog.products.slice(0, 6)} />
   <Hero />
-  <CollectionsCarousel />
+  <CollectionsCarousel categorias={catalog.categories} />
   {/* Sin catálogo: la grilla vive en /catalogo. ShopApp sigue acá porque el carrito y
        el checkout se abren desde el encabezado en cualquier página. */}
   <ShopApp client:load catalog={catalog} mostrarCatalogo={false} />
