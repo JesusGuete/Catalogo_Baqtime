@@ -1,0 +1,59 @@
+---
+// El catálogo, con su propia dirección.
+//
+// En Baqtime la grilla vivía dentro de la portada y las categorías eran pestañas
+// horizontales. Separarlo tiene tres consecuencias, y las tres son la razón del cambio:
+//
+//   1. La portada puede presentar la marca en vez de vender de golpe.
+//   2. /catalogo?categoria=tote es un enlace que se comparte y que Google indexa: antes,
+//      elegir una categoría no cambiaba la dirección y no había forma de enlazarla.
+//   3. Las categorías caben en vertical. Con seis pestañas horizontales ya había que
+//      apretarlas; en una barra lateral se leen todas y sobra sitio para el contador.
+//
+// Se renderiza por petición, no en el build: publicar desde el panel se ve en la tienda
+// sin reconstruir nada.
+import PantallaCarga from "../components/astro/PantallaCarga.astro";
+import Header from "../components/astro/Header.astro";
+import Footer from "../components/astro/Footer.astro";
+import WhatsappWidget from "../components/react/WhatsappWidget.jsx";
+import SiteHead from "../components/astro/SiteHead.astro";
+import ShopApp from "../components/react/ShopApp.jsx";
+import { loadCatalog } from "../lib/catalog";
+import "../styles/site.css";
+
+// Misma política que la portada: Cloudflare guarda el HTML renderizado en el edge, así
+// que la mayoría de las visitas no llegan a Supabase.
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, s-maxage=60, stale-while-revalidate=300"
+);
+
+const catalog = await loadCatalog();
+
+const url = new URL("/catalogo", Astro.site).href;
+const titulo = "Catálogo — Baqtime";
+const descripcion =
+  "Tote bags, bags Lumiere, neceseres y cosmetiqueras personalizables con tus iniciales bordadas. Elige el modelo, el color del hilo y las letras.";
+const imagen = new URL("/assets/img/og-image.png", Astro.site).href;
+---
+
+<html lang="es-CO">
+  <head>
+    <SiteHead
+      title={titulo}
+      description={descripcion}
+      url={url}
+      image={imagen}
+      imageAlt="Catálogo de Baqtime"
+    />
+  </head>
+  <body>
+    <!-- Primero de todo: su script tiene que correr antes de que el navegador empiece a
+         pintar el contenido, o se vería un destello de la tienda antes de taparla. -->
+    <PantallaCarga />
+    <Header categorias={catalog.CATS} destacados={catalog.products.slice(0, 6)} />
+    <ShopApp client:load catalog={catalog} />
+    <Footer />
+    <WhatsappWidget client:load />
+  </body>
+</html>

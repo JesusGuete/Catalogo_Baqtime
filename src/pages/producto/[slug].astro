@@ -108,7 +108,7 @@ const datosEstructurados = {
     />
   </head>
   <body>
-    <Header />
+    <Header categorias={catalog.CATS} destacados={catalog.products.slice(0, 6)} />
     <ShopApp client:load catalog={catalogoLigero} initialProductId={producto.id} />
     <Footer />
     <WhatsappWidget client:load />

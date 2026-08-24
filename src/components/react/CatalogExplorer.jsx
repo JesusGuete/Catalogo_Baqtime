@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { SORTERS, matchesSearch, fmt } from "../../lib/search-utils.js";
+import { matchesSearch, fmt } from "../../lib/search-utils.js";
 import { rutaProducto } from "../../lib/product-url.ts";
 
 // Equivalente React de: search.js + catalog-filters.js + catalog-grid.js juntos.
@@ -9,11 +9,36 @@ import { rutaProducto } from "../../lib/product-url.ts";
 // en la versión vanilla ese estado vivía en state.js; aquí vive en useState.
 export default function CatalogExplorer({ catalog, onOpenProduct }) {
   const { products: CATALOG, CATS, CATEGORY_LABELS } = catalog;
-  const [category, setCategory] = useState(null);
-  const [colorFilter, setColorFilter] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("");
-  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  /**
+   * La categoría inicial sale de la URL: `/catalogo?categoria=tote`.
+   *
+   * Es lo que permite que el carrusel de la portada mande a una colección concreta, y
+   * que ese enlace se pueda compartir. Se lee en el estado INICIAL y no en un efecto:
+   * con efecto, la primera pintura mostraría el catálogo entero y saltaría a la
+   * categoría un instante después, a la vista del cliente.
+   *
+   * Se valida contra las categorías reales. Una clave inventada en la barra de
+   * direcciones dejaría la pantalla filtrando por algo que no existe: grilla vacía y
+   * ninguna categoría marcada, sin manera de entender por qué.
+   */
+  const [category, setCategory] = useState(() => {
+    if (typeof window === "undefined") return null;
+    const pedida = new URLSearchParams(window.location.search).get("categoria");
+    return CATS.some((c) => c.key === pedida) ? pedida : null;
+  });
+  /**
+   * El texto de búsqueda también puede venir en la dirección: `/catalogo?buscar=tote`.
+   *
+   * El buscador vive en el encabezado, que está en todas las páginas, y esta grilla solo
+   * en /catalogo. Buscando desde la portada no hay a quién avisar, así que el buscador
+   * navega hasta acá con el texto puesto. Leerlo del estado inicial —y no de un efecto—
+   * evita que se vea el catálogo entero un instante antes de filtrarse.
+   */
+  const [searchQuery, setSearchQuery] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("buscar") ?? "";
+  });
 
   // El buscador entero se mudó al encabezado (SearchBadge), que es otra isla y no
   // comparte estado con esta. Se comunican por evento, igual que el carrito.
@@ -37,113 +62,60 @@ export default function CatalogExplorer({ catalog, onOpenProduct }) {
   useEffect(() => {
     function onSetCategory(e) {
       setCategory(e.detail.category);
-      setColorFilter(null);
     }
     window.addEventListener("baqtime:set-category", onSetCategory);
     return () => window.removeEventListener("baqtime:set-category", onSetCategory);
   }, []);
 
-  // Si el filtro de color activo ya no existe en la categoría elegida, se limpia
-  // (equivalente a reconcileColorFilter() en catalog-filters.js).
-  const colorsInCategory = useMemo(() => {
-    const pool = category ? CATALOG.filter((p) => p.category === category) : CATALOG;
-    return [...new Set(pool.map((p) => p.groupKey))];
-  }, [category]);
-
-  useEffect(() => {
-    if (colorFilter && !colorsInCategory.includes(colorFilter)) {
-      setColorFilter(null);
-    }
-  }, [colorsInCategory, colorFilter]);
-
+  // SE QUITARON "ORDENAR POR" Y "FILTRAR" (el filtro por color).
+  //
+  // Casi nadie los tocaba y ocupaban un renglón entero encima de la grilla, justo donde
+  // empiezan las fotos. Con 32 productos y las categorías a un clic, el cliente encuentra
+  // antes recorriendo que configurando.
+  //
+  // Con ellos se fue todo su estado: `sortBy`, `colorFilter`, `filtersOpen`, la lista de
+  // colores por categoría y el efecto que la reconciliaba. Dejarlo apagado habría sido
+  // peor: código que nadie ejecuta pero que hay que entender cada vez que se lee esto.
+  //
+  // El orden que queda es el "natural" del catálogo, que NO es casual: sale de
+  // `sort_order`, que el dueño arrastra a mano en el panel. Es su decisión de qué enseñar
+  // primero, y antes el selector de orden la pisaba.
   const products = useMemo(() => {
-    const filtered = CATALOG.filter((p) => !category || p.category === category)
-      .filter((p) => !colorFilter || p.groupKey === colorFilter)
-      .filter((p) => matchesSearch(p, searchQuery, CATEGORY_LABELS));
-    const sorter = SORTERS[sortBy];
-    if (sorter) filtered.sort(sorter); // "" = relevancia, orden natural del catálogo
-    return filtered;
-  }, [category, colorFilter, searchQuery, sortBy]);
+    return CATALOG.filter((p) => !category || p.category === category).filter((p) =>
+      matchesSearch(p, searchQuery, CATEGORY_LABELS)
+    );
+  }, [category, searchQuery]);
 
   return (
-    <>
-      <div className="cat-bg-wrap" id="catBgWrap">
-        <div className="section-title" id="catalogo">
+    <div className="cat-layout" id="catalogo">
+      <div className="cat-main">
+        <div className="section-title">
           <h2>Catálogo</h2>
-          {/* El campo de búsqueda ya no está acá: se despliega en el encabezado, donde
-              está su botón. Ver SearchBadge. */}
         </div>
 
-        <div className="thread-strip">
-          <div className="cat-tabs">
-            {CATS.map((c) => (
-              <button
-                key={c.key ?? "todos"}
-                type="button"
-                className={"cat-tab" + (category === c.key ? " active" : "")}
-                onClick={() => {
-                  setCategory(c.key);
-                  setColorFilter(null);
-                }}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="section-title tight">
-          <div className="sort-box">
-            <label htmlFor="sortSelect" className="sort-label">Ordenar por</label>
-            <select id="sortSelect" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-              <option value="">Relevancia</option>
-              <option value="price-desc">Precio: mayor a menor</option>
-              <option value="price-asc">Precio: menor a mayor</option>
-              <option value="name-asc">Nombre, ascendente</option>
-              <option value="name-desc">Nombre, descendente</option>
-            </select>
-          </div>
-          <div className="filter-dropdown">
+        {/* CATEGORÍAS EN UNA FILA, debajo del título.
+            Estuvieron un rato en una barra lateral. En vertical caben más y se leen de un
+            golpe, pero se comen una columna entera de ancho en la pantalla donde lo que
+            importa es el tamaño de las fotos. En fila ocupan un renglón y devuelven todo
+            ese espacio a la grilla.
+            Sin contadores y sin píldoras: solo texto, con la activa subrayada. Es la
+            navegación más discreta posible, y en una tienda lo que tiene que llamar la
+            atención son los productos. */}
+        <nav className="cat-tabs-linea" aria-label="Categorías">
+          {CATS.map((c) => (
             <button
+              key={c.key ?? "todos"}
               type="button"
-              className="btn btn-ghost"
-              onClick={(e) => {
-                e.stopPropagation();
-                setFiltersOpen((v) => !v);
-              }}
+              className={"cat-tab-linea" + (category === c.key ? " is-activa" : "")}
+              aria-current={category === c.key ? "true" : undefined}
+              onClick={() => setCategory(c.key)}
             >
-              {colorFilter ? `Filtrar: ${colorFilter} ▾` : "Filtrar ▾"}
+              {c.label}
             </button>
-            <div className={"filters" + (filtersOpen ? "" : " hidden")}>
-              <button
-                type="button"
-                className={"filter-btn" + (colorFilter === null ? " active" : "")}
-                onClick={() => {
-                  setColorFilter(null);
-                  setFiltersOpen(false);
-                }}
-              >
-                Todos los colores
-              </button>
-              {colorsInCategory.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  className={"filter-btn" + (colorFilter === c ? " active" : "")}
-                  onClick={() => {
-                    setColorFilter(c);
-                    setFiltersOpen(false);
-                  }}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+          ))}
+        </nav>
 
-      <div className="grid">
+        <div className="grid">
         {products.map((p) => {
           const sub = p.category === "tote" ? p.variant : CATEGORY_LABELS[p.category];
           return (
@@ -174,7 +146,8 @@ export default function CatalogExplorer({ catalog, onOpenProduct }) {
             </a>
           );
         })}
+        </div>
       </div>
-    </>
+    </div>
   );
 }

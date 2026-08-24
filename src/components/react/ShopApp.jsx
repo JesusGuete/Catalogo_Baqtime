@@ -14,12 +14,14 @@ import { rutaProducto } from "../../lib/product-url.ts";
  * @param {{
  *   catalog: import("../../lib/catalog").Catalogo,
  *   initialProductId?: string | null,
+ *   mostrarCatalogo?: boolean,
  * }} props
  */
-export default function ShopApp({ catalog, initialProductId = null }) {
+export default function ShopApp({ catalog, initialProductId = null, mostrarCatalogo = true }) {
   const items = useCart();
-  // Dos modos: la portada (catálogo, y el producto se abre encima) y /producto/[slug]
-  // (el producto ES la página).
+  // Tres modos: la portada (sin catálogo: vive en /catalogo, pero el carrito y el
+  // checkout siguen haciendo falta acá), /catalogo (la grilla completa) y
+  // /producto/[slug] (el producto ES la página).
   const isProductPage = Boolean(initialProductId);
   // En /producto/[slug] la isla arranca con ese producto ya abierto. Astro renderiza
   // esto en el servidor, así que el nombre, el precio y las fotos salen dentro del HTML
@@ -134,7 +136,7 @@ export default function ShopApp({ catalog, initialProductId = null }) {
           eran ~80 KB de HTML que ningún visitante llegaba a ver nunca, repetidos igual
           en las 32 páginas de producto. Para un buscador, 32 páginas casi idénticas son
           candidatas a que elija una sola canónica y descarte el resto. */}
-      {!isProductPage && (
+      {!isProductPage && mostrarCatalogo && (
         <CatalogExplorer catalog={catalog} onOpenProduct={abrirProducto} />
       )}
 

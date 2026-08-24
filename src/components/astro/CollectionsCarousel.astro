@@ -48,7 +48,7 @@ const collections = [
           <div class="portada-body">
             <h3>{c.title}</h3>
             <p>{c.desc}</p>
-            <a href="#catalogo" class="btn btn-ghost" data-category={c.category}>Ver colección</a>
+            <a href={`/catalogo?categoria=${c.category}`} class="btn btn-ghost">Ver colección</a>
           </div>
         </div>
       ))}
