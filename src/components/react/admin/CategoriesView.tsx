@@ -5,6 +5,8 @@ import * as categoriasRepo from "../../../lib/admin/categories.repo";
 import { validarCategoria, esValido } from "../../../lib/admin/validation";
 import { useAccion, useOrdenOptimista } from "../../../lib/admin/useAdminData";
 import { useArrastreOrden } from "../../../lib/admin/useArrastreOrden";
+import { construirPath, subirImagen } from "../../../lib/supabase/storage";
+import { publicImageUrl } from "../../../lib/supabase/config";
 import {
   Aviso,
   Boton,
@@ -52,6 +54,10 @@ const CATEGORIA_NUEVA: Category = {
   free_initials: 0,
   extra_initials_price: 0,
   initials_palette: [],
+  // Sin portada, la categoría no sale en "Nuestras colecciones" hasta que se le suba una
+  // foto. Es lo correcto: una tarjeta con un hueco donde va la imagen se ve rota.
+  portada_desc: null,
+  portada_img: null,
 };
 
 // ACÁ ESTABA `COLORES_MARCA`, cinco colores escritos a mano. Era la mitad equivocada de
@@ -140,6 +146,31 @@ export default function CategoriesView({
   function actualizar<K extends keyof Category>(campo: K, valor: Category[K]) {
     setForm((f) => (f ? { ...f, [campo]: valor } : f));
   }
+
+  /**
+   * Sube la foto de portada y guarda su URL en el formulario.
+   *
+   * VA AL BUCKET DE PRODUCTOS, no a `site-images`. Ese otro es de SOLO LECTURA para
+   * todos, administradores incluidos, y es una decisión de diseño deliberada
+   * (006_storage_policies.sql): así la limpieza de huérfanos no puede borrar imágenes
+   * del sitio ni con credenciales válidas. No se toca.
+   *
+   * Y estas portadas no corren riesgo en el bucket de productos: `publish_catalog()`
+   * calcula qué borrar a partir de `product_photos`, y una portada nunca es la foto de
+   * un producto, así que nunca entra en esa lista.
+   *
+   * El prefijo "portadas" las agrupa aparte de las fotos de producto, que se guardan
+   * bajo la clave de su categoría.
+   *
+   * NO se borra la foto anterior al reemplazarla: si el guardado falla después de subir,
+   * borrar la vieja dejaría la categoría sin ninguna. Queda un archivo sin usar en el
+   * bucket, que es el error barato de los dos.
+   */
+  const subirPortada = useAccion(async (archivo: File) => {
+    const path = construirPath("portadas", archivo);
+    await subirImagen(path, archivo);
+    actualizar("portada_img", publicImageUrl(path));
+  });
 
   function nueva() {
     const siguientePos = categorias.length
@@ -441,6 +472,69 @@ export default function CategoriesView({
                 </div>
               </>
             )}
+
+            {/* PORTADA: lo que esta categoría enseña en "Nuestras colecciones".
+                Va fuera del bloque de personalización a propósito — aplica a TODAS las
+                categorías, se borden o no. */}
+            <div className="adm-portada">
+              <p className="adm-mono adm-campo-label">
+                PORTADA · SALE EN "NUESTRAS COLECCIONES" DE LA PÁGINA PRINCIPAL
+              </p>
+              <p className="adm-hint">
+                Sin foto, esta categoría no aparece ahí. Es la forma de decidir qué se
+                muestra: sube la foto y aparece; bórrala y desaparece.
+              </p>
+
+              <div className="adm-portada-fila">
+                <div className="adm-portada-vista">
+                  {form.portada_img ? (
+                    <img src={form.portada_img} alt="" />
+                  ) : (
+                    <span className="adm-mono">SIN FOTO</span>
+                  )}
+                </div>
+
+                <div className="adm-portada-acciones">
+                  {/* El input va escondido detrás del label: el selector de archivos que
+                      pinta el navegador no se puede estilar y desentona con el resto. */}
+                  <label className="adm-mono adm-portada-btn">
+                    {form.portada_img ? "CAMBIAR FOTO" : "SUBIR FOTO"}
+                    <input
+                      type="file"
+                      accept="image/webp,image/jpeg,image/png"
+                      onChange={(e) => {
+                        const archivo = e.target.files?.[0];
+                        // Se limpia el input para que elegir DOS VECES el mismo archivo
+                        // vuelva a disparar el evento: sin esto, reintentar tras un fallo
+                        // no hace nada y parece que el botón está roto.
+                        e.target.value = "";
+                        if (archivo) void subirPortada.ejecutar(archivo);
+                      }}
+                    />
+                  </label>
+                  {form.portada_img && (
+                    <button
+                      type="button"
+                      className="adm-mono adm-portada-quitar"
+                      onClick={() => actualizar("portada_img", null)}
+                    >
+                      QUITAR
+                    </button>
+                  )}
+                  {subirPortada.enCurso && <span className="adm-mono">SUBIENDO…</span>}
+                </div>
+              </div>
+
+              <ErrorAviso error={subirPortada.error} />
+
+              <Campo etiqueta="DESCRIPCIÓN" ayuda="el texto de la tarjeta">
+                <Texto
+                  value={form.portada_desc ?? ""}
+                  onChange={(v) => actualizar("portada_desc", v || null)}
+                  placeholder="Ej. Bolso tote bordado con tus iniciales."
+                />
+              </Campo>
+            </div>
           </section>
 
           <div className="adm-cats-acciones">

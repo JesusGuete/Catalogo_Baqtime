@@ -43,6 +43,13 @@ export interface Category {
   extra_initials_price: number;
   /** Nombres de colores de bordado permitidos. Array vacío = todos. */
   initials_palette: string[];
+  /**
+   * Texto de la tarjeta en "Nuestras colecciones" (016). Nulo = la categoría no sale
+   * en el carrusel de la portada.
+   */
+  portada_desc: string | null;
+  /** URL COMPLETA de la foto de portada (016). Nulo = no sale en el carrusel. */
+  portada_img: string | null;
 }
 
 /** Lo que se manda al crear. `key` es obligatoria y después no se puede cambiar. */
@@ -409,6 +416,8 @@ const columnasCategoria = [
   "free_initials",
   "extra_initials_price",
   "initials_palette",
+  "portada_desc",
+  "portada_img",
 ] as const satisfies readonly (keyof Category)[];
 
 const columnasColorIniciales = [

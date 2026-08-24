@@ -85,7 +85,7 @@ async function q<T>(path: string): Promise<T> {
 export async function loadCatalog(): Promise<Catalogo> {
   const [categories, prods, initialsColors] = await Promise.all([
     q<Category[]>(
-      "categories?select=key,label,default_price,personalizable,max_initials,has_variant,position,is_imported,free_initials,extra_initials_price,initials_palette&order=position"
+      "categories?select=key,label,default_price,personalizable,max_initials,has_variant,position,is_imported,free_initials,extra_initials_price,initials_palette,portada_desc,portada_img&order=position"
     ),
     q<FilaProducto[]>(
       "products?select=id,category_key,name,color,variant,hex,price,personalizable,max_initials,group_key,sort_order,initials_palette,product_photos(storage_path,position)&order=category_key,sort_order"

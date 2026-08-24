@@ -5,37 +5,25 @@
 // igual que hacía collections-carousel.js. Por eso esto NO es una isla React
 // (ver tabla "Qué es isla React y qué no" en docs/plan-mejoramiento.md).
 //
-// Imágenes servidas desde el bucket site-images de Supabase (solo lectura por API,
-// se suben a mano por el dashboard — ver docs/frontend-contract.md §4). Antes vivían
-// en Firebase Storage; se migraron para poder apagar Firebase sin romper esta sección.
-const STORAGE =
-  `${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/object/public/site-images/`;
-const collections = [
-  { id: "Tote", title: "Tote Personalizado", category: "tote",
-    desc: "Bolso tote bordado con tus iniciales. Perfecto para el día a día.",
-    img: STORAGE + "tote_personalizado.webp",
-    w: 785, h: 785 },
-  { id: "Luxury", title: "Tote Bag Luxury", category: "tote-luxury",
-    desc: "La versión premium del tote, en acabados más finos. Personalizable con hasta 2 iniciales.",
-    img: STORAGE + "tote_luxury.jpg",
-    w: 785, h: 785 },
-  { id: "Lumiere", title: "Bag Lumiere", category: "lumiere",
-    desc: "Bolso tipo hobo, elegante y listo para usar, sin personalización. Un básico versátil para cualquier look.",
-    img: STORAGE + "lumiere_negro_life1.webp",
-    w: 900, h: 1200 },
-  { id: "Cosmetiquera", title: "Cosmetiquera", category: "cosmetiquera",
-    desc: "Cosmetiquera personalizable con hasta 2 iniciales, del tamaño justo para tus básicos de maquillaje.",
-    img: STORAGE + "cosmetiqueras.jpg",
-    w: 900, h: 900 },
-  { id: "Neceser", title: "Neceser", category: "neceser",
-    desc: "Neceser de cuero vegano personalizable con máximo 2 letras. Ideal para viajes y el día a día.",
-    img: STORAGE + "neceser_portada1.webp",
-    w: 900, h: 900 },
-  { id: "Makeup", title: "Makeup Bag", category: "makeup-bag",
-    desc: "Makeup bag personalizable con hasta 3 iniciales, pensada para organizar tus productos de belleza con estilo.",
-    img: STORAGE + "makeup_bag_portada1.jpg",
-    w: 900, h: 900 },
-];
+// LAS TARJETAS SALEN DE LA BASE, NO DEL CÓDIGO (016_categoria_portada.sql).
+//
+// Antes eran seis objetos escritos a mano acá: título, descripción y ruta de la foto.
+// Crear una categoría desde el panel NO la hacía aparecer en la portada —había que
+// editar este archivo y volver a desplegar—, y borrarla dejaba su tarjeta apuntando a
+// un catálogo vacío. Las seis eran exactamente las seis categorías, así que ahora se
+// leen de `categories` y se editan desde la pantalla Categorías del panel.
+//
+// SOLO SALEN LAS QUE TIENEN FOTO. Una categoría sin portada no se dibuja: una tarjeta
+// con un hueco donde va la imagen se ve rota, y es peor que no estar. Así el dueño
+// controla qué aparece sin necesidad de un interruptor aparte — sube la foto y aparece.
+import type { Category } from "../../types/database";
+
+interface Props {
+  categorias: Category[];
+}
+const { categorias } = Astro.props;
+
+const collections = categorias.filter((c) => c.portada_img);
 ---
 <h2 class="portada-heading">Nuestras colecciones</h2>
 <div class="portada-carousel">
@@ -44,11 +32,14 @@ const collections = [
     <div class="portada" id="portadaTrack">
       {collections.map((c) => (
         <div class="portada-card">
-          <div class="portada-img"><img src={c.img} alt={c.title} width={c.w} height={c.h} /></div>
+          {/* Sin width/height: la foto la sube el dueño y sus medidas cambian con cada
+              una. El contenedor .portada-img ya fija la proporción en CSS, asi que no
+              hay salto de maquetación al cargar. */}
+          <div class="portada-img"><img src={c.portada_img} alt={c.label} loading="lazy" /></div>
           <div class="portada-body">
-            <h3>{c.title}</h3>
-            <p>{c.desc}</p>
-            <a href={`/catalogo?categoria=${c.category}`} class="btn btn-ghost">Ver colección</a>
+            <h3>{c.label}</h3>
+            {c.portada_desc && <p>{c.portada_desc}</p>}
+            <a href={`/catalogo?categoria=${c.key}`} class="btn btn-ghost">Ver colección</a>
           </div>
         </div>
       ))}
