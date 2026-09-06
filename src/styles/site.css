@@ -90,12 +90,6 @@
     -webkit-tap-highlight-color:transparent;
   }
   .cart-icon-btn:hover, .search-icon-header:hover{ color:var(--mocha); }
-  .cart-icon-btn-modal{
-    position:fixed; top:calc(var(--header-h) + 14px); right:58px; z-index:5;
-    width:34px; height:34px; border-radius:50%;
-    background:var(--white-card); border:1px solid var(--line);
-    display:flex; align-items:center; justify-content:center;
-  }
   .cart-count{
     position:absolute; top:-4px; right:-8px;
     background:var(--mocha); color:var(--cream);
