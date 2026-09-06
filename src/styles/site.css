@@ -300,7 +300,7 @@
     width:190px; padding:8px 14px; opacity:1;
     border:1px solid var(--line); margin-right:6px;
   }
-  .header-buscar input:focus{ border-color:var(--mocha); }
+  .header-buscar input:focus{ border-color:var(--line); }
   @media (prefers-reduced-motion:reduce){
     .header-buscar input{ transition:none; }
   }
@@ -553,6 +553,7 @@
     font-family:'Unna', serif; letter-spacing:0.06em;
     text-transform:uppercase; background:#fff; color:var(--ink);
   }
+  .initials-input:focus-visible{ outline:none; border-color:var(--line); }
   .initials-count{ font-size:11px; color:var(--ink-soft); margin-top:6px; font-family:'JetBrains Mono',monospace;}
   .initials-count.warn{ color:var(--vino); }
 
@@ -904,7 +905,8 @@
     border:1px solid var(--line); border-radius:999px;
     outline:none;
   }
-  .buscador-campo:focus{ border-color:var(--mocha); }
+  .buscador-campo:focus{ border-color:var(--line); }
+  .buscador-campo:focus-visible{ outline:none; }
   .buscador-sugerencias{
     display:flex; align-items:center; justify-content:center;
     gap:8px 18px; flex-wrap:wrap; margin-bottom:28px;
@@ -927,7 +929,7 @@
   .buscador-card-img{ aspect-ratio:1/1; overflow:hidden; background:var(--panel); }
   .buscador-card-img img{ width:100%; height:100%; object-fit:cover; display:block; }
   .buscador-card-nombre{ font-size:12px; margin-top:8px; line-height:1.35; }
-  .buscador-card-precio{ font-size:11px; color:var(--mocha); margin-top:2px; }
+  .buscador-card-precio{ font-size:11px; color:var(--ink); margin-top:2px; }
   .buscador-vacio{ text-align:center; color:var(--ink-soft); font-size:14px; margin:8px 0 0; }
   @media (max-width:900px){
     .buscador-grid{ grid-template-columns:repeat(3, 1fr); }
