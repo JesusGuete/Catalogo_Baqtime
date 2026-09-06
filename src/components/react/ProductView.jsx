@@ -4,6 +4,7 @@ import { PRICE_SHIP, fmt, recargoIniciales } from "../../lib/pricing.js";
 import { addToCart } from "../../lib/cart-store.js";
 import { useCart } from "../../lib/useCart.js";
 import { rutaProducto } from "../../lib/product-url.ts";
+import { IconoBolsa } from "./Iconos.jsx";
 
 // Portado desde assets/js/site/product-modal.js.
 // Mismas clases CSS que index.html (.modal-overlay/.modal), así que el diseño de
@@ -214,7 +215,11 @@ export default function ProductView({
             aria-label="Ver carrito"
             onClick={() => window.dispatchEvent(new CustomEvent("baqtime:toggle-cart"))}
           >
-            🛒 <span className={"cart-count" + (cartItems.length === 0 ? " hidden" : "")}>{cartItems.length}</span>
+            {/* El mismo <IconoBolsa /> del encabezado. Antes acá había un emoji 🛒: cada
+                sistema operativo lo dibuja distinto, así que el carrito de la ficha no
+                coincidía con el de la barra ni seguía el color de la marca. */}
+            <IconoBolsa />
+            <span className={"cart-count" + (cartItems.length === 0 ? " hidden" : "")}>{cartItems.length}</span>
           </button>
           <button
             className="modal-close"
