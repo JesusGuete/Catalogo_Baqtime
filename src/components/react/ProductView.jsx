@@ -185,10 +185,7 @@ export default function ProductView({
     if (onCheckout) onCheckout();
   }
 
-  const initialsLabel =
-    product.category === "neceser"
-      ? "Tus iniciales (máximo 2 letras)"
-      : `Tus iniciales (máx. ${product.maxInitials})`;
+  const initialsLabel = "Iniciales";
 
   // `aria-modal` le dice al lector de pantalla que todo lo demás de la página está
   // inerte. En /producto/[slug] esto no está encima de nada: es el contenido de la
