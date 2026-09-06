@@ -4,7 +4,6 @@ import { PRICE_SHIP, fmt, recargoIniciales } from "../../lib/pricing.js";
 import { addToCart } from "../../lib/cart-store.js";
 import { useCart } from "../../lib/useCart.js";
 import { rutaProducto } from "../../lib/product-url.ts";
-import { IconoBolsa } from "./Iconos.jsx";
 
 // Portado desde assets/js/site/product-modal.js.
 // Mismas clases CSS que index.html (.modal-overlay/.modal), así que el diseño de
@@ -206,25 +205,11 @@ export default function ProductView({
         }}
       >
         <div className="modal" {...dialogProps}>
-          <button
-            type="button"
-            className="cart-icon-btn-modal"
-            aria-label="Ver carrito"
-            onClick={() => window.dispatchEvent(new CustomEvent("baqtime:toggle-cart"))}
-          >
-            {/* El mismo <IconoBolsa /> del encabezado. Antes acá había un emoji 🛒: cada
-                sistema operativo lo dibuja distinto, así que el carrito de la ficha no
-                coincidía con el de la barra ni seguía el color de la marca. */}
-            <IconoBolsa />
-            <span className={"cart-count" + (cartItems.length === 0 ? " hidden" : "")}>{cartItems.length}</span>
-          </button>
-          <button
-            className="modal-close"
-            onClick={onClose}
-            aria-label={isProductPage ? "Volver a la tienda" : "Cerrar"}
-          >
-            ✕
-          </button>
+          {/* El botón de carrito y la X de cerrar que iban acá quedaban pegados al
+              header apenas se le dejó de tapar (ver commit anterior): duplicaban el
+              carrito y el "volver" que el header ya ofrece siempre visible arriba.
+              Cerrar sigue funcionando por Escape, tocando fuera del modal, o el
+              gesto/botón atrás del navegador (popstate, ver ShopApp.jsx). */}
 
           <div className="modal-gallery">
             {/* MINIATURAS Y FLECHAS. La tira de fotos siempre existió, pero era solo un
