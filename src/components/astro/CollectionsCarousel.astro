@@ -45,7 +45,13 @@ const collections = categorias.filter((c) => c.portada_img);
               hay salto de maquetación al cargar. */}
           <div class="portada-img"><img src={c.portada_img} alt={c.label} loading="lazy" /></div>
           <div class="portada-body">
-            <h3>{c.label}</h3>
+            {/* La flecha solo se ve en celular (site.css la oculta en escritorio, donde
+                ya está el botón "Ver colección"). Sin ella, foto + nombre no dan ninguna
+                pista de que la tarjeta lleva a algo — un cliente nuevo tendría que
+                adivinarlo o tocar por curiosidad. Es el mismo símbolo que usa iOS para
+                "toca para entrar", así que no hace falta explicarlo.
+                aria-hidden porque es decorativa: el <a> ya anuncia "enlace" solo. */}
+            <h3>{c.label} <span class="portada-chevron" aria-hidden="true">›</span></h3>
             {c.portada_desc && <p>{c.portada_desc}</p>}
             <span class="btn btn-ghost" aria-hidden="true">Ver colección</span>
           </div>

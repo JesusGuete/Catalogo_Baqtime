@@ -289,6 +289,9 @@
   .portada-body{ padding:20px 20px 24px; display:flex; flex-direction:column; flex:1; }
   .portada-body h3{ font-size:19px; margin:0 0 8px; }
   .portada-body p{ font-size:13px; color:var(--ink-soft); line-height:1.55; margin:0 0 16px; flex:1; }
+  /* Solo tiene sentido en celular, donde no hay botón visible ni cursor que cambie sobre
+     un enlace. En escritorio el botón "Ver colección" ya cumple ese papel. */
+  .portada-chevron{ display:none; }
 
   /* ===== BUSCADOR ===== */
   /* El campo se despliega en el encabezado, pegado a su botón. Se anima el ancho en vez
@@ -703,14 +706,21 @@
       border:0; background:transparent; box-shadow:none;
     }
     .portada-card:hover{ transform:none; box-shadow:none; }
-    /* Solo foto y nombre. La descripción y el botón sobran cuando la tarjeta entera ya
-       es tocable, y el párrafo era lo que hacía cada tarjeta tan alta. */
+    /* Solo foto, nombre y una flecha. La descripción y el botón sobran cuando la tarjeta
+       entera ya es tocable, y el párrafo era lo que hacía cada tarjeta tan alta. */
     .portada-body{ padding:8px 2px 0; text-align:center; }
     .portada-body h3{ font-size:14px; margin:0; }
     .portada-body p{ display:none; }
     .portada-body .btn{ display:none; }
-    /* Sin tira que desplazar, las flechas no llevan a ninguna parte. */
+    /* La pista de que se puede tocar. En escritorio no hace falta: ahí está el botón
+       "Ver colección" y el cursor ya cambia sobre un enlace. */
+    .portada-chevron{ color:var(--mocha); font-weight:600; }
+    /* Sin tira que desplazar, las flechas del carrusel no llevan a ninguna parte. */
     .portada-arrow{ display:none; }
+    /* Respuesta al tocar: sin ella, la tarjeta no da ninguna señal física de que el toque
+       "agarró" algo, y en celular no existe el :hover que cumple ese papel en escritorio. */
+    .portada-card:active{ opacity:.65; }
+    .portada-card:active .portada-img img{ transform:scale(1.02); }
 
     /* "MI PEDIDO" fuera del encabezado en celular: el menú ya lleva al mismo sitio, y en
        una barra angosta cada píxel cuenta. En computador se queda, que ahí sobra espacio
