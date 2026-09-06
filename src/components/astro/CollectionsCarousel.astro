@@ -31,7 +31,15 @@ const collections = categorias.filter((c) => c.portada_img);
   <div class="portada-viewport">
     <div class="portada" id="portadaTrack">
       {collections.map((c) => (
-        <div class="portada-card">
+        // Toda la tarjeta es UN SOLO enlace, no un div con un botón adentro. En
+        // celular el botón "Ver colección" se oculta (site.css, regla de
+        // .portada-body .btn) para que la tarjeta se vea como en la referencia de
+        // Louis Vuitton: solo foto y nombre. Si el enlace viviera únicamente en ese
+        // botón, ocultarlo dejaría la tarjeta sin ninguna forma de tocarla — que es
+        // exactamente el bug que esto corrige. Con la tarjeta entera como <a>, el
+        // botón visible en escritorio es decorativo: un atajo visual sobre un
+        // enlace que ya cubre toda el área.
+        <a href={`/catalogo?categoria=${c.key}`} class="portada-card">
           {/* Sin width/height: la foto la sube el dueño y sus medidas cambian con cada
               una. El contenedor .portada-img ya fija la proporción en CSS, asi que no
               hay salto de maquetación al cargar. */}
@@ -39,9 +47,9 @@ const collections = categorias.filter((c) => c.portada_img);
           <div class="portada-body">
             <h3>{c.label}</h3>
             {c.portada_desc && <p>{c.portada_desc}</p>}
-            <a href={`/catalogo?categoria=${c.key}`} class="btn btn-ghost">Ver colección</a>
+            <span class="btn btn-ghost" aria-hidden="true">Ver colección</span>
           </div>
-        </div>
+        </a>
       ))}
     </div>
   </div>
@@ -78,17 +86,4 @@ const collections = categorias.filter((c) => c.portada_img);
   viewport.addEventListener("scroll", updateArrows);
   window.addEventListener("resize", updateArrows);
   updateArrows();
-
-  // Enlaces "Ver colección": la isla React del catálogo (CatalogExplorer) escucha este
-  // evento para cambiar de categoría. Es la misma idea que el "callback injection" que
-  // usaba catalog-filters.js/main.js, adaptada a que ahora son dos componentes
-  // separados (Astro estático + isla React) que no comparten estado directamente.
-  document.querySelectorAll<HTMLAnchorElement>("a[data-category]").forEach((link) => {
-    link.addEventListener("click", (e) => {
-      e.preventDefault();
-      const category = link.dataset.category || null;
-      window.dispatchEvent(new CustomEvent("baqtime:set-category", { detail: { category } }));
-      document.getElementById("catalogo")?.scrollIntoView();
-    });
-  });
 </script>

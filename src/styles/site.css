@@ -260,14 +260,23 @@
   .portada{
     display:flex; gap:22px;
   }
+  /* Es un <a>, no un <div>: el navegador subraya enlaces y les da el color de texto de
+     visitado por defecto. Sin esto, la tarjeta se vería con una raya azul debajo del
+     nombre y del botón fantasma en cuanto se tocara una vez. */
   .portada-card{
     scroll-snap-align:start; /* cada tarjeta "engancha" el scroll a su borde izquierdo */
     flex:0 0 calc((100% - 44px)/3); /* 3 tarjetas visibles, descontando 2 espacios de 22px */
     background:var(--white-card); border:1px solid var(--line); border-radius:3px;
     overflow:hidden; display:flex; flex-direction:column;
     transition:transform .2s ease, box-shadow .2s ease;
+    text-decoration:none; color:inherit;
   }
   .portada-card:hover{ transform:translateY(-4px); box-shadow:0 22px 34px -22px rgba(38,34,29,0.4); }
+  /* El botón "Ver colección" ahora es un <span> decorativo, no un enlace propio — la
+     tarjeta entera ya lo es. Necesita su propio :hover porque ya no hereda el de
+     `.btn-ghost:hover` de un `<a>` real: acá el que cambia de color al pasar el mouse es
+     el span, siguiendo al padre. */
+  .portada-card:hover .btn-ghost{ background:var(--ink); color:var(--cream); }
   .portada-arrow{
     flex:0 0 auto; width:36px; height:36px; border-radius:50%;
     border:1px solid var(--line); background:var(--white-card); color:var(--ink);
