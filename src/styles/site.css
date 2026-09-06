@@ -162,15 +162,6 @@
   @media (max-width: 860px){
     .hero{ grid-template-columns:1fr; padding-top:32px; gap:28px; }
   }
-  .eyebrow{
-    font-family:'JetBrains Mono', monospace;
-    font-size:11px;
-    letter-spacing:0.14em;
-    text-transform:uppercase;
-    color:var(--mocha);
-    margin-bottom:14px;
-    display:flex; align-items:center; gap:10px;
-  }
   .hero h1{
     font-size:clamp(34px, 5vw, 54px);
     line-height:1.04;
@@ -524,8 +515,12 @@
      nombre encabeza la página, sobre el catálogo es contenido subordinado al Hero.
      Se ve igual en los dos casos, así que el estilo no distingue. */
   .modal-info h1, .modal-info h2{ font-size:24px; margin:0 0 4px; padding-right:30px;}
+  /* El precio en negro, no en dorado: es el dato más importante de la ficha y el dorado
+     lo hacía ver como un adorno. Además así coincide con el precio de las tarjetas del
+     catálogo, que ya era negro — antes el mismo dato cambiaba de color según dónde se
+     mirara. */
   .modal-info .price-live{
-    font-family:'JetBrains Mono', monospace; font-size:20px; color:var(--mocha); margin-bottom:18px;
+    font-family:'JetBrains Mono', monospace; font-size:20px; color:var(--ink); margin-bottom:18px;
   }
 
   .field{ margin-bottom:18px; }
