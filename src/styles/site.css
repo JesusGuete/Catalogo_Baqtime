@@ -713,8 +713,12 @@
     .portada-body p{ display:none; }
     .portada-body .btn{ display:none; }
     /* La pista de que se puede tocar. En escritorio no hace falta: ahí está el botón
-       "Ver colección" y el cursor ya cambia sobre un enlace. */
-    .portada-chevron{ color:var(--mocha); font-weight:600; }
+       "Ver colección" y el cursor ya cambia sobre un enlace.
+       `display:inline` es obligatorio acá: la regla de escritorio (arriba en el archivo,
+       sin media query) pone `display:none`, y sin anularlo explícitamente esta regla solo
+       cambiaba el color de un elemento que seguía oculto. Así se coló a producción sin
+       que la flecha llegara a verse nunca. */
+    .portada-chevron{ display:inline; color:var(--mocha); font-weight:600; }
     /* Sin tira que desplazar, las flechas del carrusel no llevan a ninguna parte. */
     .portada-arrow{ display:none; }
     /* Respuesta al tocar: sin ella, la tarjeta no da ninguna señal física de que el toque
