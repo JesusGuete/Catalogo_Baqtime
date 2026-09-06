@@ -201,6 +201,8 @@
     padding:26px;
     display:flex; flex-direction:column; align-items:center;
     gap:18px;
+    width:100%; max-width:392px;
+    justify-self:center;
   }
   .hero-visual img{
     width:100%; max-width:340px; border-radius:3px;
