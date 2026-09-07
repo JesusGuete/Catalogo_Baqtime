@@ -379,14 +379,14 @@ export default function CategoriesView({
               activo={form.has_variant}
               onChange={(v) => actualizar("has_variant", v)}
               titulo="El subtítulo muestra la variante"
-              detalle='HAS_VARIANT · "CORDONES NEGROS" EN VEZ DEL NOMBRE DE LA CATEGORÍA'
+              detalle='Ej. "Cordones negros" en vez del nombre de la categoría'
             />
 
             <Interruptor
               activo={form.is_imported}
               onChange={(v) => actualizar("is_imported", v)}
               titulo="Avisar que es importado"
-              detalle='IS_IMPORTED · MUESTRA "ENTREGA EN 15-20 DÍAS"'
+              detalle='Muestra "Entrega en 15-20 días"'
             />
           </section>
 
