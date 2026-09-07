@@ -122,12 +122,6 @@ export default function PhotoManager({ fotos, onChange, categoryKey, deshabilita
   if (editando !== null && fotos[editando]) {
     return (
       <PhotoStudio
-        // Sin esto, cambiar de foto desde la tira de miniaturas cambia la prop `foto`
-        // pero React sigue usando la MISMA instancia del componente — su estado
-        // interno (previa, original, el recorte que se estaba editando) se queda
-        // pegado a la foto vieja en vez de arrancar de cero con la nueva. La `key`
-        // fuerza un montaje nuevo por cada foto.
-        key={fotos[editando].storage_path}
         foto={fotos[editando]}
         fotos={fotos}
         categoryKey={categoryKey}
@@ -137,7 +131,6 @@ export default function PhotoManager({ fotos, onChange, categoryKey, deshabilita
           onChange(fotos.map((f, i) => (i === editando ? foto : f)));
           setEditando(null);
         }}
-        onSeleccionar={setEditando}
       />
     );
   }
