@@ -370,13 +370,7 @@ export default function ProductEditor({
                 hilo bordarlas no significa nada y ocuparía media pantalla. */}
             {form.personalizable && (
               <div className="adm-paleta">
-                <p className="adm-mono adm-campo-label">
-                  COLORES DE BORDADO DE ESTE PRODUCTO · VACÍO = LOS DE LA CATEGORÍA
-                </p>
-                <p className="adm-hint">
-                  Deja fuera los que no se vean sobre esta tela. Un hilo beige sobre lona
-                  beige no se distingue, y el cliente no tiene cómo saberlo desde la foto.
-                </p>
+                <p className="adm-mono adm-campo-label">Colores de bordado de este producto</p>
                 {colores.length === 0 ? (
                   <p className="adm-campo-ayuda">
                     Todavía no hay ningún color en la paleta. Se crean en COLORES.
