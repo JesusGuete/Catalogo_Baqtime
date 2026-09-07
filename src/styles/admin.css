@@ -140,7 +140,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
   background: transparent; color: var(--ink-soft);
   cursor: pointer; text-align: left;
 }
-.adm-nav-item:hover { background: var(--white-card); }
+@media (hover: hover) and (pointer: fine) {
+  .adm-nav-item:hover { background: var(--white-card); }
+}
 .adm-nav-item.is-activo { background: var(--white-card); color: var(--ink); }
 .adm-nav-marca { width: 2px; height: 16px; background: transparent; flex-shrink: 0; }
 .adm-nav-item.is-activo .adm-nav-marca { background: var(--mocha); }
@@ -163,7 +165,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
   background: none; border: 0; padding: 0; cursor: pointer;
   color: var(--ink-soft); font-size: 10px; text-align: left; letter-spacing: 0.08em;
 }
-.adm-sidebar-salir:hover { color: var(--ink); }
+@media (hover: hover) and (pointer: fine) {
+  .adm-sidebar-salir:hover { color: var(--ink); }
+}
 
 .adm-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
@@ -442,9 +446,11 @@ input.adm-input { display: block; }
 .adm-tabla tbody tr:last-child td { border-bottom: 0; }
 
 .adm-fila { cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.adm-fila:hover { background: var(--surface-subtle); }
 .adm-fila.is-pendiente { background: var(--draft-bg); }
-.adm-fila.is-pendiente:hover { background: #FBF4E7; }
+@media (hover: hover) and (pointer: fine) {
+  .adm-fila:hover { background: var(--surface-subtle); }
+  .adm-fila.is-pendiente:hover { background: #FBF4E7; }
+}
 .adm-fila.is-seleccionada { background: #FBF6EC; }
 .adm-fila.is-inactivo .adm-fila-nombre { color: var(--ink-soft); }
 
@@ -487,8 +493,13 @@ input.adm-input { display: block; }
   background: none; border: 1px solid transparent; border-radius: var(--radius);
   color: var(--ink-soft); cursor: pointer;
 }
-.adm-fila-menu-btn:hover, .adm-fila-menu-btn[aria-expanded="true"] {
+.adm-fila-menu-btn[aria-expanded="true"] {
   background: var(--surface-muted); border-color: var(--line-solid); color: var(--ink);
+}
+@media (hover: hover) and (pointer: fine) {
+  .adm-fila-menu-btn:hover {
+    background: var(--surface-muted); border-color: var(--line-solid); color: var(--ink);
+  }
 }
 
 /* Portada a document.body (ver ProductsView.tsx): así no la recorta el
@@ -618,7 +629,9 @@ input.adm-input { display: block; }
   transition: color 0.12s ease, background 0.12s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.adm-ped-borrar:hover { color: var(--vino); background: var(--error-bg); }
+@media (hover: hover) and (pointer: fine) {
+  .adm-ped-borrar:hover { color: var(--vino); background: var(--error-bg); }
+}
 .adm-ped-borrar:focus-visible { outline: 2px solid var(--vino); outline-offset: 1px; }
 .adm-ped-borrar:disabled { opacity: 0.4; cursor: wait; }
 
@@ -710,10 +723,12 @@ input.adm-input { display: block; }
   height: 24px; padding: 0 8px; border: 0; background: none; cursor: pointer;
   color: var(--ink-soft); font-size: 11px; border-radius: var(--radius); white-space: nowrap;
 }
-.adm-foto-btn:hover { background: var(--surface-muted); color: var(--ink); }
 .adm-foto-btn.is-activo { background: var(--ink); color: var(--cream); }
 .adm-foto-btn--quitar { width: 24px; padding: 0; color: var(--ink-faint); font-size: 13px; }
-.adm-foto-btn--quitar:hover { color: var(--vino); background: var(--error-bg); }
+@media (hover: hover) and (pointer: fine) {
+  .adm-foto-btn:hover { background: var(--surface-muted); color: var(--ink); }
+  .adm-foto-btn--quitar:hover { color: var(--vino); background: var(--error-bg); }
+}
 
 
 .adm-barra { display: block; height: 3px; background: var(--panel); border-radius: 2px; overflow: hidden; }
@@ -898,7 +913,9 @@ input.adm-input { display: block; }
   font-size: 10px; letter-spacing: 0.08em;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
-.adm-portada-btn:hover { background: var(--mocha); border-color: var(--mocha); }
+@media (hover: hover) and (pointer: fine) {
+  .adm-portada-btn:hover { background: var(--mocha); border-color: var(--mocha); }
+}
 .adm-portada-btn input { display: none; }
 
 .adm-portada-quitar {
@@ -906,7 +923,9 @@ input.adm-input { display: block; }
   font-size: 10px; letter-spacing: 0.08em; color: var(--ink-soft);
   padding: 2px 0; text-decoration: underline;
 }
-.adm-portada-quitar:hover { color: var(--vino); }
+@media (hover: hover) and (pointer: fine) {
+  .adm-portada-quitar:hover { color: var(--vino); }
+}
 
 /* ============================================================ ESTUDIO DE FOTOS */
 /* Pantalla completa para editar una foto (encuadrar, girar, voltear, reemplazar).
