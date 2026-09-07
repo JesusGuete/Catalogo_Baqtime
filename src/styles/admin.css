@@ -504,10 +504,14 @@ input.adm-input { display: block; }
   font-size: 13px; background: none; border: 0; border-radius: var(--radius);
   color: var(--ink); cursor: pointer;
 }
-.adm-fila-menu-popover button:hover:not(:disabled) { background: var(--surface-muted); }
 .adm-fila-menu-popover button:disabled { color: var(--ink-faint); cursor: not-allowed; }
 .adm-fila-menu-popover button.is-peligro { color: var(--vino); }
-.adm-fila-menu-popover button.is-peligro:hover { background: var(--error-bg); }
+/* `(hover: hover)`: mismo motivo que .adm-estudio-tool más abajo — sin esto, en el
+   celular el fondo de hover queda pegado apenas se toca una opción del menú. */
+@media (hover: hover) and (pointer: fine) {
+  .adm-fila-menu-popover button:hover:not(:disabled) { background: var(--surface-muted); }
+  .adm-fila-menu-popover button.is-peligro:hover { background: var(--error-bg); }
+}
 
 .adm-tabla-wrap.is-guardando, .adm-tabla.is-guardando { opacity: 0.6; pointer-events: none; }
 
@@ -924,12 +928,19 @@ input.adm-input { display: block; }
   display: flex; align-items: center; gap: 10px; text-align: left;
   padding: 10px 12px; background: none; border: 1px solid transparent;
   border-radius: var(--radius); color: var(--ink); font-size: 13px; cursor: pointer;
-  /* Sin esto, tocar el botón en el celular deja el resaltado gris/blanco por
-     defecto de Safari encima del texto un rato después de soltar — se veía como
-     "el fondo se puso blanco y no se lee la letra". */
   -webkit-tap-highlight-color: transparent;
 }
-.adm-estudio-tool:hover:not(:disabled) { background: var(--surface-muted); }
+/* `(hover: hover)` es la causa real de "el botón se queda como lavado" en el
+   celular: sin este filtro, el `:hover` de acá abajo se aplica igual en una
+   pantalla táctil (que no tiene mouse) apenas se toca el botón, y como no hay forma
+   de "sacar el mouse de encima" con el dedo, el fondo gris claro (surface-muted)
+   se queda pegado hasta que se toca otra cosa — un botón sin seleccionar se ve
+   igual de "activo" que uno recién tocado, y ninguno de los dos es realmente un
+   estado ni de seleccionado ni de deshabilitado. Con este filtro, el hover SOLO
+   existe en computadoras con mouse de verdad. */
+@media (hover: hover) and (pointer: fine) {
+  .adm-estudio-tool:hover:not(:disabled) { background: var(--surface-muted); }
+}
 .adm-estudio-tool:disabled { opacity: 0.5; cursor: not-allowed; }
 .adm-estudio-tool.is-activo { background: var(--ink); color: var(--cream); }
 .adm-estudio-tool.is-activo:disabled { opacity: 1; cursor: default; }
