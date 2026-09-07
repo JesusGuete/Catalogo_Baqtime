@@ -125,7 +125,7 @@ export default function CatalogExplorer({ catalog, onOpenProduct }) {
             // El clic sigue abriendo el modal como siempre — preventDefault evita la
             // navegación, así que la experiencia no cambia.
             <a
-              className="card"
+              className="card card--editorial"
               key={p.id}
               href={rutaProducto(p)}
               onClick={(e) => {
@@ -137,11 +137,12 @@ export default function CatalogExplorer({ catalog, onOpenProduct }) {
             >
               <div className="card-img">
                 <img src={p.img} alt={p.name} loading="lazy" />
-              </div>
-              <div className="card-body">
-                <p className="card-name">{p.name}</p>
-                <p className="card-sub">{sub}</p>
-                <p className="card-price mono">{fmt(p.price)}</p>
+                <div className="card-scrim" />
+                <div className="card-overlay">
+                  <p className="card-name">{p.name}</p>
+                  <p className="card-sub">{sub}</p>
+                  <p className="card-price mono">{fmt(p.price)}</p>
+                </div>
               </div>
             </a>
           );
