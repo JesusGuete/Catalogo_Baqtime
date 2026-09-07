@@ -675,12 +675,12 @@ input.adm-input { display: block; }
 
 .adm-fotos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .adm-foto {
-  display: flex; align-items: center; gap: 12px; padding: 10px;
   background: var(--white-card); border: 1px solid var(--line-soft);
   border-radius: var(--radius);
 }
 .adm-foto:first-child { background: var(--surface-muted); border-color: var(--line-solid); }
-.adm-foto--subiendo { background: var(--draft-bg); border-color: var(--draft-border); }
+.adm-foto--subiendo { display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--draft-bg); border-color: var(--draft-border); }
+.adm-foto-fila { display: flex; align-items: center; gap: 12px; padding: 10px; }
 .adm-foto-agarre {
   display: inline-flex; align-items: center; justify-content: center;
   width: 24px; height: 24px; color: var(--ink-faint); border-radius: var(--radius);
@@ -699,13 +699,54 @@ input.adm-input { display: block; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .adm-foto-pct { font-size: 11px; color: var(--mocha); width: 54px; text-align: center; }
-.adm-foto-acciones { display: flex; gap: 4px; }
+.adm-foto-acciones { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
 .adm-foto-btn {
-  width: 24px; height: 24px; border: 0; background: none; cursor: pointer;
-  color: var(--ink-faint); font-size: 13px; border-radius: var(--radius);
+  height: 24px; padding: 0 8px; border: 0; background: none; cursor: pointer;
+  color: var(--ink-soft); font-size: 11px; border-radius: var(--radius); white-space: nowrap;
 }
 .adm-foto-btn:hover { background: var(--surface-muted); color: var(--ink); }
-.adm-foto-btn--quitar:hover { color: var(--vino); }
+.adm-foto-btn.is-activo { background: var(--ink); color: var(--cream); }
+.adm-foto-btn--quitar { width: 24px; padding: 0; color: var(--ink-faint); font-size: 13px; }
+.adm-foto-btn--quitar:hover { color: var(--vino); background: var(--error-bg); }
+
+/* Punto de encuadre (017): lo que la tienda toma como centro al recortar esta foto en
+   sus marcos 1:1. Un clic en el lienzo mueve el punto ahí; las flechas del teclado lo
+   ajustan de a poco. Ver PhotoManager.tsx. */
+.adm-encuadre {
+  display: flex; gap: 16px; padding: 0 12px 12px; flex-wrap: wrap;
+  border-top: 1px solid var(--line-soft); margin-top: 2px; padding-top: 12px;
+}
+.adm-encuadre-lienzo {
+  position: relative; width: 200px; aspect-ratio: 1 / 1; flex-shrink: 0;
+  overflow: hidden; border-radius: var(--radius); background: var(--panel);
+  cursor: crosshair; -webkit-touch-callout: none;
+}
+.adm-encuadre-lienzo img {
+  width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none;
+  -webkit-touch-callout: none;
+}
+.adm-encuadre-lienzo:focus-visible { outline: 2px solid var(--mocha); outline-offset: 2px; }
+.adm-encuadre-punto {
+  position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px;
+  border: 2px solid var(--cream); border-radius: 50%;
+  background: var(--mocha); box-shadow: 0 0 0 1px rgba(38, 34, 29, 0.4);
+  pointer-events: none;
+}
+.adm-encuadre-lado { flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 8px; }
+.adm-encuadre-cifra { color: var(--ink-soft); }
+.adm-encuadre-preview { display: flex; align-items: center; gap: 8px; }
+.adm-encuadre-preview img {
+  width: 56px; height: 56px; object-fit: cover; border-radius: var(--radius);
+  background: var(--panel); flex-shrink: 0;
+}
+.adm-encuadre-preview-cap { color: var(--ink-faint); font-size: 9px; letter-spacing: 0.06em; }
+.adm-encuadre-centrar {
+  align-self: flex-start; height: 26px; padding: 0 10px;
+  background: none; border: 1px solid var(--line-solid); border-radius: var(--radius);
+  color: var(--ink-soft); font-size: 10px; letter-spacing: 0.06em; cursor: pointer;
+}
+.adm-encuadre-centrar:hover:not(:disabled) { border-color: var(--ink); color: var(--ink); }
+.adm-encuadre-centrar:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .adm-barra { display: block; height: 3px; background: var(--panel); border-radius: 2px; overflow: hidden; }
 .adm-barra-fill { display: block; height: 100%; background: var(--mocha); transition: width 0.2s ease; }

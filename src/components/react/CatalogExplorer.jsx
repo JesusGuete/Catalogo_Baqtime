@@ -140,7 +140,12 @@ export default function CatalogExplorer({ catalog, onOpenProduct }) {
               }}
             >
               <div className="card-img">
-                <img src={p.img} alt={p.name} loading="lazy" />
+                <img
+                  src={p.img}
+                  alt={p.name}
+                  loading="lazy"
+                  style={{ objectPosition: `${p.imgFocal.x}% ${p.imgFocal.y}%` }}
+                />
                 <div className="card-scrim" />
                 <div className="card-overlay">
                   <p className="card-name">{p.name}</p>

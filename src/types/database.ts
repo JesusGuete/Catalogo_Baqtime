@@ -134,7 +134,7 @@ export type ProductInsert = Omit<Product, "created_at" | "updated_at">;
 export type ProductUpdate = Partial<Omit<ProductInsert, "id">>;
 
 // ============================================================================
-// product_photos / product_photos_draft — 001_schema.sql:66-74
+// product_photos / product_photos_draft — 001_schema.sql:66-74, 017_photo_focal_point.sql
 // ============================================================================
 
 export interface ProductPhoto {
@@ -145,11 +145,19 @@ export interface ProductPhoto {
   storage_path: string;
   /** smallint. CHECK >= 0. `0` = foto principal. UNIQUE (product_id, position). */
   position: number;
+  /**
+   * Punto de encuadre (017), 0-100. Es lo que la tienda usa como centro al recortar la
+   * foto dentro de sus marcos de proporción fija (1:1, 3:4) — nunca modifica el archivo.
+   * 50/50 (el default de la columna) es el centro geométrico: el comportamiento de
+   * siempre, antes de que esta migración existiera.
+   */
+  focal_x: number;
+  focal_y: number;
   created_at: Timestamptz;
 }
 
-/** Lo mínimo que necesita el panel de una foto: la ruta y el orden. */
-export type PhotoRef = Pick<ProductPhoto, "storage_path" | "position">;
+/** Lo mínimo que necesita el panel de una foto: ruta, orden y encuadre. */
+export type PhotoRef = Pick<ProductPhoto, "storage_path" | "position" | "focal_x" | "focal_y">;
 
 // ============================================================================
 // publications — 001_schema.sql:76-84
@@ -314,10 +322,17 @@ export interface PublishResult {
 }
 
 /** Argumentos de `replace_product_photos_draft`. 003_functions.sql:154-156 */
+/** Una foto tal como la manda el panel a `replace_product_photos_draft` (017). */
+export interface FotoParaGuardar {
+  storage_path: string;
+  focal_x: number;
+  focal_y: number;
+}
+
 export interface ReplacePhotosArgs {
   p_product_id: string;
   /** El array COMPLETO en el orden final. El índice 0 es la foto principal. */
-  p_storage_paths: string[];
+  p_photos: FotoParaGuardar[];
 }
 
 /**

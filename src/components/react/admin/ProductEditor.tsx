@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type {
   Category,
+  FotoParaGuardar,
   InitialsColor,
   ProductInsert,
   ProductWithPhotos,
@@ -119,7 +120,7 @@ export default function ProductEditor({
           productosRepo.siguienteOrden(productosExistentes, categorias[0]?.key ?? "")
         )
   );
-  const [rutasFotos, setRutasFotos] = useState<string[]>(() =>
+  const [fotos, setFotos] = useState<FotoParaGuardar[]>(() =>
     producto ? productosRepo.rutasDeFotos(producto) : []
   );
   const [tocado, setTocado] = useState(false);
@@ -145,9 +146,16 @@ export default function ProductEditor({
     () => (producto ? productosRepo.rutasDeFotos(producto) : []),
     [producto]
   );
+  // Compara también el encuadre: mover el punto de una foto sin agregar ni quitar
+  // ninguna sigue siendo un cambio que hay que guardar.
   const fotosCambiaron =
-    rutasFotos.length !== fotosOriginales.length ||
-    rutasFotos.some((r, i) => r !== fotosOriginales[i]);
+    fotos.length !== fotosOriginales.length ||
+    fotos.some(
+      (f, i) =>
+        f.storage_path !== fotosOriginales[i]?.storage_path ||
+        f.focal_x !== fotosOriginales[i]?.focal_x ||
+        f.focal_y !== fotosOriginales[i]?.focal_y
+    );
 
   function actualizar<K extends keyof Formulario>(campo: K, valor: Formulario[K]) {
     setTocado(true);
@@ -201,7 +209,7 @@ export default function ProductEditor({
 
       // Paso 2: las fotos, solo si cambiaron. El array COMPLETO, en el orden final.
       if (fotosCambiaron || esNuevo) {
-        await fotosRepo.reemplazar(form.id, rutasFotos);
+        await fotosRepo.reemplazar(form.id, fotos);
       }
 
       onGuardado();
@@ -397,8 +405,8 @@ export default function ProductEditor({
 
         <div className="adm-editor-fotos">
           <PhotoManager
-            rutas={rutasFotos}
-            onChange={setRutasFotos}
+            fotos={fotos}
+            onChange={setFotos}
             categoryKey={form.category_key}
           />
 

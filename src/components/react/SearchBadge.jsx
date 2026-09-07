@@ -130,7 +130,12 @@ export default function SearchBadge({ destacados = [] }) {
                 {visibles.map((p) => (
                   <a key={p.id} className="buscador-card" href={rutaProducto(p)}>
                     <div className="buscador-card-img">
-                      <img src={p.img} alt={p.name} loading="lazy" />
+                      <img
+                        src={p.img}
+                        alt={p.name}
+                        loading="lazy"
+                        style={{ objectPosition: `${p.imgFocal.x}% ${p.imgFocal.y}%` }}
+                      />
                     </div>
                     <span className="buscador-card-nombre">{p.name}</span>
                     <span className="buscador-card-precio mono">{fmt(p.price)}</span>

@@ -39,6 +39,17 @@ export interface ProductoPublico {
   gallery: string[];
   /** La primera foto, o el placeholder si el producto no tiene ninguna. */
   img: string;
+  /**
+   * Punto de encuadre (017_photo_focal_point.sql) de cada foto de `gallery`, en el
+   * mismo orden e índice — `galleryFocal[i]` es el encuadre de `gallery[i]`. Se separa
+   * de `gallery` en vez de convertirla en un array de objetos para no tener que tocar
+   * cada lugar de la tienda que ya consume `gallery`/`img` como URLs sueltas (carrito,
+   * JSON-LD, swatches de variante): solo las vistas que de verdad recortan la foto
+   * (tarjeta del catálogo, galería del producto, resultados del buscador) leen esto.
+   */
+  galleryFocal: { x: number; y: number }[];
+  /** El encuadre de `img` — o sea, `galleryFocal[0]`. Centro (50/50) si no hay fotos. */
+  imgFocal: { x: number; y: number };
 }
 
 export interface Catalogo {
@@ -70,7 +81,7 @@ interface FilaProducto {
   group_key: string;
   sort_order: number;
   initials_palette: string[];
-  product_photos?: { storage_path: string; position: number }[];
+  product_photos?: { storage_path: string; position: number; focal_x: number; focal_y: number }[];
 }
 
 const photoUrl = (storagePath: string): string =>
@@ -88,7 +99,7 @@ export async function loadCatalog(): Promise<Catalogo> {
       "categories?select=key,label,default_price,personalizable,max_initials,has_variant,position,is_imported,free_initials,extra_initials_price,initials_palette,portada_desc,portada_img&order=position"
     ),
     q<FilaProducto[]>(
-      "products?select=id,category_key,name,color,variant,hex,price,personalizable,max_initials,group_key,sort_order,initials_palette,product_photos(storage_path,position)&order=category_key,sort_order"
+      "products?select=id,category_key,name,color,variant,hex,price,personalizable,max_initials,group_key,sort_order,initials_palette,product_photos(storage_path,position,focal_x,focal_y)&order=category_key,sort_order"
     ),
     // Se ordena también por `name` porque `position` no es única (014): sin el desempate,
     // dos colores con el mismo número saldrían en un orden que cambia entre peticiones y
@@ -109,11 +120,12 @@ export async function loadCatalog(): Promise<Catalogo> {
     return posDiff !== 0 ? posDiff : a.sort_order - b.sort_order;
   });
 
+  const CENTRO = { x: 50, y: 50 };
+
   const products: ProductoPublico[] = prods.map((p) => {
-    const gallery = (p.product_photos ?? [])
-      .slice()
-      .sort((a, b) => a.position - b.position)
-      .map((ph) => photoUrl(ph.storage_path));
+    const fotosOrdenadas = (p.product_photos ?? []).slice().sort((a, b) => a.position - b.position);
+    const gallery = fotosOrdenadas.map((ph) => photoUrl(ph.storage_path));
+    const galleryFocal = fotosOrdenadas.map((ph) => ({ x: ph.focal_x, y: ph.focal_y }));
     return {
       id: p.id,
       category: p.category_key,
@@ -129,6 +141,8 @@ export async function loadCatalog(): Promise<Catalogo> {
       initialsPalette: p.initials_palette ?? [],
       gallery,
       img: gallery[0] ?? PLACEHOLDER, // producto sin fotos: placeholder, no romper
+      galleryFocal,
+      imgFocal: galleryFocal[0] ?? CENTRO,
     };
   });
 
