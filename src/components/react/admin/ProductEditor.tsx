@@ -255,12 +255,16 @@ export default function ProductEditor({
 
       <div className="adm-editor-cols">
         <div className="adm-editor-form">
+          {/* Antes eran tres tarjetas numeradas (Identidad, Clasificación, Precio y
+              personalización) con trece campos siempre visibles, incluidos ID, Orden y
+              Grupo de color — que el dueño casi nunca toca. Quedan en una sola tarjeta con
+              lo que sí se decide en cada producto, y ID/Grupo de color se pliegan abajo en
+              "Avanzado". Orden ya no tiene campo: se decide arrastrando la fila en la
+              lista de Productos, no acá — repetir esa decisión acá era lo que producía el
+              23505 al chocar con otro producto que ya tenía el mismo número. */}
           <section className="adm-card">
-            <SectionHead numero="01" titulo="Identidad" />
+            <SectionHead titulo="Producto" />
             <div className="adm-fila-campos">
-              <Campo etiqueta="ID" ayuda="no se puede cambiar" error={errores.id}>
-                <Texto value={form.id} onChange={() => {}} disabled mono />
-              </Campo>
               <Campo etiqueta="NOMBRE" error={errores.name}>
                 <Texto
                   value={form.name}
@@ -268,8 +272,6 @@ export default function ProductEditor({
                   invalido={!!errores.name}
                 />
               </Campo>
-            </div>
-            <div className="adm-fila-campos">
               <Campo etiqueta="COLOR" error={errores.color}>
                 <Texto
                   value={form.color}
@@ -284,15 +286,11 @@ export default function ProductEditor({
                   invalido={!!errores.hex}
                 />
               </Campo>
+            </div>
+            <div className="adm-fila-campos">
               <Campo etiqueta="VARIANTE" ayuda="opcional">
                 <Texto value={form.variant} onChange={(v) => actualizar("variant", v)} />
               </Campo>
-            </div>
-          </section>
-
-          <section className="adm-card">
-            <SectionHead numero="02" titulo="Clasificación" />
-            <div className="adm-fila-campos">
               <Campo etiqueta="CATEGORÍA" error={errores.category_key}>
                 <Selector
                   value={form.category_key}
@@ -301,46 +299,12 @@ export default function ProductEditor({
                   invalido={!!errores.category_key}
                 />
               </Campo>
-              <Campo
-                etiqueta="GRUPO DE COLOR"
-                ayuda="agrupa variantes"
-                error={errores.group_key}
-              >
-                <Texto
-                  value={form.group_key}
-                  onChange={(v) => actualizar("group_key", v)}
-                  invalido={!!errores.group_key}
-                />
-              </Campo>
-              <Campo etiqueta="ORDEN" error={errores.sort_order}>
-                <Numero
-                  value={form.sort_order}
-                  onChange={(v) => actualizar("sort_order", v)}
-                  invalido={!!errores.sort_order}
-                />
-              </Campo>
-            </div>
-            <p className="adm-hint">
-              El orden no se puede repetir dentro de la misma categoría.
-            </p>
-          </section>
-
-          <section className="adm-card">
-            <SectionHead numero="03" titulo="Precio y personalización" />
-            <div className="adm-fila-campos">
               <Campo etiqueta="PRECIO" ayuda="pesos enteros" error={errores.price}>
                 <Numero
                   value={form.price}
                   onChange={(v) => actualizar("price", v)}
                   invalido={!!errores.price}
                   prefijo="$"
-                />
-              </Campo>
-              <Campo etiqueta="MÁX INICIALES" error={errores.max_initials}>
-                <Numero
-                  value={form.max_initials}
-                  onChange={(v) => actualizar("max_initials", v)}
-                  invalido={!!errores.max_initials}
                 />
               </Campo>
             </div>
@@ -359,60 +323,89 @@ export default function ProductEditor({
               />
             </div>
 
-            {categoria && categoria.extra_initials_price > 0 && (
-              <Aviso
-                titulo={`${categoria.label} cobra ${dinero(categoria.extra_initials_price)} a partir de la inicial ${categoria.free_initials + 1}.`}
-                meta={`Regla de ${categoria.label} · se edita en Categorías`}
-              />
-            )}
-
-            {/* Solo si es personalizable: en un producto sin iniciales, elegir con qué
-                hilo bordarlas no significa nada y ocuparía media pantalla. */}
+            {/* Solo si es personalizable: en un producto sin iniciales, cuántas admite y
+                con qué hilo bordarlas no significa nada y ocuparía media pantalla. */}
             {form.personalizable && (
-              <div className="adm-paleta">
-                <p className="adm-mono adm-campo-label">Colores de bordado de este producto</p>
-                {colores.length === 0 ? (
-                  <p className="adm-campo-ayuda">
-                    Todavía no hay ningún color en la paleta. Se crean en COLORES.
-                  </p>
-                ) : (
-                  <div className="adm-paleta-chips">
-                    {colores.map((c) => {
-                      const elegido = form.initials_palette.includes(c.name);
-                      return (
-                        <button
-                          key={c.name}
-                          type="button"
-                          className={`adm-mono adm-color-chip ${elegido ? "is-activo" : ""}`}
-                          onClick={() =>
-                            actualizar(
-                              "initials_palette",
-                              elegido
-                                ? form.initials_palette.filter((n) => n !== c.name)
-                                : [...form.initials_palette, c.name]
-                            )
-                          }
-                          aria-pressed={elegido}
-                        >
-                          <span className="adm-color-swatch" style={{ background: c.hex }} />
-                          {c.name.toUpperCase()}
-                        </button>
-                      );
-                    })}
-                  </div>
+              <>
+                <div className="adm-fila-campos">
+                  <Campo etiqueta="MÁX INICIALES" error={errores.max_initials}>
+                    <Numero
+                      value={form.max_initials}
+                      onChange={(v) => actualizar("max_initials", v)}
+                      invalido={!!errores.max_initials}
+                    />
+                  </Campo>
+                </div>
+
+                {categoria && categoria.extra_initials_price > 0 && (
+                  <Aviso
+                    titulo={`${categoria.label} cobra ${dinero(categoria.extra_initials_price)} a partir de la inicial ${categoria.free_initials + 1}.`}
+                    meta={`Regla de ${categoria.label} · se edita en Categorías`}
+                  />
                 )}
-                {/* Decir cuál gana evita la pregunta obvia: el dueño ve dos lugares donde
-                    configurar lo mismo y necesita saber cuál de los dos manda. */}
-                {form.initials_palette.length === 0 &&
-                categoria &&
-                categoria.initials_palette.length > 0 ? (
-                  <p className="adm-campo-ayuda">
-                    Ahora hereda de {categoria.label}: {categoria.initials_palette.join(", ")}.
-                  </p>
-                ) : null}
-              </div>
+
+                <div className="adm-paleta">
+                  <p className="adm-mono adm-campo-label">Colores de bordado de este producto</p>
+                  {colores.length === 0 ? (
+                    <p className="adm-campo-ayuda">
+                      Todavía no hay ningún color en la paleta. Se crean en Categorías, en la
+                      pestaña Colores.
+                    </p>
+                  ) : (
+                    <div className="adm-paleta-chips">
+                      {colores.map((c) => {
+                        const elegido = form.initials_palette.includes(c.name);
+                        return (
+                          <button
+                            key={c.name}
+                            type="button"
+                            className={`adm-mono adm-color-chip ${elegido ? "is-activo" : ""}`}
+                            onClick={() =>
+                              actualizar(
+                                "initials_palette",
+                                elegido
+                                  ? form.initials_palette.filter((n) => n !== c.name)
+                                  : [...form.initials_palette, c.name]
+                              )
+                            }
+                            aria-pressed={elegido}
+                          >
+                            <span className="adm-color-swatch" style={{ background: c.hex }} />
+                            {c.name.toUpperCase()}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {/* Decir cuál gana evita la pregunta obvia: el dueño ve dos lugares donde
+                      configurar lo mismo y necesita saber cuál de los dos manda. */}
+                  {form.initials_palette.length === 0 &&
+                  categoria &&
+                  categoria.initials_palette.length > 0 ? (
+                    <p className="adm-campo-ayuda">
+                      Ahora hereda de {categoria.label}: {categoria.initials_palette.join(", ")}.
+                    </p>
+                  ) : null}
+                </div>
+              </>
             )}
           </section>
+
+          <details className="adm-card adm-avanzado">
+            <summary>Avanzado</summary>
+            <div className="adm-fila-campos">
+              <Campo etiqueta="ID" ayuda="no se puede cambiar">
+                <Texto value={form.id} onChange={() => {}} disabled mono />
+              </Campo>
+              <Campo etiqueta="GRUPO DE COLOR" ayuda="agrupa variantes" error={errores.group_key}>
+                <Texto
+                  value={form.group_key}
+                  onChange={(v) => actualizar("group_key", v)}
+                  invalido={!!errores.group_key}
+                />
+              </Campo>
+            </div>
+          </details>
         </div>
 
         <div className="adm-editor-fotos">
