@@ -1,7 +1,7 @@
-import { useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { publicImageUrl } from "../../../lib/supabase/config";
 import { construirPath, subirImagen } from "../../../lib/supabase/storage";
-import { transformarImagen } from "../../../lib/admin/image-transform";
+import { optimizarArchivo, transformarImagen } from "../../../lib/admin/image-transform";
 import { cajaAutoCuadrada, cajaAutoEditorial, cajaDe, conCaja, sinCajas, type TipoRecorte } from "../../../lib/admin/crop";
 import { estiloRecorte } from "../../../lib/crop-style.js";
 import { comoAdminError, type AdminError } from "../../../lib/supabase/errors";
@@ -63,9 +63,36 @@ export default function PhotoStudio({
   const [dimensiones, setDimensiones] = useState<{ nw: number; nh: number } | null>(null);
   const [procesando, setProcesando] = useState<"girar" | "espejo" | "reemplazar" | null>(null);
   const [error, setError] = useState<AdminError | null>(null);
+  // URL local (blob:) del resultado de girar/voltear/reemplazar, para mostrarlo al
+  // instante mientras el archivo sube en segundo plano — sin esto, la única forma de
+  // "ver cómo quedó" era esperar a que Storage lo reciba y volver a bajarlo, que es
+  // exactamente el tiempo muerto que se sentía como lentitud.
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lienzoRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const arrastreRef = useRef<Arrastre>(null);
+
+  const urlMostrada = previewUrl ?? publicImageUrl(previa.storage_path);
+
+  function mostrarPreview(url: string | null) {
+    setPreviewUrl((anterior) => {
+      if (anterior) URL.revokeObjectURL(anterior);
+      return url;
+    });
+  }
+
+  // Si se cierra el estudio (o se cambia de foto, ver el `key` en PhotoManager.tsx)
+  // mientras hay una vista previa local sin revocar, no queda esperando al recolector
+  // de basura del navegador.
+  const previewUrlRef = useRef<string | null>(null);
+  previewUrlRef.current = previewUrl;
+  useEffect(
+    () => () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    },
+    []
+  );
 
   const tocoAlgo =
     previa.storage_path !== original.storage_path ||
@@ -163,50 +190,54 @@ export default function PhotoStudio({
     setPrevia((p) => conCaja(p, herramienta, null));
   }
 
-  async function girar() {
+  /**
+   * Gira o voltea la foto que ya está en pantalla. Pasa el `<img>` del lienzo (ya
+   * cargado, `imgRef`) en vez de la URL: `transformarImagen` puede volver a bajar la
+   * foto sola si hace falta, pero como esta foto YA está en memoria porque se está
+   * viendo en este mismo momento, evitarle esa segunda bajada de red es la diferencia
+   * entre notar la espera y no notarla.
+   */
+  async function girarOVoltear(opciones: { rotar?: 90 } | { espejo: true }, cual: "girar" | "espejo") {
     setError(null);
-    setProcesando("girar");
+    setProcesando(cual);
     try {
-      const blob = await transformarImagen(publicImageUrl(previa.storage_path), { rotar: 90 });
-      const archivo = new File([blob], "girada.webp", { type: "image/webp" });
+      const origen = imgRef.current ?? publicImageUrl(previa.storage_path);
+      const blob = await transformarImagen(origen, opciones);
+      // Se muestra YA, con el resultado que ya está en el navegador — no hace falta
+      // esperar a Storage para saber cómo quedó.
+      mostrarPreview(URL.createObjectURL(blob));
+      const archivo = new File([blob], `${cual}.webp`, { type: "image/webp" });
       const path = construirPath(categoryKey, archivo);
       await subirImagen(path, archivo);
       setPrevia(sinCajas({ ...previa, storage_path: path }));
       setDimensiones(null);
     } catch (e) {
       setError(comoAdminError(e));
+      mostrarPreview(null);
     } finally {
       setProcesando(null);
     }
   }
 
-  async function voltear() {
-    setError(null);
-    setProcesando("espejo");
-    try {
-      const blob = await transformarImagen(publicImageUrl(previa.storage_path), { espejo: true });
-      const archivo = new File([blob], "espejo.webp", { type: "image/webp" });
-      const path = construirPath(categoryKey, archivo);
-      await subirImagen(path, archivo);
-      setPrevia(sinCajas({ ...previa, storage_path: path }));
-      setDimensiones(null);
-    } catch (e) {
-      setError(comoAdminError(e));
-    } finally {
-      setProcesando(null);
-    }
-  }
+  const girar = () => girarOVoltear({ rotar: 90 }, "girar");
+  const voltear = () => girarOVoltear({ espejo: true }, "espejo");
 
-  async function reemplazar(archivo: File) {
+  async function reemplazar(archivoElegido: File) {
     setError(null);
     setProcesando("reemplazar");
     try {
+      // Optimizar TAMBIÉN acá: un reemplazo es una foto nueva como cualquier otra, no
+      // hay motivo para que esta entrada al bucket se salte lo que ya hace
+      // subirArchivos() en PhotoManager.
+      const archivo = await optimizarArchivo(archivoElegido);
+      mostrarPreview(URL.createObjectURL(archivo));
       const path = construirPath(categoryKey, archivo);
       await subirImagen(path, archivo);
       setPrevia(sinCajas({ ...previa, storage_path: path }));
       setDimensiones(null);
     } catch (e) {
       setError(comoAdminError(e));
+      mostrarPreview(null);
     } finally {
       setProcesando(null);
     }
@@ -332,10 +363,12 @@ export default function PhotoStudio({
             ref={lienzoRef}
           >
             <img
-              key={previa.storage_path}
-              src={publicImageUrl(previa.storage_path)}
+              key={urlMostrada}
+              ref={imgRef}
+              src={urlMostrada}
               alt=""
               draggable={false}
+              crossOrigin="anonymous"
               onLoad={(e) =>
                 setDimensiones({ nw: e.currentTarget.naturalWidth, nh: e.currentTarget.naturalHeight })
               }
@@ -377,20 +410,15 @@ export default function PhotoStudio({
         <div className="adm-estudio-previas">
           <p className="adm-mono adm-campo-label">Cómo se va a ver</p>
           <div className={`adm-estudio-previa ${herramienta === "square" ? "is-activa" : ""}`}>
-            <img
-              key={`${previa.storage_path}-cuadrada`}
-              src={publicImageUrl(previa.storage_path)}
-              alt=""
-              style={estiloRecorte(cajaCuadrada)}
-            />
+            <img key={`${urlMostrada}-cuadrada`} src={urlMostrada} alt="" style={estiloRecorte(cajaCuadrada)} />
             <span className="adm-mono adm-estudio-previa-cap">Tarjeta 1:1</span>
           </div>
           <div
             className={`adm-estudio-previa adm-estudio-previa--editorial ${herramienta === "editorial" ? "is-activa" : ""}`}
           >
             <img
-              key={`${previa.storage_path}-editorial`}
-              src={publicImageUrl(previa.storage_path)}
+              key={`${urlMostrada}-editorial`}
+              src={urlMostrada}
               alt=""
               style={estiloRecorte(cajaEditorial)}
             />

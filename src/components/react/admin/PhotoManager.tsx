@@ -122,6 +122,12 @@ export default function PhotoManager({ fotos, onChange, categoryKey, deshabilita
   if (editando !== null && fotos[editando]) {
     return (
       <PhotoStudio
+        // Sin esto, "Foto anterior/siguiente" cambia la prop `foto` pero React sigue
+        // usando la MISMA instancia del componente — su estado interno (previa,
+        // original, el recorte que se estaba editando) se queda pegado a la foto
+        // vieja en vez de arrancar de cero con la nueva. La `key` fuerza un montaje
+        // nuevo por cada foto.
+        key={fotos[editando].storage_path}
         foto={fotos[editando]}
         categoryKey={categoryKey}
         indice={editando}
