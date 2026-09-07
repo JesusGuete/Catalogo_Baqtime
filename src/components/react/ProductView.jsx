@@ -83,6 +83,11 @@ export default function ProductView({
   useEffect(() => () => clearTimeout(addedTimer.current), []);
 
   const photos = product.gallery && product.gallery.length ? product.gallery : [product.img];
+  // Mismo índice que `photos`: el encuadre (017) de cada foto, para las miniaturas y la
+  // foto principal, que sí recortan a 1:1. El zoom (más abajo) muestra la foto completa
+  // con object-fit:contain, así que ese <img> no necesita esto.
+  const photosFocal =
+    product.galleryFocal && product.galleryFocal.length ? product.galleryFocal : [product.imgFocal];
 
   /**
    * Qué foto se está viendo. Se mueve desde tres lados —flechas, miniaturas y el dedo en
@@ -228,6 +233,7 @@ export default function ProductView({
                       alt={`${product.name} — foto ${i + 1} de ${photos.length}`}
                       className={i === fotoActiva ? "active" : ""}
                       onClick={() => irAFoto(i)}
+                      style={{ objectPosition: `${photosFocal[i].x}% ${photosFocal[i].y}%` }}
                     />
                   ))}
                 </div>
@@ -244,6 +250,7 @@ export default function ProductView({
                       src={src}
                       alt={product.name}
                       onClick={() => setZoomOpen(true)}
+                      style={{ objectPosition: `${photosFocal[i].x}% ${photosFocal[i].y}%` }}
                     />
                   ))}
                 </div>

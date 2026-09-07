@@ -32,7 +32,7 @@ const CTX = "publish" as const;
  */
 export async function cargarPublicado(): Promise<ProductWithPhotos[]> {
   const filas = await rest<ProductWithPhotos[]>(
-    `products?select=${SELECT_PRODUCTO},product_photos(storage_path,position)&order=category_key,sort_order`,
+    `products?select=${SELECT_PRODUCTO},product_photos(storage_path,position,focal_x,focal_y)&order=category_key,sort_order`,
     { contexto: CTX }
   );
   for (const p of filas) p.product_photos?.sort((a, b) => a.position - b.position);

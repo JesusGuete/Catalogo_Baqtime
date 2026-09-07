@@ -12,16 +12,19 @@
 import { rpc } from "../supabase/http";
 import { construirPath, subirImagen } from "../supabase/storage";
 import { comoAdminError, type AdminError } from "../supabase/errors";
-import type { ReplacePhotosArgs } from "../../types/database";
+import type { FotoParaGuardar, ReplacePhotosArgs } from "../../types/database";
 
 const CTX = "photos" as const;
 
 /**
  * Reemplaza el conjunto completo de fotos de un producto del borrador.
+ *
+ * `fotos` ya trae el encuadre de cada una (017_photo_focal_point.sql) — la posición
+ * sigue saliendo del índice del array, igual que siempre.
  * @returns cuántas fotos quedaron
  */
-export async function reemplazar(productId: string, storagePaths: string[]): Promise<number> {
-  const args: ReplacePhotosArgs = { p_product_id: productId, p_storage_paths: storagePaths };
+export async function reemplazar(productId: string, fotos: FotoParaGuardar[]): Promise<number> {
+  const args: ReplacePhotosArgs = { p_product_id: productId, p_photos: fotos };
   return rpc<number>("replace_product_photos_draft", args as unknown as Record<string, unknown>, CTX);
 }
 
