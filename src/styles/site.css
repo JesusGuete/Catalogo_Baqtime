@@ -412,6 +412,24 @@
   .card-sub{ font-size:12px; color:var(--ink-soft); margin:0 0 10px; }
   .card-price{ font-family:'JetBrains Mono', monospace; font-size:14px; }
 
+  /* ===== TARJETA EDITORIAL (grilla del catálogo) =====
+     Misma tarjeta, mismo enlace, mismo producto de siempre — nada del conteo ni del
+     agrupamiento cambia. Lo único distinto es que ya no hay franja blanca abajo: la
+     foto ocupa toda la tarjeta y el nombre, la variante y el precio van superpuestos
+     sobre un degradado, como en una página editorial. */
+  .card--editorial{ background:none; border:none; }
+  .card--editorial .card-img{ position:relative; aspect-ratio:3/4; }
+  .card-scrim{
+    position:absolute; left:0; right:0; bottom:0; height:56%;
+    background:linear-gradient(to top, rgba(38,34,29,0.88), rgba(38,34,29,0));
+    pointer-events:none;
+  }
+  .card-overlay{ position:absolute; left:16px; right:16px; bottom:14px; color:var(--cream); }
+  .card-overlay p{ margin:0; }
+  .card--editorial .card-name{ font-size:15px; margin:0 0 2px; }
+  .card--editorial .card-sub{ font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:#d8d2c6; margin:0 0 8px; }
+  .card--editorial .card-price{ color:var(--cream); }
+
   /* ===== MODAL ===== */
   .modal-overlay{
     position:fixed; top:var(--header-h); left:0; right:0; bottom:0; background:var(--cream);
