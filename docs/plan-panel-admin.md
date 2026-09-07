@@ -35,13 +35,17 @@ celular.
   iniciales se movió adentro del bloque "Personalizable" (antes se mostraba igual con
   el interruptor apagado, sin significar nada ahí).
 
+- **Fase 04 — Punto de encuadre.** Migración `017_photo_focal_point.sql` corrida en
+  producción (`focal_x`/`focal_y` en `product_photos` y `product_photos_draft`, default
+  50/50 = centro; `replace_product_photos_draft` pasa a recibir `jsonb` con el encuadre
+  de cada foto). Panel: botón "Encuadrar" por foto en `PhotoManager` — clic o flechas
+  del teclado para mover el punto, con vista previa de cómo queda recortada. Tienda:
+  `catalog.ts` trae `galleryFocal`/`imgFocal`; se aplica `object-position` en la tarjeta
+  del catálogo, la galería del producto y los resultados del buscador (el zoom del
+  producto no, ya muestra la foto completa). PR #64.
+
 ## Por hacer — editor de fotos (bloque original)
 
-- **Fase 04 — Punto de encuadre.** Migración (`focal_x`, `focal_y` en `product_photos`
-  y `product_photos_draft`, default 50/50 = centro), `replace_product_photos_draft`
-  actualizada, `catalog.ts` trayendo los valores nuevos, `site.css` usando
-  `object-position` en vez de centro fijo. 🔒 Pendiente de autorización para tocar
-  Supabase (preguntado, no confirmado todavía).
 - **Fase 05 — Recortar, girar y optimizar.** El estudio a pantalla completa (opción A):
   zoom, arrastre, relaciones fijas 1:1 y 3:4, giro, espejo, reemplazo con conservación
   del original para poder revertir, y redimensionado a WebP en el mismo paso.
