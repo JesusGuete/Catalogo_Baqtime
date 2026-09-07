@@ -4,8 +4,25 @@ import { publicImageUrl } from "../../../lib/supabase/config";
 import { useArrastreOrden } from "../../../lib/admin/useArrastreOrden";
 import type { AdminError } from "../../../lib/supabase/errors";
 import type { FotoParaGuardar } from "../../../types/database";
+import { cajaDe } from "../../../lib/admin/crop";
+import { estiloRecorte } from "../../../lib/crop-style.js";
 import { ErrorAviso, IconoAgarre, SectionHead } from "./ui";
 import PhotoStudio from "./PhotoStudio";
+
+/** Foto recién subida: sin ningún recorte propio todavía (`null` = usa cover normal). */
+function fotoSinRecorte(storage_path: string): FotoParaGuardar {
+  return {
+    storage_path,
+    crop_square_x: null,
+    crop_square_y: null,
+    crop_square_w: null,
+    crop_square_h: null,
+    crop_editorial_x: null,
+    crop_editorial_y: null,
+    crop_editorial_w: null,
+    crop_editorial_h: null,
+  };
+}
 
 // Gestor de fotos de un producto.
 //
@@ -71,10 +88,8 @@ export default function PhotoManager({ fotos, onChange, categoryKey, deshabilita
 
     setSubiendo([]);
     if (fallidas.length) setErrores(fallidas);
-    // Foto nueva = encuadre centrado (50/50): es lo que la tienda ya hace hoy sin
-    // ningún dato, así que es el punto de partida correcto hasta que alguien lo mueva.
     if (subidas.length) {
-      onChange([...fotos, ...subidas.map((storage_path) => ({ storage_path, focal_x: 50, focal_y: 50 }))]);
+      onChange([...fotos, ...subidas.map(fotoSinRecorte)]);
     }
   }
 
@@ -148,15 +163,14 @@ export default function PhotoManager({ fotos, onChange, categoryKey, deshabilita
                 >
                   <IconoAgarre />
                 </span>
-                <img
-                  className="adm-foto-thumb"
-                  src={publicImageUrl(foto.storage_path)}
-                  alt=""
-                  width={54}
-                  height={54}
-                  loading="lazy"
-                  style={{ objectPosition: `${foto.focal_x}% ${foto.focal_y}%` }}
-                />
+                <span className="adm-foto-thumb-wrap">
+                  <img
+                    src={publicImageUrl(foto.storage_path)}
+                    alt=""
+                    loading="lazy"
+                    style={estiloRecorte(cajaDe(foto, "square"))}
+                  />
+                </span>
                 <div className="adm-foto-meta">
                   {i === 0 ? (
                     <span className="adm-mono adm-tag adm-tag--solido">PRINCIPAL</span>

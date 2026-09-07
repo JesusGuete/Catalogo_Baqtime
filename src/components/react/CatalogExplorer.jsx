@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { matchesSearch, fmt } from "../../lib/search-utils.js";
 import { rutaProducto } from "../../lib/product-url.ts";
+import { estiloRecorte } from "../../lib/crop-style.js";
 
 // Equivalente React de: search.js + catalog-filters.js + catalog-grid.js juntos.
 // Antes eran 3 módulos que se comunicaban tocando el DOM directamente (getElementById,
@@ -140,12 +141,7 @@ export default function CatalogExplorer({ catalog, onOpenProduct }) {
               }}
             >
               <div className="card-img">
-                <img
-                  src={p.img}
-                  alt={p.name}
-                  loading="lazy"
-                  style={{ objectPosition: `${p.imgFocal.x}% ${p.imgFocal.y}%` }}
-                />
+                <img src={p.img} alt={p.name} loading="lazy" style={estiloRecorte(p.imgEditorialCrop)} />
                 <div className="card-scrim" />
                 <div className="card-overlay">
                   <p className="card-name">{p.name}</p>

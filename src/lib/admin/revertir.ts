@@ -10,16 +10,15 @@
 // simple y más consistente con el resto del panel.
 
 import * as productosRepo from "./products.repo";
+import { fotoParaGuardarDesde } from "./products.repo";
 import * as fotosRepo from "./photos.repo";
 import { calcularDiff } from "./diff";
 import type { FotoParaGuardar, ProductUpdate, ProductWithPhotos } from "../../types/database";
 
-/** Fotos de un producto (ruta + encuadre, 017), en orden. Sirve para borrador o publicado. */
+/** Fotos de un producto (ruta + los dos recortes, 018), en orden. Sirve para borrador o publicado. */
 function rutasDeFotos(p: ProductWithPhotos): FotoParaGuardar[] {
   const fotos = p.product_photos_draft ?? p.product_photos ?? [];
-  return [...fotos]
-    .sort((a, b) => a.position - b.position)
-    .map((f) => ({ storage_path: f.storage_path, focal_x: f.focal_x, focal_y: f.focal_y }));
+  return [...fotos].sort((a, b) => a.position - b.position).map(fotoParaGuardarDesde);
 }
 
 /**
