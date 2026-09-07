@@ -924,6 +924,10 @@ input.adm-input { display: block; }
   display: flex; align-items: center; gap: 10px; text-align: left;
   padding: 10px 12px; background: none; border: 1px solid transparent;
   border-radius: var(--radius); color: var(--ink); font-size: 13px; cursor: pointer;
+  /* Sin esto, tocar el botón en el celular deja el resaltado gris/blanco por
+     defecto de Safari encima del texto un rato después de soltar — se veía como
+     "el fondo se puso blanco y no se lee la letra". */
+  -webkit-tap-highlight-color: transparent;
 }
 .adm-estudio-tool:hover:not(:disabled) { background: var(--surface-muted); }
 .adm-estudio-tool:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -953,7 +957,7 @@ input.adm-input { display: block; }
 .adm-estudio-caja {
   position: absolute; border: 1.5px solid var(--cream);
   box-shadow: 0 0 0 1px var(--ink), 0 0 0 9999px rgba(38, 34, 29, 0.55);
-  cursor: move; touch-action: none;
+  cursor: move; touch-action: none; -webkit-tap-highlight-color: transparent;
 }
 .adm-estudio-caja:focus-visible { outline: 2px solid var(--mocha); outline-offset: 2px; }
 .adm-estudio-tercios { position: absolute; inset: 0; pointer-events: none; }
@@ -977,7 +981,7 @@ input.adm-input { display: block; }
 .adm-estudio-previa {
   display: block; position: relative; width: 100%; aspect-ratio: 1 / 1; overflow: hidden;
   border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line-solid);
-  padding: 0; cursor: pointer;
+  padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .adm-estudio-previa:disabled { cursor: not-allowed; }
 .adm-estudio-previa.is-activa { border-color: var(--mocha); box-shadow: 0 0 0 1px var(--mocha); }
