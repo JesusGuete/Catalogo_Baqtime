@@ -144,10 +144,14 @@ export default function AdminApp() {
   // dueño, así que era ruido permanente. Ahora solo lleva subtítulo la pantalla donde el
   // comportamiento es distinto de lo esperado (categorías y colores se guardan directo,
   // sin pasar por "Publicar" como el resto) — el resto no necesita explicarse.
+  //
+  // "Colores" comparte título con "Categorías": desde la Fase 02, es una pestaña
+  // adentro de la misma pantalla, no una sección aparte — el selector de pestañas
+  // (más abajo) ya dice en cuál de las dos se está.
   const encabezado: Record<Vista, { titulo: string; subtitulo: string }> = {
     productos: { titulo: "Productos", subtitulo: "" },
     categorias: { titulo: "Categorías", subtitulo: "Los cambios se publican al instante" },
-    colores: { titulo: "Colores de bordado", subtitulo: "Los cambios se publican al instante" },
+    colores: { titulo: "Categorías", subtitulo: "Los cambios se publican al instante" },
     pedidos: { titulo: "Pedidos", subtitulo: "" },
     publicar: { titulo: "Publicar", subtitulo: "" },
   };
@@ -159,7 +163,6 @@ export default function AdminApp() {
       sesion={sesion}
       conteoProductos={datos.borrador.length}
       conteoCategorias={datos.categorias.length}
-      conteoColores={datos.colores.length}
       pedidosPendientes={pedidosPendientes}
       cambiosPendientes={cambiosPendientes}
       titulo={encabezado[vista].titulo}
@@ -207,22 +210,48 @@ export default function AdminApp() {
         />
       )}
 
-      {vista === "categorias" && (
-        <CategoriesView
-          categorias={datos.categorias}
-          conteoPorCategoria={datos.conteoPorCategoria}
-          cargando={datos.cargando}
-          onCambio={() => void datos.recargar()}
-        />
-      )}
+      {(vista === "categorias" || vista === "colores") && (
+        <>
+          {/* Colores dejó de tener su propio ítem en el menú (Fase 02): se usan
+              siempre juntas —acá se crean los colores, en Categorías se elegía cuáles
+              admitía cada una— así que ahora es una pestaña adentro de esta pantalla. */}
+          <div className="adm-subtabs" role="tablist" aria-label="Categorías o colores">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={vista === "categorias"}
+              className={`adm-subtab ${vista === "categorias" ? "is-activo" : ""}`}
+              onClick={() => navegar({ vista: "categorias", editando: null })}
+            >
+              Categorías
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={vista === "colores"}
+              className={`adm-subtab ${vista === "colores" ? "is-activo" : ""}`}
+              onClick={() => navegar({ vista: "colores", editando: null })}
+            >
+              Colores · {datos.colores.length}
+            </button>
+          </div>
 
-      {vista === "colores" && (
-        <ColorsView
-          colores={datos.colores}
-          categorias={datos.categorias}
-          cargando={datos.cargando}
-          onCambio={() => void datos.recargar()}
-        />
+          {vista === "categorias" ? (
+            <CategoriesView
+              categorias={datos.categorias}
+              conteoPorCategoria={datos.conteoPorCategoria}
+              cargando={datos.cargando}
+              onCambio={() => void datos.recargar()}
+            />
+          ) : (
+            <ColorsView
+              colores={datos.colores}
+              categorias={datos.categorias}
+              cargando={datos.cargando}
+              onCambio={() => void datos.recargar()}
+            />
+          )}
+        </>
       )}
 
       {vista === "publicar" && (

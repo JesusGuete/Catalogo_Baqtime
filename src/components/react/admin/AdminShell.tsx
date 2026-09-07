@@ -20,8 +20,6 @@ interface Props {
   sesion: Sesion;
   conteoProductos: number;
   conteoCategorias: number;
-  /** Cuántos colores de bordado tiene la paleta. */
-  conteoColores: number;
   /** Pedidos esperando que confirmes el pago. Enciende el punto de PEDIDOS. */
   pedidosPendientes: number;
   /** Cuántos cambios hay sin publicar. Enciende el punto del nav y la píldora. */
@@ -39,7 +37,6 @@ export default function AdminShell({
   sesion,
   conteoProductos,
   conteoCategorias,
-  conteoColores,
   pedidosPendientes,
   cambiosPendientes,
   titulo,
@@ -59,12 +56,19 @@ export default function AdminShell({
   // avisa lo mismo en TODAS las pantallas (ver más abajo, no depende de `vista`), así
   // que tenerlo también acá era la misma noticia dos veces. El de "Pedidos" se queda:
   // es la única señal de que hay algo esperando confirmación de pago.
-  const items: { id: Vista; label: string; contador?: number; punto?: boolean }[] = [
+  //
+  // "Colores" ya no tiene su propio ítem: pasó a ser una pestaña DENTRO de
+  // Categorías (AdminApp la dibuja arriba del contenido). Acá "Categorías" se marca
+  // activo en las dos vistas, para que el ítem del menú no "apague" su resaltado
+  // solo porque el dueño está mirando la pestaña Colores.
+  const items: { id: Vista; label: string; contador?: number; punto?: boolean; activoEn?: Vista[] }[] = [
     { id: "productos", label: "Productos", contador: conteoProductos },
-    { id: "categorias", label: "Categorías", contador: conteoCategorias },
-    // Va pegada a Categorías porque se usan juntas: acá se crean los colores y allá se
-    // elige cuáles admite cada categoría.
-    { id: "colores", label: "Colores", contador: conteoColores },
+    {
+      id: "categorias",
+      label: "Categorías",
+      contador: conteoCategorias,
+      activoEn: ["categorias", "colores"],
+    },
     { id: "pedidos", label: "Pedidos", punto: pedidosPendientes > 0 },
     { id: "publicar", label: "Publicar" },
   ];
@@ -89,28 +93,31 @@ export default function AdminShell({
         </button>
 
         <ul className="adm-nav">
-          {items.map((it) => (
-            <li key={it.id}>
-              <button
-                type="button"
-                className={`adm-nav-item ${vista === it.id ? "is-activo" : ""}`}
-                onClick={() => onVista(it.id)}
-                aria-current={vista === it.id ? "page" : undefined}
-              >
-                <span className="adm-nav-marca" />
-                <span className="adm-nav-label">{it.label}</span>
-                {it.contador !== undefined && (
-                  <span className="adm-mono adm-nav-contador">{it.contador}</span>
-                )}
-                {it.punto && (
-                  <span
-                    className="adm-nav-punto"
-                    aria-label="hay pedidos esperando confirmación de pago"
-                  />
-                )}
-              </button>
-            </li>
-          ))}
+          {items.map((it) => {
+            const activo = (it.activoEn ?? [it.id]).includes(vista);
+            return (
+              <li key={it.id}>
+                <button
+                  type="button"
+                  className={`adm-nav-item ${activo ? "is-activo" : ""}`}
+                  onClick={() => onVista(it.id)}
+                  aria-current={activo ? "page" : undefined}
+                >
+                  <span className="adm-nav-marca" />
+                  <span className="adm-nav-label">{it.label}</span>
+                  {it.contador !== undefined && (
+                    <span className="adm-mono adm-nav-contador">{it.contador}</span>
+                  )}
+                  {it.punto && (
+                    <span
+                      className="adm-nav-punto"
+                      aria-label="hay pedidos esperando confirmación de pago"
+                    />
+                  )}
+                </button>
+              </li>
+            );
+          })}
         </ul>
 
         <div className="adm-sidebar-pie">

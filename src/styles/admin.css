@@ -397,6 +397,19 @@ input.adm-input { display: block; }
 .adm-chip.is-activo { background: var(--ink); border-color: var(--ink); color: var(--cream); }
 .adm-toolbar-fin { margin-left: auto; }
 
+/* Pestañas Categorías / Colores (Fase 02): antes "Colores" tenía su propio ítem en
+   el menú lateral; ahora vive acá porque las dos pantallas se usan juntas. */
+.adm-subtabs {
+  display: flex; gap: 4px; margin-bottom: 20px;
+  border-bottom: 1px solid var(--line-solid);
+}
+.adm-subtab {
+  padding: 10px 4px; margin-right: 20px;
+  background: none; border: 0; border-bottom: 2px solid transparent;
+  font-size: 14px; color: var(--ink-soft); cursor: pointer; margin-bottom: -1px;
+}
+.adm-subtab.is-activo { color: var(--ink); border-bottom-color: var(--ink); }
+
 @media (max-width: 640px) {
   /* Mismo patrón que .cat-tabs en la tienda (site.css): una sola fila que se
      desliza, en vez de envolver en 2-3 renglones. */
