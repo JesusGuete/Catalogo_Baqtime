@@ -427,16 +427,6 @@ export default function CategoriesView({
                   </Campo>
                 </div>
 
-                <Aviso
-                  tono="borrador"
-                  titulo={
-                    form.extra_initials_price > 0
-                      ? `De 1 a ${form.free_initials} iniciales van sin costo. De la ${form.free_initials + 1} en adelante suma ${dinero(form.extra_initials_price)} una sola vez.`
-                      : "Sin recargo: todas las iniciales están incluidas en el precio."
-                  }
-                  meta="GRATIS HASTA NO PUEDE SUPERAR AL MÁXIMO · LA BASE LO RECHAZA"
-                />
-
                 <div className="adm-paleta">
                   <p className="adm-mono adm-campo-label">
                     COLORES DE BORDADO PERMITIDOS · VACÍO = TODOS
