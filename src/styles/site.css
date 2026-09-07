@@ -705,15 +705,14 @@
 
     .portada-heading{ padding:0 16px; font-size:21px; margin-bottom:14px; }
 
-    /* EN CELULAR EL CARRUSEL SE VUELVE FRANJAS ALTERNADAS (foto + texto).
-       El carrusel deslizable escondía casi todo (una colección por gesto) y la rejilla
-       de dos columnas que hubo antes le quitaba la descripción a cada una. Acá cada
-       colección es una franja completa —foto cuadrada a un lado, texto al otro—
-       alternando izquierda/derecha como una nota de revista: se lee de corrido, con
-       scroll vertical normal, y conserva la descripción y el llamado a la acción.
+    /* EN CELULAR EL CARRUSEL SE VUELVE UNA LISTA VERTICAL EDITORIAL, FOTO A SANGRE.
+       El carrusel deslizable escondía casi todo (una colección por gesto). Acá cada
+       colección es una franja de ancho completo con la foto ocupando todo el espacio y
+       el nombre + descripción superpuestos sobre un degradado — mismo lenguaje visual
+       que ya se usa en las tarjetas del catálogo (foto a sangre, texto superpuesto).
 
        En computador NO cambia nada: sigue siendo el carrusel de tres tarjetas. */
-    .portada-carousel{ padding:0 16px 40px; gap:0; display:block; }
+    .portada-carousel{ padding:0 0 40px; gap:0; display:block; }
     .portada-viewport{ overflow:visible; }
     .portada{
       display:flex; flex-direction:column; gap:2px; overflow:visible;
@@ -721,30 +720,37 @@
     .portada-card{
       flex:none; width:auto; scroll-snap-align:none;
       border:0; background:transparent; box-shadow:none;
-      display:flex; flex-direction:row; align-items:center; height:150px;
+      position:relative; display:block; height:240px;
     }
-    /* Impares a la izquierda, pares invertidas: es lo que arma el zigzag. */
-    .portada-card:nth-child(even){ flex-direction:row-reverse; }
     .portada-card:hover{ transform:none; box-shadow:none; }
-    .portada-img{ width:44%; height:100%; flex-shrink:0; aspect-ratio:auto; }
-    .portada-body{ padding:0 14px; text-align:left; display:block; }
-    .portada-body h3{ font-size:15px; margin:0 0 4px; }
+    .portada-img{ width:100%; height:100%; position:absolute; inset:0; aspect-ratio:auto; }
+    /* El degradado va en un pseudo-elemento del propio <a>: así queda por encima de la
+       foto pero por debajo del texto sin necesitar un div nuevo en el marcado. */
+    .portada-card::after{
+      content:''; position:absolute; left:0; right:0; bottom:0; height:65%;
+      background:linear-gradient(to top, rgba(38,34,29,0.85), rgba(38,34,29,0) 60%);
+      pointer-events:none;
+    }
+    .portada-body{
+      position:absolute; left:18px; right:18px; bottom:16px; z-index:1;
+      padding:0; text-align:left; display:block;
+    }
+    .portada-body h3{ font-size:17px; margin:0 0 4px; color:#fff; }
     .portada-body p{
-      display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
-      overflow:hidden; font-size:11px; margin:0 0 8px;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+      overflow:hidden; font-size:11px; margin:0; color:#e2ddd2;
+      font-family:'Helvetica Neue',Arial,sans-serif;
     }
-    .portada-body .btn{
-      display:inline-block; background:none; border:0; padding:0;
-      font-size:10px; letter-spacing:.08em; color:var(--mocha);
-    }
-    /* La flecha ya no hace falta: el botón de texto cumple el mismo papel de pista. */
+    /* El botón de texto ya no hace falta: sobre la foto a sangre, con el nombre en
+       blanco, la tarjeta entera ya se lee como tocable. */
+    .portada-body .btn{ display:none; }
     .portada-chevron{ display:none; }
     /* Sin tira que desplazar, las flechas del carrusel no llevan a ninguna parte. */
     .portada-arrow{ display:none; }
     /* Respuesta al tocar: sin ella, la tarjeta no da ninguna señal física de que el toque
        "agarró" algo, y en celular no existe el :hover que cumple ese papel en escritorio. */
-    .portada-card:active{ opacity:.65; }
-    .portada-card:active .portada-img img{ transform:scale(1.02); }
+    .portada-card:active{ opacity:.85; }
+    .portada-card:active .portada-img img{ transform:scale(1.03); }
 
     /* "MI PEDIDO" fuera del encabezado en celular: el menú ya lleva al mismo sitio, y en
        una barra angosta cada píxel cuenta. En computador se queda, que ahí sobra espacio
