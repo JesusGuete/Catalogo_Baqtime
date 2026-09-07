@@ -26,13 +26,15 @@ import { Boton, ErrorAviso } from "./ui";
 
 interface Props {
   foto: FotoParaGuardar;
+  /** Todas las fotos del producto, para la tira de miniaturas de la derecha. */
+  fotos: FotoParaGuardar[];
   categoryKey: string;
   indice: number;
-  total: number;
   onAplicar: (foto: FotoParaGuardar) => void;
   onCerrar: () => void;
-  onAnterior?: () => void;
-  onSiguiente?: () => void;
+  /** Cambia a otra foto del mismo producto. Descarta cambios sin aplicar (con
+   *  confirmación) — la miniatura reemplaza a los botones "Foto anterior/siguiente". */
+  onSeleccionar: (indice: number) => void;
 }
 
 const TAMANO_MIN = 12;
@@ -49,13 +51,12 @@ type Arrastre = { modo: "mover" | "redimensionar"; x0: number; y0: number; cajaI
 
 export default function PhotoStudio({
   foto,
+  fotos,
   categoryKey,
   indice,
-  total,
   onAplicar,
   onCerrar,
-  onAnterior,
-  onSiguiente,
+  onSeleccionar,
 }: Props) {
   const [original] = useState<FotoParaGuardar>(foto);
   const [previa, setPrevia] = useState<FotoParaGuardar>(foto);
@@ -190,6 +191,19 @@ export default function PhotoStudio({
     setPrevia((p) => conCaja(p, herramienta, null));
   }
 
+  /** Cambia de foto desde la tira de miniaturas. Si hay cambios sin aplicar en la
+   *  foto actual, se pierden — se avisa antes, en vez de tirarlos en silencio. */
+  function seleccionar(i: number) {
+    if (i === indice) return;
+    if (
+      tocoAlgo &&
+      !window.confirm("Esta foto tiene cambios sin aplicar. ¿Cambiar de foto y perderlos?")
+    ) {
+      return;
+    }
+    onSeleccionar(i);
+  }
+
   /**
    * Gira o voltea la foto que ya está en pantalla. Pasa el `<img>` del lienzo (ya
    * cargado, `imgRef`) en vez de la URL: `transformarImagen` puede volver a bajar la
@@ -257,7 +271,7 @@ export default function PhotoStudio({
         <div className="adm-editor-titulo">
           <h2 className="adm-h2">Editar foto</h2>
           <p className="adm-mono adm-editor-sub">
-            Foto {indice + 1} de {total}
+            Foto {indice + 1} de {fotos.length}
           </p>
         </div>
         <div className="adm-editor-acciones">
@@ -338,16 +352,6 @@ export default function PhotoStudio({
           >
             <span className="adm-estudio-tool-icono">↺</span> Restablecer este recorte
           </button>
-          {onAnterior && (
-            <button type="button" className="adm-estudio-tool" onClick={onAnterior} disabled={ocupado}>
-              <span className="adm-estudio-tool-icono">‹</span> Foto anterior
-            </button>
-          )}
-          {onSiguiente && (
-            <button type="button" className="adm-estudio-tool" onClick={onSiguiente} disabled={ocupado}>
-              <span className="adm-estudio-tool-icono">›</span> Foto siguiente
-            </button>
-          )}
         </div>
 
         <div className="adm-estudio-lienzo-wrap">
@@ -408,6 +412,27 @@ export default function PhotoStudio({
         </div>
 
         <div className="adm-estudio-previas">
+          {fotos.length > 1 && (
+            <>
+              <p className="adm-mono adm-campo-label">Fotos de este producto</p>
+              <div className="adm-estudio-miniaturas">
+                {fotos.map((f, i) => (
+                  <button
+                    key={f.storage_path}
+                    type="button"
+                    className={`adm-estudio-miniatura ${i === indice ? "is-activa" : ""}`}
+                    onClick={() => seleccionar(i)}
+                    disabled={ocupado}
+                    aria-current={i === indice}
+                    aria-label={`Editar foto ${i + 1} de ${fotos.length}`}
+                  >
+                    <img src={publicImageUrl(f.storage_path)} alt="" style={estiloRecorte(cajaDe(f, "square"))} />
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
           <p className="adm-mono adm-campo-label">Cómo se va a ver</p>
           <div className={`adm-estudio-previa ${herramienta === "square" ? "is-activa" : ""}`}>
             <img key={`${urlMostrada}-cuadrada`} src={urlMostrada} alt="" style={estiloRecorte(cajaCuadrada)} />
