@@ -983,9 +983,11 @@ input.adm-input { display: block; }
 .adm-estudio-miniatura:disabled { cursor: not-allowed; }
 .adm-estudio-miniatura img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .adm-estudio-previa {
-  position: relative; width: 100%; aspect-ratio: 1 / 1; overflow: hidden;
+  display: block; position: relative; width: 100%; aspect-ratio: 1 / 1; overflow: hidden;
   border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line-solid);
+  padding: 0; cursor: pointer;
 }
+.adm-estudio-previa:disabled { cursor: not-allowed; }
 .adm-estudio-previa.is-activa { border-color: var(--mocha); box-shadow: 0 0 0 1px var(--mocha); }
 .adm-estudio-previa--editorial { aspect-ratio: 3 / 4; }
 .adm-estudio-previa img { width: 100%; height: 100%; object-fit: cover; display: block; }

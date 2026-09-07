@@ -405,10 +405,6 @@ export default function PhotoStudio({
               </div>
             )}
           </div>
-          <p className="adm-mono adm-estudio-cifra">
-            {herramienta === "square" ? "Recorte 1:1" : "Recorte 3:4"}
-            {!cajaDe(previa, herramienta) && " · automático, todavía sin tocar"}
-          </p>
         </div>
 
         <div className="adm-estudio-previas">
@@ -434,12 +430,22 @@ export default function PhotoStudio({
           )}
 
           <p className="adm-mono adm-campo-label">Cómo se va a ver</p>
-          <div className={`adm-estudio-previa ${herramienta === "square" ? "is-activa" : ""}`}>
+          <button
+            type="button"
+            className={`adm-estudio-previa ${herramienta === "square" ? "is-activa" : ""}`}
+            onClick={() => setHerramienta("square")}
+            disabled={ocupado}
+            aria-pressed={herramienta === "square"}
+          >
             <img key={`${urlMostrada}-cuadrada`} src={urlMostrada} alt="" style={estiloRecorte(cajaCuadrada)} />
             <span className="adm-mono adm-estudio-previa-cap">Tarjeta 1:1</span>
-          </div>
-          <div
+          </button>
+          <button
+            type="button"
             className={`adm-estudio-previa adm-estudio-previa--editorial ${herramienta === "editorial" ? "is-activa" : ""}`}
+            onClick={() => setHerramienta("editorial")}
+            disabled={ocupado}
+            aria-pressed={herramienta === "editorial"}
           >
             <img
               key={`${urlMostrada}-editorial`}
@@ -448,7 +454,7 @@ export default function PhotoStudio({
               style={estiloRecorte(cajaEditorial)}
             />
             <span className="adm-mono adm-estudio-previa-cap">Editorial 3:4</span>
-          </div>
+          </button>
         </div>
       </div>
     </div>
