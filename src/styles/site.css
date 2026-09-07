@@ -726,11 +726,18 @@
     .header-menu span, .search-texto{ display:none; }
     .header-pedido{ font-size:10px; padding:8px 12px; }
 
-    .hero-inner{ padding:28px 16px 30px; gap:24px; }
-    .hero h1{ font-size:30px; margin-bottom:14px; }
-    .hero p{ font-size:14px; margin-bottom:22px; }
+    .hero-inner{ padding:20px 16px 22px; gap:14px; }
+    .hero h1{ font-size:26px; margin-bottom:10px; }
+    .hero p{ font-size:13px; margin-bottom:16px; }
     .hero-cta{ gap:10px; }
     .btn{ padding:12px 20px; font-size:13px; }
+    /* El collage a todo lo ancho (340px, casi la pantalla entera) era lo que hacía que
+       el hero se sintiera enorme en celular: sumaba su propia altura completa a la del
+       texto de arriba, uno debajo del otro. Achicarlo es lo único que de verdad reduce
+       cuánto hay que bajar antes de llegar a "Nuestras colecciones" — quitarlo del todo
+       le habría costado la única foto de producto que tiene el hero. */
+    .hero-visual{ max-width:230px; gap:10px; }
+    .hero-mono-tag{ font-size:10px; }
     /* Un poco más chico en el teléfono, pero se mantiene el texto: es lo que hace que se
        entienda para qué sirve el botón. */
     .ig-btn{ font-size:14px; gap:7px; }
