@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
-import type { Category, InitialsColor } from "../../../types/database";
+import type { Category } from "../../../types/database";
 import * as categoriasRepo from "../../../lib/admin/categories.repo";
 import { validarCategoria, esValido } from "../../../lib/admin/validation";
 import { useAccion, useOrdenOptimista } from "../../../lib/admin/useAdminData";
@@ -35,8 +35,6 @@ import {
 
 interface Props {
   categorias: Category[];
-  /** La paleta real, de la tabla `initials_colors`. Se edita en la pantalla Colores. */
-  colores: InitialsColor[];
   conteoPorCategoria: Record<string, number>;
   cargando: boolean;
   onCambio: () => void;
@@ -60,17 +58,14 @@ const CATEGORIA_NUEVA: Category = {
   portada_img: null,
 };
 
-// ACÁ ESTABA `COLORES_MARCA`, cinco colores escritos a mano. Era la mitad equivocada de
-// una paleta duplicada: la tienda pintaba otros nueve, desde src/lib/initials.js, con
-// hex distintos para los nombres que sí compartían. Esta pantalla ofrecía "Blush" y
-// "Plateado", que la tienda no tenía, así que marcar cualquiera de los dos dejaba a la
-// categoría sin ningún color de bordado que mostrar.
-//
-// Desde 014_initials_colors.sql la paleta es una tabla y llega por props. Ver ColorsView.
+// Esta pantalla ya no ofrece elegir la paleta de bordado por categoría (`initials_palette`
+// sigue existiendo en la tabla, pero el dueño decidió fijarla siempre por producto, en
+// ProductEditor, donde se ve la tela real de cada bolso). La columna queda en `categories`
+// sin editor propio: initialsColorsFor() (src/lib/initials.js) la sigue leyendo como
+// respaldo si algún día una categoría vieja la trae cargada, pero nada nuevo la escribe.
 
 export default function CategoriesView({
   categorias,
-  colores,
   conteoPorCategoria,
   cargando,
   onCambio,
@@ -179,15 +174,6 @@ export default function CategoriesView({
     setEsNueva(true);
     setSeleccionada(null);
     setForm({ ...CATEGORIA_NUEVA, position: siguientePos });
-  }
-
-  function alternarColor(nombre: string) {
-    if (!form) return;
-    const actual = form.initials_palette;
-    actualizar(
-      "initials_palette",
-      actual.includes(nombre) ? actual.filter((n) => n !== nombre) : [...actual, nombre]
-    );
   }
 
   if (cargando && !categorias.length) return <Cargando />;
@@ -400,63 +386,35 @@ export default function CategoriesView({
               detalle="PERSONALIZABLE"
             />
 
+            {/* La paleta de bordado por categoría se sacó a propósito (era la que
+                heredaba un producto que no definía la suya propia). El dueño eligió
+                fijarla siempre por producto, en el editor de producto, donde ve la tela
+                real de cada bolso — acá arriba, agrupados por categoría, no. */}
             {form.personalizable && (
-              <>
-                <div className="adm-fila-campos">
-                  <Campo etiqueta="MÁXIMO" error={errores.max_initials}>
-                    <Numero
-                      value={form.max_initials}
-                      onChange={(v) => actualizar("max_initials", v ?? 0)}
-                      invalido={!!errores.max_initials}
-                    />
-                  </Campo>
-                  <Campo etiqueta="GRATIS HASTA" error={errores.free_initials}>
-                    <Numero
-                      value={form.free_initials}
-                      onChange={(v) => actualizar("free_initials", v ?? 0)}
-                      invalido={!!errores.free_initials}
-                    />
-                  </Campo>
-                  <Campo etiqueta="RECARGO" error={errores.extra_initials_price}>
-                    <Numero
-                      value={form.extra_initials_price}
-                      onChange={(v) => actualizar("extra_initials_price", v ?? 0)}
-                      invalido={!!errores.extra_initials_price}
-                      prefijo="$"
-                    />
-                  </Campo>
-                </div>
-
-                <div className="adm-paleta">
-                  <p className="adm-mono adm-campo-label">
-                    COLORES DE BORDADO PERMITIDOS · VACÍO = TODOS
-                  </p>
-                  {colores.length === 0 ? (
-                    <p className="adm-campo-ayuda">
-                      Todavía no hay ningún color en la paleta. Se crean en COLORES, en el
-                      menú de la izquierda.
-                    </p>
-                  ) : (
-                    <div className="adm-paleta-chips">
-                      {colores.map((c) => {
-                        const elegido = form.initials_palette.includes(c.name);
-                        return (
-                          <button
-                            key={c.name}
-                            type="button"
-                            className={`adm-mono adm-color-chip ${elegido ? "is-activo" : ""}`}
-                            onClick={() => alternarColor(c.name)}
-                            aria-pressed={elegido}
-                          >
-                            <span className="adm-color-swatch" style={{ background: c.hex }} />
-                            {c.name.toUpperCase()}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </>
+              <div className="adm-fila-campos">
+                <Campo etiqueta="MÁXIMO" error={errores.max_initials}>
+                  <Numero
+                    value={form.max_initials}
+                    onChange={(v) => actualizar("max_initials", v ?? 0)}
+                    invalido={!!errores.max_initials}
+                  />
+                </Campo>
+                <Campo etiqueta="GRATIS HASTA" error={errores.free_initials}>
+                  <Numero
+                    value={form.free_initials}
+                    onChange={(v) => actualizar("free_initials", v ?? 0)}
+                    invalido={!!errores.free_initials}
+                  />
+                </Campo>
+                <Campo etiqueta="RECARGO" error={errores.extra_initials_price}>
+                  <Numero
+                    value={form.extra_initials_price}
+                    onChange={(v) => actualizar("extra_initials_price", v ?? 0)}
+                    invalido={!!errores.extra_initials_price}
+                    prefijo="$"
+                  />
+                </Campo>
+              </div>
             )}
 
             {/* PORTADA: lo que esta categoría enseña en "Nuestras colecciones".

@@ -210,7 +210,6 @@ export default function AdminApp() {
       {vista === "categorias" && (
         <CategoriesView
           categorias={datos.categorias}
-          colores={datos.colores}
           conteoPorCategoria={datos.conteoPorCategoria}
           cargando={datos.cargando}
           onCambio={() => void datos.recargar()}
