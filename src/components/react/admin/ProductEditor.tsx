@@ -431,16 +431,11 @@ export default function ProductEditor({
           {/* "Ocultar" vivía acá también, además del interruptor "Visible en el sitio" de
               arriba: dos controles para el mismo hecho. Se saca de acá — el interruptor
               alcanza y es donde el dueño ya lo espera. Eliminar se queda solo, porque es
-              la única acción de esta sección que de verdad es irreversible. */}
+              la única acción de esta sección que de verdad es irreversible.
+              La explicación de qué borra vive en el `confirm()` del click, no acá arriba:
+              se lee justo antes de decidir, no como texto de fondo permanente. */}
           {!esNuevo && (
             <section className="adm-card">
-              <p className="adm-peligro-titulo">Eliminar producto</p>
-              <p className="adm-nota">
-                Se borra del borrador junto con sus fotos. El cambio llega al sitio recién
-                cuando publiques — hasta entonces se puede seguir editando todo lo demás.
-                Si solo quieres que deje de verse en la tienda, usa el interruptor
-                «Visible en el sitio» de arriba: es reversible y no pierde nada.
-              </p>
               <Boton
                 onClick={() => {
                   if (
