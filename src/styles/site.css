@@ -150,8 +150,33 @@
   .checkout-page .cart-items{ margin-bottom:8px; }
   .checkout-page .cart-line-img{ width:64px; height:64px; }
 
-  /* ===== HERO ===== */
+  /* ===== HERO =====
+     Fondo a sangre completa: una foto real en duotono vino (el color de marca), sin la
+     viñeta clara que se probó primero — se descartó porque el punto era que el color
+     cubriera toda la sección, no solo los bordes. Como el fondo queda oscuro de punta a
+     punta, el texto pasa de tinta oscura a blanco/crema: sobre este fondo la paleta de
+     texto de siempre sería ilegible. */
   .hero{
+    position:relative;
+    overflow:hidden;
+    background:var(--ink); /* se ve un instante mientras carga la foto de fondo */
+  }
+  .hero::before{
+    content:'';
+    position:absolute; inset:0;
+    background-image:url('/assets/img/hero_bg_vino.webp');
+    background-size:cover; background-position:50% 30%;
+    filter:grayscale(1) contrast(1.05);
+  }
+  .hero::after{
+    content:'';
+    position:absolute; inset:0;
+    background:var(--vino);
+    mix-blend-mode:multiply;
+    opacity:.9;
+  }
+  .hero-inner{
+    position:relative; z-index:2;
     padding:56px 20px 40px;
     max-width:1180px;
     margin:0 auto;
@@ -161,18 +186,19 @@
     align-items:center;
   }
   @media (max-width: 860px){
-    .hero{ grid-template-columns:1fr; padding-top:32px; gap:28px; }
+    .hero-inner{ grid-template-columns:1fr; padding-top:32px; gap:28px; }
   }
   .hero h1{
     font-size:clamp(34px, 5vw, 54px);
     line-height:1.04;
     margin:0 0 18px;
+    color:var(--cream);
   }
   .hero h1 em{
     font-style:normal; color:inherit;
   }
   .hero p{
-    font-size:16px; line-height:1.6; color:var(--ink-soft);
+    font-size:16px; line-height:1.6; color:#e9e1d6;
     max-width:46ch; margin:0 0 28px;
   }
   .hero-cta{
@@ -190,24 +216,26 @@
     text-decoration:none;
     display:inline-flex; align-items:center; gap:8px;
   }
-  .btn-primary{ background:var(--ink); color:var(--cream); }
-  .btn-primary:hover{ background:var(--mocha); border-color:var(--mocha); }
+  /* Sobre el fondo oscuro, un botón oscuro se perdía: pasa a blanco sólido, que es lo
+     que de verdad contrasta acá. Sigue siendo el único botón "fuerte" de la sección. */
+  .btn-primary{ background:var(--cream); color:var(--ink); border-color:var(--cream); }
+  .btn-primary:hover{ background:var(--mocha); border-color:var(--mocha); color:var(--cream); }
   .btn-ghost{ background:transparent; color:var(--ink); }
   .btn-ghost:hover{ background:var(--ink); color:var(--cream); }
 
+  /* Ya no lleva el panel gris de fondo (--panel) ni el padding que lo enmarcaba: sobre
+     el fondo con foto, ese recuadro se leía como un marco de vidrio esmerilado que no
+     sumaba nada. La tarjeta blanca de la foto flota directo sobre el fondo. */
   .hero-visual{
     position:relative;
-    background:var(--panel);
-    border-radius:4px;
-    padding:26px;
     display:flex; flex-direction:column; align-items:center;
     gap:18px;
-    width:100%; max-width:392px;
+    width:100%; max-width:340px;
     justify-self:center;
   }
   .hero-visual img{
     width:100%; max-width:340px; border-radius:3px;
-    box-shadow: 0 20px 40px -18px rgba(38,34,29,0.35);
+    box-shadow: 0 20px 40px -18px rgba(0,0,0,0.5);
   }
   .hero-img-wrap{
     position:relative; width:100%; max-width:340px;
@@ -232,13 +260,13 @@
   .ig-btn svg{ flex-shrink:0; }
   .hero-mono-tag{
     font-family:'JetBrains Mono', monospace;
-    font-size:11px; color:var(--ink-soft);
+    font-size:11px; color:#e9e1d6;
     text-align:center;
   }
 
   /* ===== PORTADA: carrusel de colecciones (6 tarjetas, 3 visibles) ===== */
   .portada-heading{
-    max-width:1180px; margin:0 auto; padding:0 20px; font-size:26px; margin-bottom:18px;
+    max-width:1180px; margin:48px auto 18px; padding:0 20px; font-size:26px;
   }
   .portada-carousel{
     max-width:1180px; margin:0 auto; padding:0 20px 60px;
@@ -692,12 +720,11 @@
     .header-menu span, .search-texto{ display:none; }
     .header-pedido{ font-size:10px; padding:8px 12px; }
 
-    .hero{ padding:28px 16px 30px; gap:24px; }
+    .hero-inner{ padding:28px 16px 30px; gap:24px; }
     .hero h1{ font-size:30px; margin-bottom:14px; }
     .hero p{ font-size:14px; margin-bottom:22px; }
     .hero-cta{ gap:10px; }
     .btn{ padding:12px 20px; font-size:13px; }
-    .hero-visual{ padding:18px; }
     /* Un poco más chico en el teléfono, pero se mantiene el texto: es lo que hace que se
        entienda para qué sirve el botón. */
     .ig-btn{ font-size:14px; gap:7px; }

@@ -117,7 +117,11 @@ export default function CatalogExplorer({ catalog, onOpenProduct }) {
 
         <div className="grid">
         {products.map((p) => {
-          const sub = p.category === "tote" ? p.variant : CATEGORY_LABELS[p.category];
+          // Solo el tote personalizado tiene variante de cordón que valga la pena
+          // mostrar en la tarjeta; en las demás categorías el nombre ya dice qué es
+          // ("Neceser Azul", "Cosmetiquera Rosada"...), así que repetir la categoría
+          // ahí abajo ("NECESER", "COSMETIQUERA") era ruido, no información nueva.
+          const sub = p.category === "tote" ? p.variant : null;
           return (
             // Es un enlace de verdad, no un div con onClick. Tres cosas que un div no
             // da: Google lo sigue y así llega a la página del producto, se puede copiar
@@ -140,7 +144,7 @@ export default function CatalogExplorer({ catalog, onOpenProduct }) {
                 <div className="card-scrim" />
                 <div className="card-overlay">
                   <p className="card-name">{p.name}</p>
-                  <p className="card-sub">{sub}</p>
+                  {sub && <p className="card-sub">{sub}</p>}
                   <p className="card-price mono">{fmt(p.price)}</p>
                 </div>
               </div>

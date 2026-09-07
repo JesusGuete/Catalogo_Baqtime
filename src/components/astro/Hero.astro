@@ -12,44 +12,49 @@
 const HERO_IMG = "/assets/img/hero_collage_v3.webp";
 ---
 <section class="hero">
-  <div>
-    <h1>Bolsos y accesorios<br /><em>Personalizados</em></h1>
-    <p>
-      Cada detalle cuenta una historia y cada pieza puede convertirse en una expresión de
-      tu estilo. Descubre diseños elegantes, versátiles y especiales, creados para
-      acompañarte en cada ocasión y hacer que cada elección se sienta tuya.
-    </p>
-    <div class="hero-cta">
-      <a href="/catalogo" class="btn btn-primary">Ver catálogo</a>
+  <!-- El fondo (foto en duotono vino) va en .hero, a todo el ancho. .hero-inner es la
+       que mantiene el max-width:1180px y la grilla de dos columnas de siempre — separarlos
+       es lo que permite que la foto sangre de punta a punta sin estirar el contenido. -->
+  <div class="hero-inner">
+    <div>
+      <h1>Bolsos y accesorios<br /><em>Personalizados</em></h1>
+      <p>
+        Cada detalle cuenta una historia y cada pieza puede convertirse en una expresión de
+        tu estilo. Descubre diseños elegantes, versátiles y especiales, creados para
+        acompañarte en cada ocasión y hacer que cada elección se sienta tuya.
+      </p>
+      <div class="hero-cta">
+        <a href="/catalogo" class="btn btn-primary">Ver catálogo</a>
+      </div>
     </div>
-  </div>
-  <div class="hero-visual">
-    <div class="hero-img-wrap">
-      <img
-        id="heroImg"
-        src={HERO_IMG}
-        alt="Tote bag mocca con cordones café e iniciales bordadas"
-        width="1000"
-        height="1200"
-      />
-      <!-- Antes esto era un área invisible encima del ícono que venía pintado en la
-           imagen. Ahora el botón es real: se puede agrandar, escribirle "Síguenos" y
-           leerlo un lector de pantalla. -->
-      <a
-        class="ig-btn"
-        href="https://www.instagram.com/baqtime/"
-        target="_blank"
-        rel="noopener"
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <rect x="2.75" y="2.75" width="18.5" height="18.5" rx="5.25"
-                stroke="currentColor" stroke-width="1.8" />
-          <circle cx="12" cy="12" r="4.25" stroke="currentColor" stroke-width="1.8" />
-          <circle cx="17.4" cy="6.6" r="1.25" fill="currentColor" />
-        </svg>
-        <span>Síguenos</span>
-      </a>
+    <div class="hero-visual">
+      <div class="hero-img-wrap">
+        <img
+          id="heroImg"
+          src={HERO_IMG}
+          alt="Tote bag mocca con cordones café e iniciales bordadas"
+          width="1000"
+          height="1200"
+        />
+        <!-- Antes esto era un área invisible encima del ícono que venía pintado en la
+             imagen. Ahora el botón es real: se puede agrandar, escribirle "Síguenos" y
+             leerlo un lector de pantalla. -->
+        <a
+          class="ig-btn"
+          href="https://www.instagram.com/baqtime/"
+          target="_blank"
+          rel="noopener"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="2.75" y="2.75" width="18.5" height="18.5" rx="5.25"
+                  stroke="currentColor" stroke-width="1.8" />
+            <circle cx="12" cy="12" r="4.25" stroke="currentColor" stroke-width="1.8" />
+            <circle cx="17.4" cy="6.6" r="1.25" fill="currentColor" />
+          </svg>
+          <span>Síguenos</span>
+        </a>
+      </div>
+      <div class="hero-mono-tag">Tu estilo · Tus iniciales · Tu bolso</div>
     </div>
-    <div class="hero-mono-tag">Tu estilo · Tus iniciales · Tu bolso</div>
   </div>
 </section>
