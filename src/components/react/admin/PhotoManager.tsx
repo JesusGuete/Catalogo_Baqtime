@@ -170,8 +170,8 @@ export default function PhotoManager({ rutas, onChange, categoryKey, deshabilita
         onDragLeave={() => setArrastrando(false)}
         onDrop={soltarArchivos}
       >
-        <span className="adm-mono">SOLTAR IMÁGENES AQUÍ O HACER CLIC</span>
-        <span className="adm-mono adm-dropzone-sub">WEBP · JPG · PNG · HASTA 5 MB</span>
+        <span>Soltar imágenes aquí o hacer clic</span>
+        <span className="adm-mono adm-dropzone-sub">WebP · JPG · PNG · hasta 5 MB</span>
       </button>
 
       <input
@@ -190,7 +190,7 @@ export default function PhotoManager({ rutas, onChange, categoryKey, deshabilita
 
       <Aviso
         titulo="El nombre del archivo lo pone el panel, no tú."
-        meta="CATEGORÍA/TIMESTAMP.EXT · SE VALIDA ANTES DE SUBIR PARA NO DEJAR ARCHIVOS HUÉRFANOS"
+        meta="Así se evita que quede un archivo sin producto asociado"
       />
 
       {errores.map((f) => (

@@ -227,19 +227,17 @@ export default function ProductEditor({
         <span className="adm-editor-sep" />
         <div className="adm-editor-titulo">
           <h2 className="adm-h2">{esNuevo ? "Producto nuevo" : form.name || "Sin nombre"}</h2>
-          <p className="adm-mono adm-editor-sub">
-            PRODUCTS_DRAFT · {form.id.toUpperCase()}
-          </p>
+          <p className="adm-mono adm-editor-sub">{form.id}</p>
         </div>
         <div className="adm-editor-acciones">
           {hayCambios && (
             <span className="adm-pill">
               <span className="adm-pill-dot" />
-              <span className="adm-mono">CAMBIOS SIN GUARDAR</span>
+              <span className="adm-mono">cambios sin guardar</span>
             </span>
           )}
           <Boton onClick={onCerrar} variante="secundario">
-            DESCARTAR
+            Descartar
           </Boton>
           <Boton
             onClick={() => void guardar.ejecutar()}
@@ -247,7 +245,7 @@ export default function ProductEditor({
             disabled={!valido}
             cargando={guardar.enCurso}
           >
-            GUARDAR BORRADOR
+            Guardar
           </Boton>
         </div>
       </div>
@@ -322,8 +320,8 @@ export default function ProductEditor({
                 />
               </Campo>
             </div>
-            <p className="adm-mono adm-hint">
-              EL ORDEN ES ÚNICO DENTRO DE LA CATEGORÍA · REPETIRLO DEVUELVE 23505
+            <p className="adm-hint">
+              El orden no se puede repetir dentro de la misma categoría.
             </p>
           </section>
 
@@ -358,14 +356,13 @@ export default function ProductEditor({
                 activo={form.is_active}
                 onChange={(v) => actualizar("is_active", v)}
                 titulo="Visible en el sitio"
-                detalle="IS_ACTIVE"
               />
             </div>
 
             {categoria && categoria.extra_initials_price > 0 && (
               <Aviso
                 titulo={`${categoria.label} cobra ${dinero(categoria.extra_initials_price)} a partir de la inicial ${categoria.free_initials + 1}.`}
-                meta={`REGLA DE LA CATEGORÍA · FREE_INITIALS ${categoria.free_initials} · EXTRA_INITIALS_PRICE ${categoria.extra_initials_price} · SE EDITA EN CATEGORÍAS`}
+                meta={`Regla de ${categoria.label} · se edita en Categorías`}
               />
             )}
 
@@ -431,39 +428,34 @@ export default function ProductEditor({
             categoryKey={form.category_key}
           />
 
+          {/* "Ocultar" vivía acá también, además del interruptor "Visible en el sitio" de
+              arriba: dos controles para el mismo hecho. Se saca de acá — el interruptor
+              alcanza y es donde el dueño ya lo espera. Eliminar se queda solo, porque es
+              la única acción de esta sección que de verdad es irreversible. */}
           {!esNuevo && (
             <section className="adm-card">
-              <p className="adm-mono adm-peligro-titulo">ZONA DE RIESGO</p>
+              <p className="adm-peligro-titulo">Eliminar producto</p>
               <p className="adm-nota">
-                Ocultar lo saca del sitio y conserva la fila. Eliminar la borra del borrador
-                junto con sus fotos.
+                Se borra del borrador junto con sus fotos. El cambio llega al sitio recién
+                cuando publiques — hasta entonces se puede seguir editando todo lo demás.
+                Si solo querés que deje de verse en la tienda, usa el interruptor
+                «Visible en el sitio» de arriba: es reversible y no pierde nada.
               </p>
-              <div className="adm-peligro-btns">
-                <Boton
-                  onClick={() => actualizar("is_active", !form.is_active)}
-                  variante="secundario"
-                >
-                  {form.is_active ? "OCULTAR" : "MOSTRAR"}
-                </Boton>
-                <Boton
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        `¿Eliminar "${form.name}" del borrador? Se borra la fila y sus fotos. El cambio llega al sitio recién cuando publiques.`
-                      )
-                    ) {
-                      void eliminar.ejecutar();
-                    }
-                  }}
-                  variante="peligro"
-                  cargando={eliminar.enCurso}
-                >
-                  ELIMINAR
-                </Boton>
-              </div>
-              <p className="adm-mono adm-hint">
-                OCULTAR ES LO RECOMENDADO · LA GUARDA DE PUBLICACIÓN CUENTA FILAS, NO FILAS ACTIVAS
-              </p>
+              <Boton
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      `¿Eliminar "${form.name}" del borrador? Se borra la fila y sus fotos. El cambio llega al sitio recién cuando publiques.`
+                    )
+                  ) {
+                    void eliminar.ejecutar();
+                  }
+                }}
+                variante="peligro"
+                cargando={eliminar.enCurso}
+              >
+                Eliminar
+              </Boton>
             </section>
           )}
         </div>

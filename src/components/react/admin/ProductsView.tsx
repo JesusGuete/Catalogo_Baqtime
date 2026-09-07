@@ -197,26 +197,26 @@ export default function ProductsView({
         <div className="adm-chips" role="group" aria-label="Filtrar por categoría">
           <button
             type="button"
-            className={`adm-mono adm-chip ${categoria === null ? "is-activo" : ""}`}
+            className={`adm-chip ${categoria === null ? "is-activo" : ""}`}
             onClick={() => onCategoria(null)}
           >
-            TODAS
+            Todas
           </button>
           {categorias.map((c) => (
             <button
               key={c.key}
               type="button"
-              className={`adm-mono adm-chip ${categoria === c.key ? "is-activo" : ""}`}
+              className={`adm-chip ${categoria === c.key ? "is-activo" : ""}`}
               onClick={() => onCategoria(c.key)}
             >
-              {c.label.toUpperCase()}
+              {c.label}
             </button>
           ))}
         </div>
 
         <div className="adm-toolbar-fin">
           <Boton onClick={onNuevo} variante="acento">
-            + NUEVO PRODUCTO
+            + Nuevo producto
           </Boton>
         </div>
       </div>
@@ -323,7 +323,7 @@ export default function ProductsView({
                             title={
                               puedeReordenar
                                 ? "Arrastra o usa las flechas para reordenar"
-                                : "Elige una sola categoría (no TODAS) y vacía el buscador para reordenar"
+                                : "Elige una sola categoría (no todas) y vacía el buscador para reordenar"
                             }
                           >
                             <IconoAgarre />
@@ -346,7 +346,7 @@ export default function ProductsView({
                       <td className="adm-td-enlace" role="cell">
                         <button
                           type="button"
-                          className="adm-mono adm-btn-enlace"
+                          className="adm-btn-enlace"
                           // La fila entera abre el editor al hacer clic. Sin esto, copiar
                           // el enlace también te sacaría de la lista.
                           onClick={(e) => {
@@ -360,7 +360,7 @@ export default function ProductsView({
                               : "Este producto todavía no está publicado: su enlace daría error"
                           }
                         >
-                          {copiado === p.id ? "COPIADO ✓" : "COPIAR"}
+                          {copiado === p.id ? "Copiado ✓" : "Copiar"}
                         </button>
                       </td>
                     </tr>

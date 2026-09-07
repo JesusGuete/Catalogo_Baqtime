@@ -518,7 +518,7 @@ export default function CategoriesView({
                       className="adm-mono adm-portada-quitar"
                       onClick={() => actualizar("portada_img", null)}
                     >
-                      QUITAR
+                      Quitar
                     </button>
                   )}
                   {subirPortada.enCurso && <span className="adm-mono">SUBIENDO…</span>}
@@ -545,7 +545,7 @@ export default function CategoriesView({
               disabled={!valido}
               cargando={guardar.enCurso}
             >
-              {esNueva ? "CREAR CATEGORÍA" : "GUARDAR CATEGORÍA"}
+              {esNueva ? "Crear categoría" : "Guardar categoría"}
             </Boton>
 
             {!esNueva && (
@@ -565,7 +565,7 @@ export default function CategoriesView({
                 ancho
                 cargando={borrar.enCurso}
               >
-                BORRAR CATEGORÍA
+                Borrar categoría
               </Boton>
             )}
           </div>

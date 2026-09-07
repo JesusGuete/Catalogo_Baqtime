@@ -139,7 +139,7 @@ export default function ColorsView({ colores, categorias, cargando, onCambio }: 
           disabled={!puedeAgregar}
           cargando={agregar.enCurso}
         >
-          + AGREGAR COLOR
+          + Agregar color
         </Boton>
       </section>
 
@@ -191,7 +191,7 @@ export default function ColorsView({ colores, categorias, cargando, onCambio }: 
                       disabled={!HEX_VALIDO.test(valor)}
                       cargando={guardarHex.enCurso && enVuelo === c.name}
                     >
-                      GUARDAR
+                      Guardar
                     </Boton>
                   )}
                   <Boton
@@ -210,7 +210,7 @@ export default function ColorsView({ colores, categorias, cargando, onCambio }: 
                     variante="peligro"
                     cargando={borrar.enCurso && enVuelo === c.name}
                   >
-                    BORRAR
+                    Borrar
                   </Boton>
                 </div>
               </li>

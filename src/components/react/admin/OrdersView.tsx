@@ -152,19 +152,19 @@ export default function OrdersView({ onAbrir, onConteo }: Props) {
         <div className="adm-chips" role="group" aria-label="Filtrar por estado">
           <button
             type="button"
-            className={`adm-mono adm-chip ${filtro === null ? "is-activo" : ""}`}
+            className={`adm-chip ${filtro === null ? "is-activo" : ""}`}
             onClick={() => setFiltro(null)}
           >
-            TODOS {pedidos.length}
+            Todos {pedidos.length}
           </button>
           {ORDER_STATUSES.map((e) => (
             <button
               key={e}
               type="button"
-              className={`adm-mono adm-chip ${filtro === e ? "is-activo" : ""}`}
+              className={`adm-chip ${filtro === e ? "is-activo" : ""}`}
               onClick={() => setFiltro(e)}
             >
-              {ORDER_STATUS_LABEL[e].toUpperCase()} {conteoPorEstado[e] ?? 0}
+              {ORDER_STATUS_LABEL[e]} {conteoPorEstado[e] ?? 0}
             </button>
           ))}
         </div>

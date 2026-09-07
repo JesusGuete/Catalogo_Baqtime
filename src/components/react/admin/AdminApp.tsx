@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSession, useAdminData, useAccion } from "../../../lib/admin/useAdminData";
+import { useSession, useAdminData } from "../../../lib/admin/useAdminData";
 import { configuracionFaltante } from "../../../lib/supabase/config";
 import { calcularDiff } from "../../../lib/admin/diff";
-import { descartarCambios } from "../../../lib/admin/revertir";
 import LoginView from "./LoginView";
 import AdminShell, { type Vista } from "./AdminShell";
 import ProductsView from "./ProductsView";
@@ -79,13 +78,6 @@ export default function AdminApp() {
     [datos.borrador, datos.publicado]
   );
 
-  // "Deshacer cambios" (borrador de productos, ver revertir.ts). Categorías queda
-  // afuera por ahora: se guardan directo, sin borrador, así que no aplica.
-  const descartar = useAccion(async () => {
-    await descartarCambios(datos.borrador, datos.publicado);
-    await datos.recargar();
-  });
-
   // Una variable de entorno faltante rompe todo con un error de red confuso. Mejor
   // decirlo antes de mostrar un formulario de login que no puede funcionar.
   const faltantes = configuracionFaltante();
@@ -146,15 +138,18 @@ export default function AdminApp() {
   }
 
   // En el mismo orden que el menú lateral, para que se lean juntos.
+  //
+  // El subtítulo antes era el nombre de la tabla o función de Supabase detrás de cada
+  // pantalla (PRODUCTS_DRAFT, RPC · PUBLISH_CATALOG...). Nunca cambiaba una decisión del
+  // dueño, así que era ruido permanente. Ahora solo lleva subtítulo la pantalla donde el
+  // comportamiento es distinto de lo esperado (categorías y colores se guardan directo,
+  // sin pasar por "Publicar" como el resto) — el resto no necesita explicarse.
   const encabezado: Record<Vista, { titulo: string; subtitulo: string }> = {
-    productos: { titulo: "Productos", subtitulo: "PRODUCTS_DRAFT" },
-    categorias: { titulo: "Categorías", subtitulo: "CATEGORIES · SE PUBLICAN AL INSTANTE" },
-    colores: {
-      titulo: "Colores de bordado",
-      subtitulo: "INITIALS_COLORS · SE PUBLICAN AL INSTANTE",
-    },
-    pedidos: { titulo: "Pedidos", subtitulo: "ORDERS · SE GUARDAN AL INSTANTE" },
-    publicar: { titulo: "Publicar", subtitulo: "RPC · PUBLISH_CATALOG" },
+    productos: { titulo: "Productos", subtitulo: "" },
+    categorias: { titulo: "Categorías", subtitulo: "Los cambios se publican al instante" },
+    colores: { titulo: "Colores de bordado", subtitulo: "Los cambios se publican al instante" },
+    pedidos: { titulo: "Pedidos", subtitulo: "" },
+    publicar: { titulo: "Publicar", subtitulo: "" },
   };
 
   return (
@@ -170,36 +165,24 @@ export default function AdminApp() {
       titulo={encabezado[vista].titulo}
       subtitulo={encabezado[vista].subtitulo}
       acciones={
-        // Los pedidos no pasan por el borrador, así que en esa pantalla estos dos
-        // botones no aplican y solo agregarían ruido.
+        // "Deshacer cambios" vivía acá también, además de al pie de la pantalla
+        // Publicar. Se saca de acá: son la misma acción destructiva ofrecida en dos
+        // lugares, y el lugar correcto es Publicar, que es donde se ve qué se estaría
+        // deshaciendo antes de tocar el botón.
+        //
+        // Los pedidos no pasan por el borrador, así que en esa pantalla este atajo no
+        // aplica y solo agregaría ruido.
         vista !== "publicar" && vista !== "pedidos" && cambiosPendientes > 0 ? (
-          <>
-            <Boton
-              onClick={() => {
-                if (
-                  window.confirm(
-                    `¿Deshacer ${cambiosPendientes === 1 ? "el cambio" : `los ${cambiosPendientes} cambios`} sin publicar? El borrador de productos vuelve a quedar igual a lo publicado ahora mismo.`
-                  )
-                ) {
-                  void descartar.ejecutar();
-                }
-              }}
-              variante="peligro"
-              cargando={descartar.enCurso}
-            >
-              DESHACER CAMBIOS
-            </Boton>
-            <Boton
-              onClick={() => navegar({ vista: "publicar", editando: null, pedido: null })}
-              variante="primario"
-            >
-              PUBLICAR
-            </Boton>
-          </>
+          <Boton
+            onClick={() => navegar({ vista: "publicar", editando: null, pedido: null })}
+            variante="primario"
+          >
+            Publicar
+          </Boton>
         ) : undefined
       }
     >
-      <ErrorAviso error={datos.error ?? descartar.error} />
+      <ErrorAviso error={datos.error} />
 
       {vista === "pedidos" && (
         <OrdersView
