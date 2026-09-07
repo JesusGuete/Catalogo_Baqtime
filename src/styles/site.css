@@ -743,7 +743,10 @@
     .ig-btn{ font-size:14px; gap:7px; }
     .ig-btn svg{ width:19px; height:19px; }
 
-    .portada-heading{ padding:0 16px; font-size:21px; margin-bottom:14px; }
+    /* La franja gris separa el título del header — antes iba directo sobre el crema,
+       pegado al header, y en el celular real se veía como un renglón suelto y cortado. */
+    .portada-head-row{ background:var(--panel); padding:22px 0 14px; }
+    .portada-heading{ padding:0 16px; font-size:20px; margin:0; }
 
     /* EN CELULAR EL CARRUSEL SE VUELVE UNA LISTA VERTICAL EDITORIAL, FOTO A SANGRE.
        El carrusel deslizable escondía casi todo (una colección por gesto). Acá cada

@@ -25,7 +25,12 @@ const { categorias } = Astro.props;
 
 const collections = categorias.filter((c) => c.portada_img);
 ---
-<h2 class="portada-heading">Nuestras colecciones</h2>
+<div class="portada-head-row">
+  <!-- Vacío en escritorio (la regla mobile lo activa): en celular era donde .portada-heading
+       quedaba pegado directo al header, un renglón de texto suelto sin marco. La franja con
+       fondo le da un borde propio a la sección. -->
+  <h2 class="portada-heading">Nuestras colecciones</h2>
+</div>
 <div class="portada-carousel">
   <button type="button" class="portada-arrow portada-arrow-left" id="portadaPrevBtn" aria-label="Ver colecciones anteriores">‹</button>
   <div class="portada-viewport">
