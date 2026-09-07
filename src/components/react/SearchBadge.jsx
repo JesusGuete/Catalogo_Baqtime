@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { IconoBuscar } from "./Iconos.jsx";
 import { rutaProducto } from "../../lib/product-url.ts";
 import { fmt } from "../../lib/search-utils.js";
+import { estiloRecorte } from "../../lib/crop-style.js";
 
 // El buscador: un botón en el encabezado que baja un panel desde arriba, como una
 // persiana, con el campo y productos recomendados.
@@ -130,12 +131,7 @@ export default function SearchBadge({ destacados = [] }) {
                 {visibles.map((p) => (
                   <a key={p.id} className="buscador-card" href={rutaProducto(p)}>
                     <div className="buscador-card-img">
-                      <img
-                        src={p.img}
-                        alt={p.name}
-                        loading="lazy"
-                        style={{ objectPosition: `${p.imgFocal.x}% ${p.imgFocal.y}%` }}
-                      />
+                      <img src={p.img} alt={p.name} loading="lazy" style={estiloRecorte(p.imgSquareCrop)} />
                     </div>
                     <span className="buscador-card-nombre">{p.name}</span>
                     <span className="buscador-card-precio mono">{fmt(p.price)}</span>

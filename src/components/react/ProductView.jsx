@@ -4,6 +4,7 @@ import { PRICE_SHIP, fmt, recargoIniciales } from "../../lib/pricing.js";
 import { addToCart } from "../../lib/cart-store.js";
 import { useCart } from "../../lib/useCart.js";
 import { rutaProducto } from "../../lib/product-url.ts";
+import { estiloRecorte } from "../../lib/crop-style.js";
 
 // Portado desde assets/js/site/product-modal.js.
 // Mismas clases CSS que index.html (.modal-overlay/.modal), así que el diseño de
@@ -83,11 +84,13 @@ export default function ProductView({
   useEffect(() => () => clearTimeout(addedTimer.current), []);
 
   const photos = product.gallery && product.gallery.length ? product.gallery : [product.img];
-  // Mismo índice que `photos`: el encuadre (017) de cada foto, para las miniaturas y la
-  // foto principal, que sí recortan a 1:1. El zoom (más abajo) muestra la foto completa
-  // con object-fit:contain, así que ese <img> no necesita esto.
-  const photosFocal =
-    product.galleryFocal && product.galleryFocal.length ? product.galleryFocal : [product.imgFocal];
+  // Mismo índice que `photos`: el recorte cuadrado (018) de cada foto, para las
+  // miniaturas y la foto principal, que sí recortan a 1:1. El zoom (más abajo) muestra
+  // la foto completa con object-fit:contain, así que ese <img> no necesita esto.
+  const photosCrop =
+    product.gallerySquareCrop && product.gallerySquareCrop.length
+      ? product.gallerySquareCrop
+      : [product.imgSquareCrop];
 
   /**
    * Qué foto se está viendo. Se mueve desde tres lados —flechas, miniaturas y el dedo en
@@ -227,14 +230,17 @@ export default function ProductView({
               {photos.length > 1 && (
                 <div className="gallery-thumbs">
                   {photos.map((src, i) => (
-                    <img
+                    <span
                       key={i}
-                      src={src}
-                      alt={`${product.name} — foto ${i + 1} de ${photos.length}`}
-                      className={i === fotoActiva ? "active" : ""}
+                      className={`gallery-thumb-wrap ${i === fotoActiva ? "active" : ""}`}
                       onClick={() => irAFoto(i)}
-                      style={{ objectPosition: `${photosFocal[i].x}% ${photosFocal[i].y}%` }}
-                    />
+                    >
+                      <img
+                        src={src}
+                        alt={`${product.name} — foto ${i + 1} de ${photos.length}`}
+                        style={estiloRecorte(photosCrop[i])}
+                      />
+                    </span>
                   ))}
                 </div>
               )}
@@ -245,13 +251,9 @@ export default function ProductView({
                     scroll la miniatura marcada se quedaría en la foto anterior. */}
                 <div className="gallery-slides" ref={slidesRef} onScroll={alDesplazar}>
                   {photos.map((src, i) => (
-                    <img
-                      key={i}
-                      src={src}
-                      alt={product.name}
-                      onClick={() => setZoomOpen(true)}
-                      style={{ objectPosition: `${photosFocal[i].x}% ${photosFocal[i].y}%` }}
-                    />
+                    <span key={i} className="gallery-slide-wrap" onClick={() => setZoomOpen(true)}>
+                      <img src={src} alt={product.name} style={estiloRecorte(photosCrop[i])} />
+                    </span>
                   ))}
                 </div>
 

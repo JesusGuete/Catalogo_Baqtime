@@ -11,7 +11,7 @@
 // es justo donde un typo no se nota.
 //
 // Mapeo campo por campo: docs/frontend-contract.md §5.
-import type { Category, InitialsColor } from "../types/database";
+import type { CajaRecorte, Category, InitialsColor } from "../types/database";
 
 const BASE = import.meta.env.PUBLIC_SUPABASE_URL;
 const KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
@@ -40,16 +40,19 @@ export interface ProductoPublico {
   /** La primera foto, o el placeholder si el producto no tiene ninguna. */
   img: string;
   /**
-   * Punto de encuadre (017_photo_focal_point.sql) de cada foto de `gallery`, en el
-   * mismo orden e índice — `galleryFocal[i]` es el encuadre de `gallery[i]`. Se separa
-   * de `gallery` en vez de convertirla en un array de objetos para no tener que tocar
-   * cada lugar de la tienda que ya consume `gallery`/`img` como URLs sueltas (carrito,
-   * JSON-LD, swatches de variante): solo las vistas que de verdad recortan la foto
-   * (tarjeta del catálogo, galería del producto, resultados del buscador) leen esto.
+   * Cajas de recorte (018_photo_crop_boxes.sql) de cada foto de `gallery`, en el mismo
+   * orden e índice — `gallerySquareCrop[i]`/`galleryEditorialCrop[i]` son las cajas de
+   * `gallery[i]`. `null` = sin personalizar, se muestra con object-fit:cover normal.
+   * Se separan de `gallery` en vez de convertirla en un array de objetos para no tener
+   * que tocar cada lugar de la tienda que ya consume `gallery`/`img` como URLs sueltas
+   * (carrito, JSON-LD, swatches de variante): solo las vistas que de verdad recortan la
+   * foto (tarjeta del catálogo, galería del producto, resultados del buscador) leen esto.
    */
-  galleryFocal: { x: number; y: number }[];
-  /** El encuadre de `img` — o sea, `galleryFocal[0]`. Centro (50/50) si no hay fotos. */
-  imgFocal: { x: number; y: number };
+  gallerySquareCrop: (CajaRecorte | null)[];
+  galleryEditorialCrop: (CajaRecorte | null)[];
+  /** El recorte de `img` (la foto 0) en cada forma. `null` si no hay fotos o no está personalizado. */
+  imgSquareCrop: CajaRecorte | null;
+  imgEditorialCrop: CajaRecorte | null;
 }
 
 export interface Catalogo {
@@ -81,7 +84,28 @@ interface FilaProducto {
   group_key: string;
   sort_order: number;
   initials_palette: string[];
-  product_photos?: { storage_path: string; position: number; focal_x: number; focal_y: number }[];
+  product_photos?: {
+    storage_path: string;
+    position: number;
+    crop_square_x: number | null;
+    crop_square_y: number | null;
+    crop_square_w: number | null;
+    crop_square_h: number | null;
+    crop_editorial_x: number | null;
+    crop_editorial_y: number | null;
+    crop_editorial_w: number | null;
+    crop_editorial_h: number | null;
+  }[];
+}
+
+function cajaDesdeFila(
+  x: number | null,
+  y: number | null,
+  w: number | null,
+  h: number | null
+): CajaRecorte | null {
+  if (x === null || y === null || w === null || h === null) return null;
+  return { x, y, w, h };
 }
 
 const photoUrl = (storagePath: string): string =>
@@ -99,7 +123,7 @@ export async function loadCatalog(): Promise<Catalogo> {
       "categories?select=key,label,default_price,personalizable,max_initials,has_variant,position,is_imported,free_initials,extra_initials_price,initials_palette,portada_desc,portada_img&order=position"
     ),
     q<FilaProducto[]>(
-      "products?select=id,category_key,name,color,variant,hex,price,personalizable,max_initials,group_key,sort_order,initials_palette,product_photos(storage_path,position,focal_x,focal_y)&order=category_key,sort_order"
+      "products?select=id,category_key,name,color,variant,hex,price,personalizable,max_initials,group_key,sort_order,initials_palette,product_photos(storage_path,position,crop_square_x,crop_square_y,crop_square_w,crop_square_h,crop_editorial_x,crop_editorial_y,crop_editorial_w,crop_editorial_h)&order=category_key,sort_order"
     ),
     // Se ordena también por `name` porque `position` no es única (014): sin el desempate,
     // dos colores con el mismo número saldrían en un orden que cambia entre peticiones y
@@ -120,12 +144,15 @@ export async function loadCatalog(): Promise<Catalogo> {
     return posDiff !== 0 ? posDiff : a.sort_order - b.sort_order;
   });
 
-  const CENTRO = { x: 50, y: 50 };
-
   const products: ProductoPublico[] = prods.map((p) => {
     const fotosOrdenadas = (p.product_photos ?? []).slice().sort((a, b) => a.position - b.position);
     const gallery = fotosOrdenadas.map((ph) => photoUrl(ph.storage_path));
-    const galleryFocal = fotosOrdenadas.map((ph) => ({ x: ph.focal_x, y: ph.focal_y }));
+    const gallerySquareCrop = fotosOrdenadas.map((ph) =>
+      cajaDesdeFila(ph.crop_square_x, ph.crop_square_y, ph.crop_square_w, ph.crop_square_h)
+    );
+    const galleryEditorialCrop = fotosOrdenadas.map((ph) =>
+      cajaDesdeFila(ph.crop_editorial_x, ph.crop_editorial_y, ph.crop_editorial_w, ph.crop_editorial_h)
+    );
     return {
       id: p.id,
       category: p.category_key,
@@ -141,8 +168,10 @@ export async function loadCatalog(): Promise<Catalogo> {
       initialsPalette: p.initials_palette ?? [],
       gallery,
       img: gallery[0] ?? PLACEHOLDER, // producto sin fotos: placeholder, no romper
-      galleryFocal,
-      imgFocal: galleryFocal[0] ?? CENTRO,
+      gallerySquareCrop,
+      galleryEditorialCrop,
+      imgSquareCrop: gallerySquareCrop[0] ?? null,
+      imgEditorialCrop: galleryEditorialCrop[0] ?? null,
     };
   });
 

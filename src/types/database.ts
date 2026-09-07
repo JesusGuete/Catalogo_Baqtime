@@ -134,8 +134,20 @@ export type ProductInsert = Omit<Product, "created_at" | "updated_at">;
 export type ProductUpdate = Partial<Omit<ProductInsert, "id">>;
 
 // ============================================================================
-// product_photos / product_photos_draft — 001_schema.sql:66-74, 017_photo_focal_point.sql
+// product_photos / product_photos_draft — 001_schema.sql:66-74, 018_photo_crop_boxes.sql
 // ============================================================================
+
+/**
+ * Una caja de recorte, en % de las dimensiones PROPIAS de la foto (no píxeles fijos):
+ * `x`/`y` la esquina superior izquierda, `w`/`h` el ancho y el alto de la caja. Sigue
+ * siendo válida aunque la foto se reemplace por otra de tamaño distinto.
+ */
+export interface CajaRecorte {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
 export interface ProductPhoto {
   id: number;
@@ -146,18 +158,37 @@ export interface ProductPhoto {
   /** smallint. CHECK >= 0. `0` = foto principal. UNIQUE (product_id, position). */
   position: number;
   /**
-   * Punto de encuadre (017), 0-100. Es lo que la tienda usa como centro al recortar la
-   * foto dentro de sus marcos de proporción fija (1:1, 3:4) — nunca modifica el archivo.
-   * 50/50 (el default de la columna) es el centro geométrico: el comportamiento de
-   * siempre, antes de que esta migración existiera.
+   * Recortes (018), 0-100. `null` = sin personalizar: la tienda sigue usando
+   * object-fit:cover normal, sin ningún cálculo — el comportamiento de siempre, antes
+   * de que esta migración existiera. Reemplazan al punto de encuadre único de 017: un
+   * solo punto no alcanzaba porque la tarjeta cuadrada y la editorial 3:4 casi nunca
+   * piden el mismo centro.
    */
-  focal_x: number;
-  focal_y: number;
+  crop_square_x: number | null;
+  crop_square_y: number | null;
+  crop_square_w: number | null;
+  crop_square_h: number | null;
+  crop_editorial_x: number | null;
+  crop_editorial_y: number | null;
+  crop_editorial_w: number | null;
+  crop_editorial_h: number | null;
   created_at: Timestamptz;
 }
 
-/** Lo mínimo que necesita el panel de una foto: ruta, orden y encuadre. */
-export type PhotoRef = Pick<ProductPhoto, "storage_path" | "position" | "focal_x" | "focal_y">;
+/** Lo mínimo que necesita el panel de una foto: ruta, orden y los dos recortes. */
+export type PhotoRef = Pick<
+  ProductPhoto,
+  | "storage_path"
+  | "position"
+  | "crop_square_x"
+  | "crop_square_y"
+  | "crop_square_w"
+  | "crop_square_h"
+  | "crop_editorial_x"
+  | "crop_editorial_y"
+  | "crop_editorial_w"
+  | "crop_editorial_h"
+>;
 
 // ============================================================================
 // publications — 001_schema.sql:76-84
@@ -325,8 +356,14 @@ export interface PublishResult {
 /** Una foto tal como la manda el panel a `replace_product_photos_draft` (017). */
 export interface FotoParaGuardar {
   storage_path: string;
-  focal_x: number;
-  focal_y: number;
+  crop_square_x: number | null;
+  crop_square_y: number | null;
+  crop_square_w: number | null;
+  crop_square_h: number | null;
+  crop_editorial_x: number | null;
+  crop_editorial_y: number | null;
+  crop_editorial_w: number | null;
+  crop_editorial_h: number | null;
 }
 
 export interface ReplacePhotosArgs {

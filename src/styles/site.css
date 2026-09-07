@@ -509,10 +509,16 @@
     -webkit-overflow-scrolling:touch; scrollbar-width:none;
   }
   .gallery-slides::-webkit-scrollbar{ display:none; }
-  .gallery-slides img{
-    flex:0 0 100%; width:100%; height:100%; object-fit:cover;
+  /* Envuelve cada foto para poder recortarla a una caja arbitraria (018): el <img> de
+     adentro se escala y se corre con position:absolute (ver lib/crop-style.js), y este
+     contenedor es el que le da el marco fijo — sin overflow:hidden acá, la imagen
+     escalada se saldría por los bordes. */
+  .gallery-slide-wrap{
+    position:relative; overflow:hidden;
+    flex:0 0 100%; width:100%; height:100%;
     scroll-snap-align:start; cursor:zoom-in;
   }
+  .gallery-slide-wrap img{ width:100%; height:100%; object-fit:cover; display:block; }
   .gallery-arrow{
     position:absolute; top:50%; transform:translateY(-50%); z-index:2;
     width:34px; height:34px; border-radius:50%;
@@ -536,13 +542,17 @@
     max-height:min(72vh, 520px); overflow-y:auto; scrollbar-width:none;
   }
   .gallery-thumbs::-webkit-scrollbar{ display:none; }
-  .gallery-thumbs img{
-    width:60px; height:60px; object-fit:cover; border-radius:2px;
+  /* Mismo motivo que .gallery-slide-wrap: el marco fijo vive acá, el <img> de adentro
+     se escala para mostrar su caja de recorte (018). */
+  .gallery-thumb-wrap{
+    position:relative; overflow:hidden;
+    width:60px; height:60px; border-radius:2px;
     border:1.5px solid transparent; cursor:pointer; opacity:.65;
     transition:.15s; flex:0 0 auto;
   }
-  .gallery-thumbs img:hover{ opacity:1; }
-  .gallery-thumbs img.active{ opacity:1; border-color:var(--ink); }
+  .gallery-thumb-wrap img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .gallery-thumb-wrap:hover{ opacity:1; }
+  .gallery-thumb-wrap.active{ opacity:1; border-color:var(--ink); }
   .zoom-hint{ font-size:11px; color:var(--ink-soft); font-family:'JetBrains Mono',monospace; text-align:center;}
 
   @media (max-width:820px){
@@ -555,7 +565,7 @@
       flex-direction:row; flex:0 0 auto;
       max-height:none; overflow-x:auto; overflow-y:hidden;
     }
-    .gallery-thumbs img{ width:52px; height:52px; }
+    .gallery-thumb-wrap{ width:52px; height:52px; }
     /* Las flechas sobran donde se pasa con el dedo, y encima tapan la foto. */
     .gallery-arrow{ display:none; }
   }
@@ -999,7 +1009,7 @@
   }
   .buscador-grid{ display:grid; grid-template-columns:repeat(6, 1fr); gap:16px; }
   .buscador-card{ text-decoration:none; color:inherit; display:flex; flex-direction:column; }
-  .buscador-card-img{ aspect-ratio:1/1; overflow:hidden; background:var(--panel); }
+  .buscador-card-img{ position:relative; aspect-ratio:1/1; overflow:hidden; background:var(--panel); }
   .buscador-card-img img{ width:100%; height:100%; object-fit:cover; display:block; }
   .buscador-card-nombre{ font-size:12px; margin-top:8px; line-height:1.35; }
   .buscador-card-precio{ font-size:11px; color:var(--ink); margin-top:2px; }

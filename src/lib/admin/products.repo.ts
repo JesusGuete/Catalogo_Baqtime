@@ -22,7 +22,7 @@ const TABLA = "products_draft";
 const CTX = "products" as const;
 
 /** El select con las fotos del borrador embebidas: una sola petición, no N+1. */
-const SELECT_CON_FOTOS = `${SELECT_PRODUCTO},product_photos_draft(storage_path,position,focal_x,focal_y)`;
+const SELECT_CON_FOTOS = `${SELECT_PRODUCTO},product_photos_draft(storage_path,position,crop_square_x,crop_square_y,crop_square_w,crop_square_h,crop_editorial_x,crop_editorial_y,crop_editorial_w,crop_editorial_h)`;
 
 /**
  * Todo el borrador con sus fotos.
@@ -140,10 +140,23 @@ export function siguienteOrden(productos: Product[], categoryKey: string): numbe
   return Math.max(...deLaCategoria.map((p) => p.sort_order)) + 1;
 }
 
-/** Las fotos de un producto (ruta + encuadre, 017), en orden. */
+/** Las fotos de un producto (ruta + los dos recortes, 018), en orden. */
 export function rutasDeFotos(producto: ProductWithPhotos): FotoParaGuardar[] {
   const fotos: PhotoRef[] = producto.product_photos_draft ?? [];
-  return [...fotos]
-    .sort((a, b) => a.position - b.position)
-    .map((f) => ({ storage_path: f.storage_path, focal_x: f.focal_x, focal_y: f.focal_y }));
+  return [...fotos].sort((a, b) => a.position - b.position).map(fotoParaGuardarDesde);
+}
+
+/** Copia los campos de recorte de un `PhotoRef` leído de la base a un `FotoParaGuardar`. */
+export function fotoParaGuardarDesde(f: PhotoRef): FotoParaGuardar {
+  return {
+    storage_path: f.storage_path,
+    crop_square_x: f.crop_square_x,
+    crop_square_y: f.crop_square_y,
+    crop_square_w: f.crop_square_w,
+    crop_square_h: f.crop_square_h,
+    crop_editorial_x: f.crop_editorial_x,
+    crop_editorial_y: f.crop_editorial_y,
+    crop_editorial_w: f.crop_editorial_w,
+    crop_editorial_h: f.crop_editorial_h,
+  };
 }

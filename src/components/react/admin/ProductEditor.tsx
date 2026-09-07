@@ -146,16 +146,25 @@ export default function ProductEditor({
     () => (producto ? productosRepo.rutasDeFotos(producto) : []),
     [producto]
   );
-  // Compara también el encuadre: mover el punto de una foto sin agregar ni quitar
-  // ninguna sigue siendo un cambio que hay que guardar.
+  // Compara también los dos recortes: mover o redimensionar una caja de una foto sin
+  // agregar ni quitar ninguna sigue siendo un cambio que hay que guardar.
   const fotosCambiaron =
     fotos.length !== fotosOriginales.length ||
-    fotos.some(
-      (f, i) =>
-        f.storage_path !== fotosOriginales[i]?.storage_path ||
-        f.focal_x !== fotosOriginales[i]?.focal_x ||
-        f.focal_y !== fotosOriginales[i]?.focal_y
-    );
+    fotos.some((f, i) => {
+      const o = fotosOriginales[i];
+      return (
+        !o ||
+        f.storage_path !== o.storage_path ||
+        f.crop_square_x !== o.crop_square_x ||
+        f.crop_square_y !== o.crop_square_y ||
+        f.crop_square_w !== o.crop_square_w ||
+        f.crop_square_h !== o.crop_square_h ||
+        f.crop_editorial_x !== o.crop_editorial_x ||
+        f.crop_editorial_y !== o.crop_editorial_y ||
+        f.crop_editorial_w !== o.crop_editorial_w ||
+        f.crop_editorial_h !== o.crop_editorial_h
+      );
+    });
 
   function actualizar<K extends keyof Formulario>(campo: K, valor: Formulario[K]) {
     setTocado(true);
