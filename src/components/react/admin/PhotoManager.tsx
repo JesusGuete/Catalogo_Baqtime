@@ -3,7 +3,7 @@ import { subirArchivos } from "../../../lib/admin/photos.repo";
 import { publicImageUrl } from "../../../lib/supabase/config";
 import { useArrastreOrden } from "../../../lib/admin/useArrastreOrden";
 import type { AdminError } from "../../../lib/supabase/errors";
-import { Aviso, ErrorAviso, IconoAgarre, SectionHead } from "./ui";
+import { ErrorAviso, IconoAgarre, SectionHead } from "./ui";
 
 // Gestor de fotos de un producto.
 //
@@ -186,11 +186,6 @@ export default function PhotoManager({ rutas, onChange, categoryKey, deshabilita
           // sin esto, reintentar una subida fallida no hace nada.
           e.target.value = "";
         }}
-      />
-
-      <Aviso
-        titulo="El nombre del archivo lo pone el panel, no tú."
-        meta="Así se evita que quede un archivo sin producto asociado"
       />
 
       {errores.map((f) => (
