@@ -438,7 +438,7 @@ export default function ProductEditor({
               <p className="adm-nota">
                 Se borra del borrador junto con sus fotos. El cambio llega al sitio recién
                 cuando publiques — hasta entonces se puede seguir editando todo lo demás.
-                Si solo querés que deje de verse en la tienda, usa el interruptor
+                Si solo quieres que deje de verse en la tienda, usa el interruptor
                 «Visible en el sitio» de arriba: es reversible y no pierde nada.
               </p>
               <Boton
