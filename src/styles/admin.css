@@ -997,13 +997,10 @@ input.adm-input { display: block; }
   .adm-estudio-cuerpo { flex-direction: column; align-items: stretch; padding: 16px; gap: 16px; }
   .adm-estudio-herramientas { width: 100%; flex-direction: row; flex-wrap: wrap; }
   .adm-estudio-tool-sep { display: none; }
-  .adm-estudio-previas { width: 100%; }
-  /* Acá sí lado a lado: sobra ancho de pantalla y las dos caben cómodas. En
-     computador se quedan apiladas (la columna de la derecha es angosta).
-     align-items:flex-start es obligatorio acá: el valor por defecto ("stretch")
-     estira la caja cuadrada hasta igualar el alto de la editorial (que es más alta,
-     3:4), y las dos terminan viéndose del mismo tamaño — justo el bug que hacía que
-     "se vieran iguales" en vez de mostrar sus proporciones reales. */
-  .adm-estudio-previas-fila { flex-direction: row; align-items: flex-start; }
-  .adm-estudio-previa { flex: 1; }
+  /* "Cómo se va a ver" ocupaba media pantalla debajo del lienzo, que ya de por sí es
+     grande en un teléfono — el dueño prefiere no scrollear tanto y usar solo los
+     botones "Recortar 1:1"/"Recortar 3:4" de arriba para elegir la herramienta. Se
+     queda solo en computador, donde es una columna angosta al costado que no le
+     quita lugar a nada. */
+  .adm-estudio-previas { display: none; }
 }
