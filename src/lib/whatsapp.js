@@ -16,7 +16,7 @@
 // nueva sale bien sin tocar este archivo.
 import { fmt } from "./pricing.js";
 
-export const WHATSAPP_NUMBER = "573505675343";
+export const WHATSAPP_NUMBER = "573134954478";
 
 /**
  * Una línea por producto, con lo que distingue a un artículo de otro: la variante (que no
