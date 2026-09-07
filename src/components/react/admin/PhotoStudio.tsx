@@ -193,6 +193,15 @@ export default function PhotoStudio({
    * foto sola si hace falta, pero como esta foto YA está en memoria porque se está
    * viendo en este mismo momento, evitarle esa segunda bajada de red es la diferencia
    * entre notar la espera y no notarla.
+   *
+   * OJO acá: NO se llama a `setDimensiones(null)` después de subir. La imagen del
+   * lienzo (`urlMostrada`) ya se actualizó ANTES, con `mostrarPreview()` — y su propio
+   * `onLoad` ya puso las dimensiones nuevas (correctas, del archivo girado/volteado)
+   * en cuanto esa vista previa terminó de cargar. Volver a poner `null` acá no
+   * recalculaba nada: el `<img>` no vuelve a cargar (mismo `key`, no cambia de
+   * `src`), así que su `onLoad` no se dispara una segunda vez, y la caja de recorte
+   * se quedaba sin dimensiones para calcularse — desaparecía la herramienta entera.
+   * Esto pasó con Girar, Espejo Y Reemplazar, porque los tres tenían la misma línea.
    */
   async function girarOVoltear(opciones: { rotar?: 90 } | { espejo: true }, cual: "girar" | "espejo") {
     setError(null);
@@ -207,7 +216,6 @@ export default function PhotoStudio({
       const path = construirPath(categoryKey, archivo);
       await subirImagen(path, archivo);
       setPrevia(sinCajas({ ...previa, storage_path: path }));
-      setDimensiones(null);
     } catch (e) {
       setError(comoAdminError(e));
       mostrarPreview(null);
@@ -231,7 +239,6 @@ export default function PhotoStudio({
       const path = construirPath(categoryKey, archivo);
       await subirImagen(path, archivo);
       setPrevia(sinCajas({ ...previa, storage_path: path }));
-      setDimensiones(null);
     } catch (e) {
       setError(comoAdminError(e));
       mostrarPreview(null);
