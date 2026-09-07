@@ -1,10 +1,11 @@
-import { useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent, type RefObject } from "react";
+import { useRef, useState, type DragEvent, type RefObject } from "react";
 import { subirArchivos } from "../../../lib/admin/photos.repo";
 import { publicImageUrl } from "../../../lib/supabase/config";
 import { useArrastreOrden } from "../../../lib/admin/useArrastreOrden";
 import type { AdminError } from "../../../lib/supabase/errors";
 import type { FotoParaGuardar } from "../../../types/database";
 import { ErrorAviso, IconoAgarre, SectionHead } from "./ui";
+import PhotoStudio from "./PhotoStudio";
 
 // Gestor de fotos de un producto.
 //
@@ -12,11 +13,16 @@ import { ErrorAviso, IconoAgarre, SectionHead } from "./ui";
 // cada vez que cambia. No escribe en la base: quien persiste es el editor, con una sola
 // llamada a `replace_product_photos_draft` mandando el array completo.
 //
-// Esa separación no es cosmética. Agregar, quitar, reordenar y encuadrar son la misma
+// Esa separación no es cosmética. Agregar, quitar, reordenar y editar son la misma
 // operación para la base (reemplazo del array entero, en una transacción). Si este
-// componente guardara cada cambio por su cuenta, una foto borrada y otra encuadrada
+// componente guardara cada cambio por su cuenta, una foto borrada y otra editada
 // serían dos transacciones, y una falla en el medio podría dejar el producto a medio
 // guardar.
+//
+// Editar (encuadrar, girar, voltear, reemplazar) vive en PhotoStudio, a pantalla
+// completa — no acá plegado en la fila. Hubo una versión con un panel de encuadre
+// aparte dentro de cada fila; se sacó porque iba a convivir mal con el editor completo
+// que reemplazaba (dos entradas distintas para lo mismo).
 
 interface SubiendoUI {
   nombre: string;
@@ -32,20 +38,12 @@ interface Props {
   deshabilitado?: boolean;
 }
 
-/** Cuánto mueve cada flecha del teclado, en puntos porcentuales. Shift = ajuste fino. */
-const PASO_FLECHA = 5;
-const PASO_FLECHA_FINO = 1;
-
-function acotar(n: number): number {
-  return Math.max(0, Math.min(100, Math.round(n)));
-}
-
 export default function PhotoManager({ fotos, onChange, categoryKey, deshabilitado }: Props) {
   const [subiendo, setSubiendo] = useState<SubiendoUI[]>([]);
   const [errores, setErrores] = useState<{ nombreArchivo: string; error: AdminError }[]>([]);
   const [arrastrando, setArrastrando] = useState(false);
-  /** Qué foto tiene abierto el panel de encuadre, por su storage_path (única por producto). */
-  const [encuadrando, setEncuadrando] = useState<string | null>(null);
+  /** Índice de la foto abierta en el estudio, o `null` si está cerrado. */
+  const [editando, setEditando] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function agregar(archivos: File[]) {
@@ -81,8 +79,7 @@ export default function PhotoManager({ fotos, onChange, categoryKey, deshabilita
   }
 
   function quitar(indice: number) {
-    const ruta = fotos[indice]?.storage_path;
-    if (ruta && encuadrando === ruta) setEncuadrando(null);
+    if (editando === indice) setEditando(null);
     onChange(fotos.filter((_, i) => i !== indice));
   }
 
@@ -92,42 +89,6 @@ export default function PhotoManager({ fotos, onChange, categoryKey, deshabilita
     const [movida] = copia.splice(desde, 1);
     copia.splice(hasta, 0, movida!);
     onChange(copia);
-  }
-
-  function encuadrar(indice: number, focal_x: number, focal_y: number) {
-    onChange(fotos.map((f, i) => (i === indice ? { ...f, focal_x, focal_y } : f)));
-  }
-
-  function alClicLienzo(e: MouseEvent<HTMLDivElement>, indice: number) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    encuadrar(
-      indice,
-      acotar(((e.clientX - rect.left) / rect.width) * 100),
-      acotar(((e.clientY - rect.top) / rect.height) * 100)
-    );
-  }
-
-  function alTecladoLienzo(e: KeyboardEvent<HTMLDivElement>, indice: number, foto: FotoParaGuardar) {
-    const paso = e.shiftKey ? PASO_FLECHA_FINO : PASO_FLECHA;
-    let { focal_x: x, focal_y: y } = foto;
-    switch (e.key) {
-      case "ArrowLeft":
-        x = acotar(x - paso);
-        break;
-      case "ArrowRight":
-        x = acotar(x + paso);
-        break;
-      case "ArrowUp":
-        y = acotar(y - paso);
-        break;
-      case "ArrowDown":
-        y = acotar(y + paso);
-        break;
-      default:
-        return;
-    }
-    e.preventDefault();
-    encuadrar(indice, x, y);
   }
 
   // Ya es optimista por diseño (mover() escribe directo en la lista en
@@ -143,6 +104,24 @@ export default function PhotoManager({ fotos, onChange, categoryKey, deshabilita
     if (archivosSoltados.length) void agregar(archivosSoltados);
   }
 
+  if (editando !== null && fotos[editando]) {
+    return (
+      <PhotoStudio
+        foto={fotos[editando]}
+        categoryKey={categoryKey}
+        indice={editando}
+        total={fotos.length}
+        onCerrar={() => setEditando(null)}
+        onAplicar={(foto) => {
+          onChange(fotos.map((f, i) => (i === editando ? foto : f)));
+          setEditando(null);
+        }}
+        onAnterior={editando > 0 ? () => setEditando(editando - 1) : undefined}
+        onSiguiente={editando < fotos.length - 1 ? () => setEditando(editando + 1) : undefined}
+      />
+    );
+  }
+
   return (
     <section className="adm-card">
       <SectionHead numero="04" titulo="Fotos" />
@@ -154,111 +133,60 @@ export default function PhotoManager({ fotos, onChange, categoryKey, deshabilita
 
       {fotos.length > 0 && (
         <ul className="adm-fotos" ref={arrastre.contenedorRef as RefObject<HTMLUListElement | null>}>
-          {fotos.map((foto, i) => {
-            const abierta = encuadrando === foto.storage_path;
-            const encuadreCentrado = foto.focal_x === 50 && foto.focal_y === 50;
-            return (
-              <li key={foto.storage_path} className="adm-foto" {...arrastre.propsItem(i)}>
-                <div className="adm-foto-fila">
-                  <span
-                    className={`adm-foto-agarre ${deshabilitado ? "is-deshabilitado" : ""}`}
-                    {...arrastre.propsAgarre(i)}
-                    aria-label={
-                      deshabilitado
-                        ? undefined
-                        : `Reordenar foto ${i + 1}. Usa las flechas arriba y abajo, o arrastra.`
-                    }
-                    title={deshabilitado ? undefined : "Arrastra o usa las flechas para reordenar"}
-                  >
-                    <IconoAgarre />
-                  </span>
-                  <img
-                    className="adm-foto-thumb"
-                    src={publicImageUrl(foto.storage_path)}
-                    alt=""
-                    width={54}
-                    height={54}
-                    loading="lazy"
-                    style={{ objectPosition: `${foto.focal_x}% ${foto.focal_y}%` }}
-                  />
-                  <div className="adm-foto-meta">
-                    {i === 0 ? (
-                      <span className="adm-mono adm-tag adm-tag--solido">PRINCIPAL</span>
-                    ) : (
-                      <span className="adm-mono adm-foto-pos">POSICIÓN {i}</span>
-                    )}
-                    <span className="adm-mono adm-foto-path">{foto.storage_path}</span>
-                  </div>
-                  <div className="adm-foto-acciones">
-                    <button
-                      type="button"
-                      className={`adm-foto-btn ${abierta ? "is-activo" : ""}`}
-                      onClick={() => setEncuadrando(abierta ? null : foto.storage_path)}
-                      disabled={deshabilitado}
-                      aria-expanded={abierta}
-                    >
-                      {abierta ? "Listo" : "Encuadrar"}
-                    </button>
-                    <button
-                      type="button"
-                      className="adm-mono adm-foto-btn adm-foto-btn--quitar"
-                      onClick={() => quitar(i)}
-                      aria-label={`Quitar la foto ${i + 1}`}
-                      disabled={deshabilitado}
-                    >
-                      ×
-                    </button>
-                  </div>
+          {fotos.map((foto, i) => (
+            <li key={foto.storage_path} className="adm-foto" {...arrastre.propsItem(i)}>
+              <div className="adm-foto-fila">
+                <span
+                  className={`adm-foto-agarre ${deshabilitado ? "is-deshabilitado" : ""}`}
+                  {...arrastre.propsAgarre(i)}
+                  aria-label={
+                    deshabilitado
+                      ? undefined
+                      : `Reordenar foto ${i + 1}. Usa las flechas arriba y abajo, o arrastra.`
+                  }
+                  title={deshabilitado ? undefined : "Arrastra o usa las flechas para reordenar"}
+                >
+                  <IconoAgarre />
+                </span>
+                <img
+                  className="adm-foto-thumb"
+                  src={publicImageUrl(foto.storage_path)}
+                  alt=""
+                  width={54}
+                  height={54}
+                  loading="lazy"
+                  style={{ objectPosition: `${foto.focal_x}% ${foto.focal_y}%` }}
+                />
+                <div className="adm-foto-meta">
+                  {i === 0 ? (
+                    <span className="adm-mono adm-tag adm-tag--solido">PRINCIPAL</span>
+                  ) : (
+                    <span className="adm-mono adm-foto-pos">POSICIÓN {i}</span>
+                  )}
+                  <span className="adm-mono adm-foto-path">{foto.storage_path}</span>
                 </div>
-
-                {abierta && (
-                  <div className="adm-encuadre">
-                    <div
-                      className="adm-encuadre-lienzo"
-                      role="slider"
-                      tabIndex={0}
-                      aria-label={`Punto de encuadre de la foto ${i + 1}. Hacé clic donde debería quedar el centro, o ajustalo con las flechas del teclado.`}
-                      aria-valuetext={`${foto.focal_x}% horizontal, ${foto.focal_y}% vertical`}
-                      onClick={(e) => alClicLienzo(e, i)}
-                      onKeyDown={(e) => alTecladoLienzo(e, i, foto)}
-                    >
-                      <img src={publicImageUrl(foto.storage_path)} alt="" draggable={false} />
-                      <span
-                        className="adm-encuadre-punto"
-                        style={{ left: `${foto.focal_x}%`, top: `${foto.focal_y}%` }}
-                      />
-                    </div>
-
-                    <div className="adm-encuadre-lado">
-                      <span className="adm-mono adm-encuadre-cifra">
-                        {foto.focal_x}% / {foto.focal_y}%
-                      </span>
-                      <p className="adm-hint">
-                        Es el punto que la tienda usa como centro al recortar esta foto en la
-                        tarjeta del catálogo y en la galería del producto.
-                      </p>
-                      <div className="adm-encuadre-preview">
-                        <img
-                          src={publicImageUrl(foto.storage_path)}
-                          alt=""
-                          style={{ objectPosition: `${foto.focal_x}% ${foto.focal_y}%` }}
-                        />
-                        <span className="adm-mono adm-encuadre-preview-cap">Así se ve recortada</span>
-                      </div>
-                      <button
-                        type="button"
-                        className="adm-mono adm-encuadre-centrar"
-                        onClick={() => encuadrar(i, 50, 50)}
-                        disabled={encuadreCentrado}
-                      >
-                        Volver al centro
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
+                <div className="adm-foto-acciones">
+                  <button
+                    type="button"
+                    className="adm-foto-btn"
+                    onClick={() => setEditando(i)}
+                    disabled={deshabilitado}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="adm-mono adm-foto-btn adm-foto-btn--quitar"
+                    onClick={() => quitar(i)}
+                    aria-label={`Quitar la foto ${i + 1}`}
+                    disabled={deshabilitado}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            </li>
+          ))}
         </ul>
       )}
 
