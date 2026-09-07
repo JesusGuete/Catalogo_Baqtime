@@ -35,22 +35,43 @@ celular.
   iniciales se movió adentro del bloque "Personalizable" (antes se mostraba igual con
   el interruptor apagado, sin significar nada ahí).
 
-- **Fase 04 — Punto de encuadre.** Migración `017_photo_focal_point.sql` corrida en
-  producción (`focal_x`/`focal_y` en `product_photos` y `product_photos_draft`, default
-  50/50 = centro; `replace_product_photos_draft` pasa a recibir `jsonb` con el encuadre
-  de cada foto). Panel: botón "Encuadrar" por foto en `PhotoManager` — clic o flechas
-  del teclado para mover el punto, con vista previa de cómo queda recortada. Tienda:
-  `catalog.ts` trae `galleryFocal`/`imgFocal`; se aplica `object-position` en la tarjeta
-  del catálogo, la galería del producto y los resultados del buscador (el zoom del
-  producto no, ya muestra la foto completa). PR #64.
+- **Fase 04 — Punto de encuadre.** `017_photo_focal_point.sql` (`focal_x`/`focal_y`).
+  Reemplazada por completo en la Fase 05 — el punto único no alcanzaba (ver abajo). PR
+  #64.
+- **Fase 05 — Estudio de fotos a pantalla completa.** `PhotoStudio.tsx`, reemplaza el
+  botón "Encuadrar" de la Fase 04. Decisión del dueño tras probarlo: un solo punto no
+  resolvía que la tarjeta cuadrada y la editorial 3:4 casi nunca piden el mismo centro
+  de una foto — hacen falta **dos cajas de recorte independientes**, no un punto.
+  - `018_photo_crop_boxes.sql` da de baja `focal_x`/`focal_y` y agrega ocho columnas
+    (`crop_square_x/y/w/h`, `crop_editorial_x/y/w/h`), nullable, default `NULL` = sin
+    personalizar (la tienda sigue con `object-fit:cover` normal, sin cálculo nuevo).
+  - Dos herramientas en el estudio: "Recortar 1:1" y "Recortar 3:4", caja arrastrable
+    y redimensionable (manija, proporción bloqueada) sobre un lienzo que respeta la
+    proporción real de la foto.
+  - Girar 90°, Espejo y Reemplazar: suben un archivo nuevo (`lib/admin/image-transform.ts`,
+    canvas → WebP) y resetean los dos recortes — una caja vieja no tiene sentido sobre
+    contenido nuevo.
+  - Corrección de alcance en el camino: `CatalogExplorer.jsx` (grilla del catálogo)
+    siempre renderiza la tarjeta **editorial 3:4**, no 1:1 como se había asumido al
+    proponer la Fase 04 — ya usa el recorte correcto.
+  - "Volver al original" solo alcanza lo hecho en la sesión del estudio — no hay
+    columna en la base para el original "de verdad" todavía (ver comentario al inicio
+    de `PhotoStudio.tsx` si se retoma esto).
+  - PR #65.
 
 ## Por hacer — editor de fotos (bloque original)
 
-- **Fase 05 — Recortar, girar y optimizar.** El estudio a pantalla completa (opción A):
-  zoom, arrastre, relaciones fijas 1:1 y 3:4, giro, espejo, reemplazo con conservación
-  del original para poder revertir, y redimensionado a WebP en el mismo paso.
+- **Recorte con archivo grabado + "volver al original" persistente.** Hoy el recorte
+  es pura metadata (cajas, nunca se toca el archivo). Si en algún momento hace falta
+  que el recorte quede grabado en un archivo nuevo de verdad (por ejemplo para bajar
+  peso además de recortar), hay que decidir dónde guardar la ruta del original para
+  poder revertir después de cerrar y volver a abrir el estudio — hoy esa referencia
+  solo vive en memoria durante la sesión.
+- **Optimizar a WebP en la subida normal.** `image-transform.ts` ya redibuja a WebP
+  cuando gira/voltea una foto; subir una foto nueva (sin pasar por el estudio) todavía
+  no pasa por ninguna optimización de peso/tamaño.
 - **Fase 06 — Repaso en celular.** Con el panel ya orientado "celular primero", probar
-  el recortador con dedo en dispositivo real antes de cerrar la Fase 05.
+  el estudio con dedo en dispositivo real (arrastrar la caja, la manija de resize).
 
 ## Por hacer — agregado en esta sesión (2026-09-07)
 
