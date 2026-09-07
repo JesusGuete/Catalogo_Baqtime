@@ -172,27 +172,6 @@ export default function PublishView({ borrador, publicado, categorias, onPublica
         ) : (
           <section className="adm-card adm-card--oscuro">
             <h3 className="adm-publicar-h3">Publicar el borrador</h3>
-            <p className="adm-publicar-bajada">
-              Copia el borrador entero al catálogo público en una sola transacción. O pasa
-              todo, o no pasa nada.
-            </p>
-
-            <ol className="adm-pasos">
-              <li>
-                <span className="adm-mono adm-paso-num">1</span>
-                Se copia el borrador al catálogo público
-              </li>
-              <li>
-                <span className="adm-mono adm-paso-num">2</span>
-                {huerfanasEstimadas > 0
-                  ? `Se borran de Storage las ${huerfanasEstimadas} imágenes huérfanas`
-                  : "No queda ninguna imagen huérfana para borrar"}
-              </li>
-              <li>
-                <span className="adm-mono adm-paso-num">3</span>
-                Después hay que reconstruir el sitio para que la tienda lo muestre
-              </li>
-            </ol>
 
             <ErrorAviso error={publicar.error ?? descartar.error} />
 
