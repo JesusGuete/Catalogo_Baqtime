@@ -21,6 +21,19 @@ celular.
 - **Decisión de producto:** la paleta de colores de bordado se define siempre por
   producto (nunca como default heredado de la categoría) — se sacó su editor de
   Categorías.
+- **Fase 02 — Menú lateral + lista de productos.** Tabla de 8 columnas → 4 (Foto,
+  Producto, Precio, Estado; Categoría solo con el filtro en "Todas"). Miniatura al
+  doble (44px → 64px). Copiar mensaje, Ocultar/Mostrar y Eliminar plegados en un menú
+  `⋯` por fila (antes solo existía "Copiar" fijo; Ocultar/Eliminar no eran accesibles
+  desde la lista). Colores pasa a ser pestaña dentro de Categorías, ya no tiene ítem
+  propio en el menú lateral.
+- **Fase 03 — Editor de producto en un bloque + Avanzado.** Tres tarjetas numeradas →
+  una sola tarjeta "Producto" con lo que de verdad se decide (nombre, color, hex,
+  variante, categoría, precio, personalizable, visible en el sitio) + "Avanzado"
+  plegado (ID, grupo de color). Orden ya no tiene campo — se decide arrastrando en la
+  lista, nunca escribiendo un número que podía chocar con otro producto (23505). Máx.
+  iniciales se movió adentro del bloque "Personalizable" (antes se mostraba igual con
+  el interruptor apagado, sin significar nada ahí).
 
 ## Por hacer — editor de fotos (bloque original)
 
@@ -32,8 +45,6 @@ celular.
 - **Fase 05 — Recortar, girar y optimizar.** El estudio a pantalla completa (opción A):
   zoom, arrastre, relaciones fijas 1:1 y 3:4, giro, espejo, reemplazo con conservación
   del original para poder revertir, y redimensionado a WebP en el mismo paso.
-- **Fase 02/03 — Lista de productos y editor en dos bloques.** Miniatura grande, menú
-  `⋯`, "Avanzado" plegado (ID, grupo de color), orden fuera del formulario.
 - **Fase 06 — Repaso en celular.** Con el panel ya orientado "celular primero", probar
   el recortador con dedo en dispositivo real antes de cerrar la Fase 05.
 
