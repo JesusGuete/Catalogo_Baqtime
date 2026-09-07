@@ -397,6 +397,19 @@ input.adm-input { display: block; }
 .adm-chip.is-activo { background: var(--ink); border-color: var(--ink); color: var(--cream); }
 .adm-toolbar-fin { margin-left: auto; }
 
+/* Pestañas Categorías / Colores (Fase 02): antes "Colores" tenía su propio ítem en
+   el menú lateral; ahora vive acá porque las dos pantallas se usan juntas. */
+.adm-subtabs {
+  display: flex; gap: 4px; margin-bottom: 20px;
+  border-bottom: 1px solid var(--line-solid);
+}
+.adm-subtab {
+  padding: 10px 4px; margin-right: 20px;
+  background: none; border: 0; border-bottom: 2px solid transparent;
+  font-size: 14px; color: var(--ink-soft); cursor: pointer; margin-bottom: -1px;
+}
+.adm-subtab.is-activo { color: var(--ink); border-bottom-color: var(--ink); }
+
 @media (max-width: 640px) {
   /* Mismo patrón que .cat-tabs en la tienda (site.css): una sola fila que se
      desliza, en vez de envolver en 2-3 renglones. */
@@ -444,7 +457,7 @@ input.adm-input { display: block; }
 .adm-fila.is-pendiente .adm-fila-meta { color: var(--draft-text); }
 
 .adm-thumb {
-  width: 44px; height: 44px; object-fit: cover;
+  width: 64px; height: 64px; object-fit: cover;
   background: var(--panel); border-radius: var(--radius); display: block;
   /* Mantener el dedo apretado sobre una imagen abre el menú "Guardar imagen"
      de iOS — molesto en cualquier lado, y directamente rompe el arrastre si
@@ -455,44 +468,59 @@ input.adm-input { display: block; }
   font-size: 10px; color: var(--ink-soft); margin: 14px 0 0; letter-spacing: 0.06em;
 }
 
-/* Reordenar filas por arrastre (Productos y Categorías), con useArrastreOrden.
-   Mismo ícono que PhotoManager usa para las fotos (.adm-foto-agarre): un
-   agarre enfocable que además responde a las flechas del teclado, así que ya
-   no hacen falta botones ↑/↓ aparte. */
-.adm-fila-orden { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
-
-/* Boton de copiar el enlace publico del producto. Discreto a proposito: la fila ya
-   tiene bastante, y esto se usa cuando hace falta, no todo el rato. */
-.adm-btn-enlace {
-  padding: 5px 10px;
-  font-size: 9px; letter-spacing: 0.08em;
-  background: var(--white-card); border: 1px solid var(--line-solid);
-  border-radius: var(--radius); color: var(--ink-soft);
-  cursor: pointer; white-space: nowrap; transition: .15s;
-}
-.adm-btn-enlace:hover:not(:disabled) { background: var(--ink); border-color: var(--ink); color: var(--cream); }
-/* Sin publicar no hay pagina que abrir: el enlace daria 404. */
-.adm-btn-enlace:disabled { opacity: .35; cursor: not-allowed; }
+.adm-td-acciones { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
 .adm-fila-agarre {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; color: var(--ink-faint); border-radius: var(--radius);
+  width: 28px; height: 28px; color: var(--ink-faint); border-radius: var(--radius);
 }
 .adm-fila-agarre.is-deshabilitado { cursor: not-allowed; opacity: 0.4; }
 .adm-fila-agarre:focus-visible, .adm-foto-agarre:focus-visible {
   outline: 2px solid var(--mocha); outline-offset: 2px;
 }
+
+/* Botón "⋮" que abre el menú de acciones de la fila (copiar mensaje, ocultar/mostrar,
+   eliminar). Antes "Copiar" vivía como botón propio siempre visible en la fila; acá
+   se pliega junto con el resto, porque se usa cuando hace falta, no todo el rato. */
+.adm-fila-menu-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0; font-size: 16px; line-height: 1;
+  background: none; border: 1px solid transparent; border-radius: var(--radius);
+  color: var(--ink-soft); cursor: pointer;
+}
+.adm-fila-menu-btn:hover, .adm-fila-menu-btn[aria-expanded="true"] {
+  background: var(--surface-muted); border-color: var(--line-solid); color: var(--ink);
+}
+
+/* Portada a document.body (ver ProductsView.tsx): así no la recorta el
+   overflow-x:auto de .adm-tabla-wrap, sin importar en qué fila se abra. */
+.adm-fila-menu-popover {
+  position: fixed; z-index: 40; min-width: 176px;
+  background: var(--white-card); border: 1px solid var(--line-solid);
+  border-radius: var(--radius); box-shadow: 0 12px 28px -12px rgba(38, 34, 29, 0.35);
+  padding: 4px; display: flex; flex-direction: column;
+}
+.adm-fila-menu-popover button {
+  display: block; width: 100%; text-align: left; padding: 8px 10px;
+  font-size: 13px; background: none; border: 0; border-radius: var(--radius);
+  color: var(--ink); cursor: pointer;
+}
+.adm-fila-menu-popover button:hover:not(:disabled) { background: var(--surface-muted); }
+.adm-fila-menu-popover button:disabled { color: var(--ink-faint); cursor: not-allowed; }
+.adm-fila-menu-popover button.is-peligro { color: var(--vino); }
+.adm-fila-menu-popover button.is-peligro:hover { background: var(--error-bg); }
+
 .adm-tabla-wrap.is-guardando, .adm-tabla.is-guardando { opacity: 0.6; pointer-events: none; }
 
 /* Entrega 3 del plan móvil: en pantallas angostas cada fila se reacomoda como
-   tarjeta (foto+nombre arriba, precio+estado abajo, agarre a un costado) en
+   tarjeta (foto+nombre arriba, precio+estado abajo, agarre+menú a un costado) en
    vez de forzar scroll horizontal para leer precio o estado. Es la misma
    tabla con estilos encima, no una versión de marcado aparte — evita tener
    dos fuentes de verdad que después se desincronizan.
 
-   Se ocultan la columna FOTOS (su único dato útil, "SIN FOTOS", ya está en
-   .adm-fila-meta) y el número crudo de ORDEN (el agarre solo ya alcanza).
-   CATEGORÍA se oculta nada más cuando la tabla ya está filtrada por una sola
-   (.adm-tabla--filtrada), porque en TODAS sigue siendo información nueva. */
+   CATEGORÍA ya no se oculta con CSS: ProductsView deja de RENDERIZAR esa columna
+   por completo cuando hay un filtro activo (un hecho, un solo lugar), así que acá
+   no hace falta ninguna regla para escondérsela — si el <td> no existe, esa área
+   de la grilla simplemente queda vacía. */
 @media (max-width: 640px) {
   .adm-tabla-wrap { overflow-x: visible; border: 0; background: none; }
   .adm-tabla, .adm-cats-lista .adm-tabla { min-width: 0; border-collapse: separate; border-spacing: 0 10px; }
@@ -509,11 +537,11 @@ input.adm-input { display: block; }
 
   .adm-tabla tr.adm-fila {
     display: grid;
-    grid-template-columns: 44px 1fr auto;
+    grid-template-columns: 64px 1fr auto;
     grid-template-areas:
-      "foto nombre agarre"
+      "foto nombre acciones"
       "precio precio estado"
-      "enlace enlace enlace";
+      "categoria categoria categoria";
     align-items: center;
     column-gap: 12px;
     row-gap: 6px;
@@ -529,17 +557,8 @@ input.adm-input { display: block; }
   .adm-td-nombre { grid-area: nombre; }
   .adm-td-precio { grid-area: precio; text-align: left; font-family: "Unna", serif; font-size: 15px; }
   .adm-td-estado { grid-area: estado; }
-  /* Fila propia y a todo el ancho: en el teléfono es un botón que hay que poder tocar
-     sin apuntar, y comprimido en una cuarta columna no se podría. */
-  .adm-td-enlace { grid-area: enlace; justify-self: stretch; }
-  .adm-btn-enlace { width: 100%; padding: 9px; }
-  .adm-td-categoria { grid-area: categoria; grid-column: 1 / -1; padding-left: 56px; font-size: 11px; color: var(--ink-soft); }
-  .adm-tabla--filtrada .adm-td-categoria { display: none; }
-  /* Prefijo td. para ganarle en especificidad a ".adm-tabla td { display:
-     block }" de arriba — con solo la clase, ese display:block gana igual
-     (empatan en clases, pero esa regla suma un elemento) y la columna nunca
-     se llegaba a ocultar. */
-  td.adm-td-fotos { display: none; }
+  .adm-td-acciones { grid-area: acciones; }
+  .adm-td-categoria { grid-area: categoria; grid-column: 1 / -1; padding-left: 76px; font-size: 11px; color: var(--ink-soft); }
 
   /* Categorías: sin foto, así que el agarre pasa a la esquina y REGLAS
      ocupa todo el ancho abajo en vez de comprimirse en una quinta columna. */
@@ -553,9 +572,6 @@ input.adm-input { display: block; }
   .adm-td-agarre { grid-area: agarre; }
   .adm-td-conteo { grid-area: conteo; text-align: right; }
   .adm-td-reglas { grid-area: reglas; }
-
-  .adm-td-orden { grid-area: agarre; }
-  .adm-fila-orden-num { display: none; }
 
   /* Pedidos: no hay foto ni agarre de arrastre, así que la tarjeta se arma con lo que
      importa para decidir a cuál entrar — número y estado arriba, cliente a lo ancho,

@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import type { RefObject } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import type { MouseEvent as ReactMouseEvent, RefObject } from "react";
 import type { Category, Product, ProductWithPhotos } from "../../../types/database";
 import { calcularDiff, type TipoCambio } from "../../../lib/admin/diff";
 import { useOrdenOptimista } from "../../../lib/admin/useAdminData";
@@ -8,6 +9,7 @@ import * as productosRepo from "../../../lib/admin/products.repo";
 import { rutaProducto } from "../../../lib/product-url";
 import { buildProductInviteMessage } from "../../../lib/whatsapp.js";
 import { publicImageUrl, PLACEHOLDER_IMAGE } from "../../../lib/supabase/config";
+import { comoAdminError, type AdminError } from "../../../lib/supabase/errors";
 import { Boton, Punto, Cargando, ErrorAviso, IconoAgarre, Vacio, dinero, type EstadoPunto } from "./ui";
 
 // Pantalla 02 del diseño: la lista del BORRADOR, no del catálogo público.
@@ -15,6 +17,12 @@ import { Boton, Punto, Cargando, ErrorAviso, IconoAgarre, Vacio, dinero, type Es
 // Cada fila declara en qué estado está respecto de lo publicado. Ese es el punto de
 // toda la pantalla: sin esa columna, el dueño no tiene forma de saber qué está viendo
 // un cliente ahora mismo y qué es un cambio suyo todavía sin publicar.
+//
+// Cuatro columnas de datos (Foto, Producto, Precio, Estado) y nada más: Categoría solo
+// aparece con el filtro en "Todas" (ahí sí es información nueva), y Orden y Fotos ya no
+// tienen columna propia — el orden se ve arrastrando la fila, y "sin fotos" es un aviso
+// dentro del nombre, no un número aparte. Copiar mensaje, Ocultar/Mostrar y Eliminar
+// viven en el menú "⋯": son acciones que se usan cuando hace falta, no todo el rato.
 
 interface Props {
   borrador: ProductWithPhotos[];
@@ -51,6 +59,13 @@ const ESTADO_UI: Record<TipoCambio | "sin-cambios", { punto: EstadoPunto; texto:
   "sin-cambios": { punto: "vivo", texto: "EN VIVO" },
 };
 
+/** Qué fila tiene el menú "⋯" abierto, y dónde dibujarlo (coordenadas de viewport). */
+interface MenuAbierto {
+  id: string;
+  x: number;
+  y: number;
+}
+
 export default function ProductsView({
   borrador,
   publicado,
@@ -69,15 +84,18 @@ export default function ProductsView({
     [categorias]
   );
 
-  /** Id del producto cuyo enlace se acaba de copiar, para confirmarlo en el botón. */
+  /** Id del producto cuyo enlace se acaba de copiar, para confirmarlo en el menú. */
   const [copiado, setCopiado] = useState<string | null>(null);
+  const [menu, setMenu] = useState<MenuAbierto | null>(null);
+  const [errorAccion, setErrorAccion] = useState<AdminError | null>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   /**
    * Qué productos tienen hoy una página que un cliente pueda abrir.
    *
    * Se mira lo PUBLICADO y no el borrador: un producto recién creado, o uno oculto,
    * tiene fila en `products_draft` pero su URL responde 404 hasta que se publica. Mandar
-   * ese enlace por WhatsApp es peor que no mandarlo, así que el botón se apaga.
+   * ese enlace por WhatsApp es peor que no mandarlo, así que la opción se apaga.
    */
   const enVivo = useMemo(
     () => new Set(publicado.filter((p) => p.is_active).map((p) => p.id)),
@@ -99,7 +117,7 @@ export default function ProductsView({
       await navigator.clipboard.writeText(mensaje);
     } catch {
       // `navigator.clipboard` no existe fuera de HTTPS ni en navegadores viejos. Quedarse
-      // sin forma de copiar sería justamente el problema que este botón vino a resolver.
+      // sin forma de copiar sería justamente el problema que esta opción vino a resolver.
       const caja = document.createElement("textarea");
       caja.value = mensaje;
       caja.setAttribute("readonly", "");
@@ -116,7 +134,60 @@ export default function ProductsView({
     setTimeout(() => setCopiado((actual) => (actual === p.id ? null : actual)), 2000);
   }
 
-  // Para que "TODAS" agrupe por categoría en el mismo orden que la pestaña
+  async function manejarOcultar(p: Product) {
+    setMenu(null);
+    try {
+      if (p.is_active) await productosRepo.ocultar(p.id);
+      else await productosRepo.mostrar(p.id);
+      onCambio();
+    } catch (e) {
+      setErrorAccion(comoAdminError(e));
+    }
+  }
+
+  async function manejarEliminar(p: Product) {
+    setMenu(null);
+    if (
+      !window.confirm(
+        `¿Eliminar "${p.name}" del borrador? Se borra la fila y sus fotos. El cambio llega al sitio recién cuando publiques.`
+      )
+    ) {
+      return;
+    }
+    try {
+      await productosRepo.eliminar(p.id);
+      onCambio();
+    } catch (e) {
+      setErrorAccion(comoAdminError(e));
+    }
+  }
+
+  // Cierra el menú al hacer clic afuera. El propio botón "⋮" queda exento (con
+  // data-menu-trigger): su onClick ya decide si abre o cierra, y si este listener
+  // también reaccionara a ese mismo clic, uno de los dos pisaría al otro.
+  useEffect(() => {
+    if (!menu) return;
+    function alClicAfuera(e: MouseEvent) {
+      const objetivo = e.target as HTMLElement;
+      if (objetivo.closest("[data-menu-trigger]")) return;
+      if (popoverRef.current?.contains(objetivo)) return;
+      setMenu(null);
+    }
+    document.addEventListener("mousedown", alClicAfuera);
+    return () => document.removeEventListener("mousedown", alClicAfuera);
+  }, [menu]);
+
+  function alternarMenu(e: ReactMouseEvent<HTMLButtonElement>, id: string) {
+    e.stopPropagation();
+    if (menu?.id === id) {
+      setMenu(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMenu({ id, x: rect.right, y: rect.bottom });
+  }
+
+  // Para que "Todas" agrupe por categoría en el mismo orden que la pestaña
   // Categorías (position), no alfabético por category_key.
   const posicionPorCategoria = useMemo(
     () => new Map(categorias.map((c) => [c.key, c.position])),
@@ -124,7 +195,7 @@ export default function ProductsView({
   );
 
   // Solo se puede arrastrar para reordenar cuando la lista visible es
-  // exactamente todos los productos de una categoría — con "TODAS" o con
+  // exactamente todos los productos de una categoría — con "Todas" o con
   // texto en el buscador, la lista está mezclada o incompleta y reordenar
   // por índice rompería el sort_order de productos que ni se ven.
   const puedeReordenar = categoria !== null && busqueda.trim() === "";
@@ -150,7 +221,7 @@ export default function ProductsView({
       );
     });
     // Con una categoría específica esto no cambia nada (todas comparten la
-    // misma posición). Con "TODAS" agrupa por el orden real de las pestañas
+    // misma posición). Con "Todas" agrupa por el orden real de las pestañas
     // de Categorías en vez del alfabético de category_key.
     return [...filtrados].sort((a, b) => {
       const posA = posicionPorCategoria.get(a.category_key) ?? Number.MAX_SAFE_INTEGER;
@@ -181,6 +252,9 @@ export default function ProductsView({
     onMover: mover,
   });
 
+  const mostrarCategoria = categoria === null;
+  const productoDelMenu = menu ? visiblesOrdenados.find((p) => p.id === menu.id) : undefined;
+
   if (cargando && !borrador.length) return <Cargando />;
 
   return (
@@ -197,31 +271,31 @@ export default function ProductsView({
         <div className="adm-chips" role="group" aria-label="Filtrar por categoría">
           <button
             type="button"
-            className={`adm-mono adm-chip ${categoria === null ? "is-activo" : ""}`}
+            className={`adm-chip ${categoria === null ? "is-activo" : ""}`}
             onClick={() => onCategoria(null)}
           >
-            TODAS
+            Todas
           </button>
           {categorias.map((c) => (
             <button
               key={c.key}
               type="button"
-              className={`adm-mono adm-chip ${categoria === c.key ? "is-activo" : ""}`}
+              className={`adm-chip ${categoria === c.key ? "is-activo" : ""}`}
               onClick={() => onCategoria(c.key)}
             >
-              {c.label.toUpperCase()}
+              {c.label}
             </button>
           ))}
         </div>
 
         <div className="adm-toolbar-fin">
           <Boton onClick={onNuevo} variante="acento">
-            + NUEVO PRODUCTO
+            + Nuevo producto
           </Boton>
         </div>
       </div>
 
-      <ErrorAviso error={errorOrden} />
+      <ErrorAviso error={errorOrden ?? errorAccion} />
 
       {!categorias.length ? (
         <Vacio titulo="Todavía no hay categorías.">
@@ -241,22 +315,21 @@ export default function ProductsView({
                 (ver admin.css) para el layout de tarjetas, y ahí la semántica
                 implícita de tabla no es confiable entre navegadores. Con el rol
                 puesto a mano no depende del display computado. */}
-            <table
-              className={`adm-tabla ${categoria !== null ? "adm-tabla--filtrada" : ""}`}
-              role="table"
-            >
+            <table className="adm-tabla" role="table">
               <thead role="rowgroup">
                 <tr role="row">
                   <th className="adm-mono" scope="col" role="columnheader">
                     <span className="adm-sr">Foto</span>
                   </th>
-                  <th className="adm-mono" scope="col" role="columnheader">PRODUCTO</th>
-                  <th className="adm-mono" scope="col" role="columnheader">CATEGORÍA</th>
-                  <th className="adm-mono adm-num" scope="col" role="columnheader">PRECIO</th>
-                  <th className="adm-mono adm-num" scope="col" role="columnheader">ORDEN</th>
-                  <th className="adm-mono adm-num" scope="col" role="columnheader">FOTOS</th>
-                  <th className="adm-mono" scope="col" role="columnheader">ESTADO</th>
-                  <th className="adm-mono" scope="col" role="columnheader">MENSAJE</th>
+                  <th className="adm-mono" scope="col" role="columnheader">Producto</th>
+                  {mostrarCategoria && (
+                    <th className="adm-mono" scope="col" role="columnheader">Categoría</th>
+                  )}
+                  <th className="adm-mono adm-num" scope="col" role="columnheader">Precio</th>
+                  <th className="adm-mono" scope="col" role="columnheader">Estado</th>
+                  <th className="adm-mono" scope="col" role="columnheader">
+                    <span className="adm-sr">Acciones</span>
+                  </th>
                 </tr>
               </thead>
               <tbody
@@ -290,8 +363,8 @@ export default function ProductsView({
                           className="adm-thumb"
                           src={principal ? publicImageUrl(principal.storage_path) : PLACEHOLDER_IMAGE}
                           alt=""
-                          width={44}
-                          height={44}
+                          width={64}
+                          height={64}
                           loading="lazy"
                         />
                       </td>
@@ -306,61 +379,43 @@ export default function ProductsView({
                           {fotos.length === 0 && " · SIN FOTOS"}
                         </span>
                       </td>
-                      <td className="adm-td-categoria" role="cell">
-                        {etiquetaCategoria[p.category_key] ?? p.category_key}
-                      </td>
+                      {mostrarCategoria && (
+                        <td className="adm-td-categoria" role="cell">
+                          {etiquetaCategoria[p.category_key] ?? p.category_key}
+                        </td>
+                      )}
                       <td className="adm-mono adm-num adm-td-precio" role="cell">{dinero(p.price)}</td>
-                      <td className="adm-mono adm-num adm-td-orden" role="cell">
-                        <span className="adm-fila-orden">
-                          <span
-                            className={`adm-fila-agarre ${puedeReordenar ? "" : "is-deshabilitado"}`}
-                            {...arrastre.propsAgarre(i)}
-                            aria-label={
-                              puedeReordenar
-                                ? `Reordenar ${p.name}. Usa las flechas arriba y abajo, o arrastra.`
-                                : undefined
-                            }
-                            title={
-                              puedeReordenar
-                                ? "Arrastra o usa las flechas para reordenar"
-                                : "Elige una sola categoría (no TODAS) y vacía el buscador para reordenar"
-                            }
-                          >
-                            <IconoAgarre />
-                          </span>
-                          <span className="adm-fila-orden-num">{p.sort_order}</span>
-                        </span>
-                      </td>
-                      <td
-                        className={`adm-mono adm-num adm-td-fotos ${fotos.length === 0 ? "adm-alerta" : ""}`}
-                        role="cell"
-                      >
-                        {fotos.length}
-                      </td>
                       <td className="adm-td-estado" role="cell">
                         <Punto estado={ui.punto} texto={ui.texto} />
                       </td>
-                      {/* Para mandarle el enlace a un cliente por WhatsApp sin tener que
-                          abrir la tienda, buscar el producto y copiar la barra de
-                          direcciones con el cliente esperando en el chat. */}
-                      <td className="adm-td-enlace" role="cell">
-                        <button
-                          type="button"
-                          className="adm-mono adm-btn-enlace"
-                          // La fila entera abre el editor al hacer clic. Sin esto, copiar
-                          // el enlace también te sacaría de la lista.
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void copiarEnlace(p);
-                          }}
-                          disabled={!enVivo.has(p.id)}
+                      <td className="adm-td-acciones" role="cell">
+                        <span
+                          className={`adm-fila-agarre ${puedeReordenar ? "" : "is-deshabilitado"}`}
+                          {...arrastre.propsAgarre(i)}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={
+                            puedeReordenar
+                              ? `Reordenar ${p.name}. Usa las flechas arriba y abajo, o arrastra.`
+                              : undefined
+                          }
                           title={
-                            enVivo.has(p.id)
-                              ? `${SITIO.replace(/\/$/, "")}${rutaProducto(p)}`
-                              : "Este producto todavía no está publicado: su enlace daría error"
+                            puedeReordenar
+                              ? "Arrastra o usa las flechas para reordenar"
+                              : "Elige una sola categoría (no todas) y vacía el buscador para reordenar"
                           }
                         >
-                          {copiado === p.id ? "COPIADO ✓" : "COPIAR"}
+                          <IconoAgarre />
+                        </span>
+                        <button
+                          type="button"
+                          className="adm-fila-menu-btn"
+                          data-menu-trigger={p.id}
+                          aria-haspopup="menu"
+                          aria-expanded={menu?.id === p.id}
+                          aria-label={`Más acciones para ${p.name}`}
+                          onClick={(e) => alternarMenu(e, p.id)}
+                        >
+                          ⋮
                         </button>
                       </td>
                     </tr>
@@ -378,6 +433,43 @@ export default function ProductsView({
           </p>
         </>
       )}
+
+      {/* Portada a document.body: así el menú nunca lo recorta el overflow-x:auto de
+          .adm-tabla-wrap, sin importar en qué fila (ni en qué scroll) se abra. */}
+      {menu &&
+        productoDelMenu &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            className="adm-fila-menu-popover"
+            role="menu"
+            style={{ top: menu.y + 4, right: window.innerWidth - menu.x }}
+          >
+            <button
+              type="button"
+              role="menuitem"
+              disabled={!enVivo.has(productoDelMenu.id)}
+              onClick={() => {
+                void copiarEnlace(productoDelMenu);
+                setMenu(null);
+              }}
+            >
+              {copiado === productoDelMenu.id ? "Copiado ✓" : "Copiar mensaje"}
+            </button>
+            <button type="button" role="menuitem" onClick={() => void manejarOcultar(productoDelMenu)}>
+              {productoDelMenu.is_active ? "Ocultar" : "Mostrar"}
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="is-peligro"
+              onClick={() => void manejarEliminar(productoDelMenu)}
+            >
+              Eliminar
+            </button>
+          </div>,
+          document.body
+        )}
     </>
   );
 }

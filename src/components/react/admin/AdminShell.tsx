@@ -20,14 +20,12 @@ interface Props {
   sesion: Sesion;
   conteoProductos: number;
   conteoCategorias: number;
-  /** Cuántos colores de bordado tiene la paleta. */
-  conteoColores: number;
   /** Pedidos esperando que confirmes el pago. Enciende el punto de PEDIDOS. */
   pedidosPendientes: number;
   /** Cuántos cambios hay sin publicar. Enciende el punto del nav y la píldora. */
   cambiosPendientes: number;
   titulo: string;
-  /** Línea en mono debajo del título: la tabla o función que está detrás. */
+  /** Frase corta debajo del título. Vacía cuando el título ya se explica solo. */
   subtitulo: string;
   acciones?: ReactNode;
   children: ReactNode;
@@ -39,7 +37,6 @@ export default function AdminShell({
   sesion,
   conteoProductos,
   conteoCategorias,
-  conteoColores,
   pedidosPendientes,
   cambiosPendientes,
   titulo,
@@ -55,14 +52,25 @@ export default function AdminShell({
     return () => clearInterval(id);
   }, []);
 
-  const items: { id: Vista; label: string; contador?: number; punto?: boolean }[] = [
-    { id: "productos", label: "PRODUCTOS", contador: conteoProductos },
-    { id: "categorias", label: "CATEGORÍAS", contador: conteoCategorias },
-    // Va pegada a Categorías porque se usan juntas: acá se crean los colores y allá se
-    // elige cuáles admite cada categoría.
-    { id: "colores", label: "COLORES", contador: conteoColores },
-    { id: "pedidos", label: "PEDIDOS", punto: pedidosPendientes > 0 },
-    { id: "publicar", label: "PUBLICAR", punto: cambiosPendientes > 0 },
+  // El punto de "Publicar" se sacó a propósito: la píldora de la barra superior ya
+  // avisa lo mismo en TODAS las pantallas (ver más abajo, no depende de `vista`), así
+  // que tenerlo también acá era la misma noticia dos veces. El de "Pedidos" se queda:
+  // es la única señal de que hay algo esperando confirmación de pago.
+  //
+  // "Colores" ya no tiene su propio ítem: pasó a ser una pestaña DENTRO de
+  // Categorías (AdminApp la dibuja arriba del contenido). Acá "Categorías" se marca
+  // activo en las dos vistas, para que el ítem del menú no "apague" su resaltado
+  // solo porque el dueño está mirando la pestaña Colores.
+  const items: { id: Vista; label: string; contador?: number; punto?: boolean; activoEn?: Vista[] }[] = [
+    { id: "productos", label: "Productos", contador: conteoProductos },
+    {
+      id: "categorias",
+      label: "Categorías",
+      contador: conteoCategorias,
+      activoEn: ["categorias", "colores"],
+    },
+    { id: "pedidos", label: "Pedidos", punto: pedidosPendientes > 0 },
+    { id: "publicar", label: "Publicar" },
   ];
 
   return (
@@ -81,49 +89,50 @@ export default function AdminShell({
             width="998"
             height="297"
           />
-          <p className="adm-mono adm-sidebar-sub">ADMINISTRACIÓN</p>
+          <p className="adm-mono adm-sidebar-sub">Administración</p>
         </button>
 
         <ul className="adm-nav">
-          {items.map((it) => (
-            <li key={it.id}>
-              <button
-                type="button"
-                className={`adm-nav-item ${vista === it.id ? "is-activo" : ""}`}
-                onClick={() => onVista(it.id)}
-                aria-current={vista === it.id ? "page" : undefined}
-              >
-                <span className="adm-nav-marca" />
-                <span className="adm-mono adm-nav-label">{it.label}</span>
-                {it.contador !== undefined && (
-                  <span className="adm-mono adm-nav-contador">{it.contador}</span>
-                )}
-                {it.punto && (
-                  <span
-                    className="adm-nav-punto"
-                    aria-label={
-                      it.id === "pedidos"
-                        ? "hay pedidos esperando confirmación de pago"
-                        : "hay cambios sin publicar"
-                    }
-                  />
-                )}
-              </button>
-            </li>
-          ))}
+          {items.map((it) => {
+            const activo = (it.activoEn ?? [it.id]).includes(vista);
+            return (
+              <li key={it.id}>
+                <button
+                  type="button"
+                  className={`adm-nav-item ${activo ? "is-activo" : ""}`}
+                  onClick={() => onVista(it.id)}
+                  aria-current={activo ? "page" : undefined}
+                >
+                  <span className="adm-nav-marca" />
+                  <span className="adm-nav-label">{it.label}</span>
+                  {it.contador !== undefined && (
+                    <span className="adm-mono adm-nav-contador">{it.contador}</span>
+                  )}
+                  {it.punto && (
+                    <span
+                      className="adm-nav-punto"
+                      aria-label="hay pedidos esperando confirmación de pago"
+                    />
+                  )}
+                </button>
+              </li>
+            );
+          })}
         </ul>
 
         <div className="adm-sidebar-pie">
           <p className="adm-sidebar-email">{sesion.email ?? "sesión activa"}</p>
-          <p className="adm-mono adm-sidebar-expira">
-            LA SESIÓN EXPIRA EN {minutos} MIN · RECARGAR CIERRA SESIÓN
-          </p>
-          <button
-            type="button"
-            className="adm-mono adm-sidebar-salir"
-            onClick={() => void cerrarSesion()}
-          >
-            CERRAR SESIÓN
+          {/* Antes se mostraba siempre, con los 60 minutos completos incluidos. Es cierto
+              todo el rato -la sesión vive solo en memoria- pero avisarlo desde el minuto
+              uno mete apuro sin necesidad. Ahora aparece recién cuando de verdad hay que
+              apurarse: a partir de los últimos 10 minutos. */}
+          {minutos <= 10 && (
+            <p className="adm-mono adm-sidebar-expira">
+              La sesión expira en {minutos} min · recargar la cierra
+            </p>
+          )}
+          <button type="button" className="adm-sidebar-salir" onClick={() => void cerrarSesion()}>
+            Cerrar sesión
           </button>
         </div>
       </nav>
@@ -132,14 +141,17 @@ export default function AdminShell({
         <header className="adm-topbar">
           <div className="adm-topbar-titulo">
             <h1 className="adm-h1">{titulo}</h1>
-            <p className="adm-mono adm-topbar-sub">{subtitulo}</p>
+            {subtitulo && <p className="adm-topbar-sub">{subtitulo}</p>}
           </div>
           <div className="adm-topbar-acciones">
+            {/* Única señal global de "hay cambios sin publicar": aparece en TODAS las
+                pantallas (no depende de `vista`), así que el punto que antes tenía el
+                ítem "Publicar" del menú de al lado quedaba anunciando lo mismo dos veces. */}
             {cambiosPendientes > 0 && (
               <span className="adm-pill">
                 <span className="adm-pill-dot" />
                 <span className="adm-mono">
-                  {cambiosPendientes} {cambiosPendientes === 1 ? "CAMBIO" : "CAMBIOS"} SIN PUBLICAR
+                  {cambiosPendientes} {cambiosPendientes === 1 ? "cambio" : "cambios"} sin publicar
                 </span>
               </span>
             )}

@@ -82,10 +82,10 @@ export default function LoginView() {
           <ErrorAviso error={error} />
 
           <Boton type="submit" variante="primario" ancho cargando={enCurso}>
-            ENTRAR
+            Entrar
           </Boton>
 
-          <p className="adm-mono adm-login-nota">EL REGISTRO ESTÁ CERRADO</p>
+          <p className="adm-login-nota">El registro está cerrado</p>
         </form>
       </main>
     </div>

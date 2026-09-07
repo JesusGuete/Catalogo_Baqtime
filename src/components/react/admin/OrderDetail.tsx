@@ -160,7 +160,7 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
               variante="primario"
               cargando={confirmar.enCurso}
             >
-              CONFIRMAR PAGO
+              Confirmar pago
             </Boton>
           )}
           {pedido.status !== "no_confirmado" && !pagado && (
@@ -177,7 +177,7 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
               variante="peligro"
               cargando={cambiar.enCurso}
             >
-              NO CONFIRMADO
+              Marcar sin confirmar
             </Boton>
           )}
         </div>
@@ -325,7 +325,7 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
               ancho
               cargando={guardarLogistica.enCurso}
             >
-              {guardado ? "GUARDADO ✓" : "GUARDAR DATOS DE ENVÍO"}
+              {guardado ? "Guardado ✓" : "Guardar datos de envío"}
             </Boton>
             {pedido.estimated_date && (
               <p className="adm-mono adm-hint">
@@ -347,15 +347,13 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
               onFocus={(e) => e.currentTarget.select()}
               aria-label="Enlace de seguimiento del cliente"
             />
-            <p className="adm-mono adm-hint">
-              NO LO PUBLIQUES: QUIEN LO TENGA VE ESTE PEDIDO
-            </p>
+            <p className="adm-hint">No lo publiques: quien lo tenga puede ver este pedido.</p>
           </section>
 
           <section className="adm-card">
-            <p className="adm-mono adm-peligro-titulo">ZONA DE RIESGO</p>
+            <p className="adm-peligro-titulo">Eliminar pedido</p>
             <p className="adm-nota">
-              Eliminar borra el pedido, sus productos y su historial. No se puede deshacer y
+              Borra el pedido, sus productos y su historial. No se puede deshacer y
               no queda registro de la venta.
             </p>
             <Boton
@@ -375,12 +373,12 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
               ancho
               cargando={eliminar.enCurso}
             >
-              ELIMINAR PEDIDO
+              Eliminar pedido
             </Boton>
             {pagado && (
-              <p className="adm-mono adm-hint">
-                ESTE PEDIDO YA TIENE EL PAGO CONFIRMADO · BORRARLO ELIMINA LA CONSTANCIA DE
-                LA VENTA
+              <p className="adm-hint">
+                Este pedido ya tiene el pago confirmado: borrarlo elimina la constancia de la
+                venta.
               </p>
             )}
           </section>

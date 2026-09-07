@@ -339,7 +339,7 @@ export function Boton({
       // un 23505 desconcertante.
       disabled={disabled || cargando}
     >
-      <span className="adm-mono">{cargando ? "GUARDANDO…" : children}</span>
+      {cargando ? "Guardando…" : children}
     </button>
   );
 }

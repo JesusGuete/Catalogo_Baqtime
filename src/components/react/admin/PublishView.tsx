@@ -130,8 +130,7 @@ export default function PublishView({ borrador, publicado, categorias, onPublica
 
         {huerfanasEstimadas > 0 && (
           <Aviso
-            titulo={`Al publicar quedan ${huerfanasEstimadas} imágenes sin usar. El panel las borra de Storage después.`}
-            meta="PUBLISH_CATALOG DEVUELVE REMOVED_PATHS · POSTGRES NO PUEDE HABLAR CON STORAGE, LO HACE EL CLIENTE"
+            titulo={`Al publicar quedan ${huerfanasEstimadas} imágenes sin usar. El panel las borra después, para liberar espacio.`}
           />
         )}
       </div>
@@ -144,20 +143,16 @@ export default function PublishView({ borrador, publicado, categorias, onPublica
               Quedaron {resultado.product_count} productos y {resultado.photo_count} fotos en el
               catálogo publicado.
             </p>
-            <p className="adm-mono adm-hint">
-              PUBLICACIÓN #{resultado.publication_id} · {resultado.imagenesBorradas} IMÁGENES
-              LIBERADAS DE STORAGE
+            <p className="adm-hint">
+              Publicación #{resultado.publication_id} · {resultado.imagenesBorradas} imágenes
+              liberadas
             </p>
 
             {/* La tienda es HTML estático: loadCatalog() corre en el build, no en cada
                 visita. Publicar actualiza la base, pero baqtime.store sigue sirviendo el
                 HTML de la última construcción. Decir "ya está en el sitio" sería mentir, y
                 el dueño lo descubriría abriendo la tienda y no viendo su cambio. */}
-            <Aviso
-              tono="borrador"
-              titulo="Falta un paso: el sitio todavía no muestra esto."
-              meta="LA TIENDA SE ARMA EN EL BUILD · HAY QUE RECONSTRUIRLA PARA QUE TOME EL CATÁLOGO NUEVO"
-            >
+            <Aviso tono="borrador" titulo="Falta un paso: el sitio todavía no muestra esto.">
               <p>
                 Los cambios ya están guardados y no se pierden. Para que se vean en
                 baqtime.store hay que reconstruir el sitio desde Cloudflare.
@@ -167,37 +162,16 @@ export default function PublishView({ borrador, publicado, categorias, onPublica
               <Aviso
                 tono="borrador"
                 titulo="La publicación salió bien, pero no se pudieron borrar las imágenes sin uso."
-                meta={`OCUPAN CUOTA, NO ROMPEN NADA · ${resultado.errorLimpieza.toUpperCase()}`}
+                meta={resultado.errorLimpieza}
               />
             )}
             <Boton onClick={() => setResultado(null)} variante="secundario" ancho>
-              VOLVER
+              Volver
             </Boton>
           </section>
         ) : (
           <section className="adm-card adm-card--oscuro">
             <h3 className="adm-publicar-h3">Publicar el borrador</h3>
-            <p className="adm-publicar-bajada">
-              Copia el borrador entero al catálogo público en una sola transacción. O pasa
-              todo, o no pasa nada.
-            </p>
-
-            <ol className="adm-pasos">
-              <li>
-                <span className="adm-mono adm-paso-num">1</span>
-                Se copia el borrador al catálogo público
-              </li>
-              <li>
-                <span className="adm-mono adm-paso-num">2</span>
-                {huerfanasEstimadas > 0
-                  ? `Se borran de Storage las ${huerfanasEstimadas} imágenes huérfanas`
-                  : "No queda ninguna imagen huérfana para borrar"}
-              </li>
-              <li>
-                <span className="adm-mono adm-paso-num">3</span>
-                Después hay que reconstruir el sitio para que la tienda lo muestre
-              </li>
-            </ol>
 
             <ErrorAviso error={publicar.error ?? descartar.error} />
 
@@ -218,8 +192,8 @@ export default function PublishView({ borrador, publicado, categorias, onPublica
               cargando={publicar.enCurso}
             >
               {diff.vacio
-                ? "NADA PARA PUBLICAR"
-                : `PUBLICAR ${diff.cambios.length} ${diff.cambios.length === 1 ? "CAMBIO" : "CAMBIOS"}`}
+                ? "Nada para publicar"
+                : `Publicar ${diff.cambios.length} ${diff.cambios.length === 1 ? "cambio" : "cambios"}`}
             </Boton>
             <Boton
               onClick={() => {
@@ -237,18 +211,14 @@ export default function PublishView({ borrador, publicado, categorias, onPublica
               disabled={diff.vacio}
               cargando={descartar.enCurso}
             >
-              DESHACER CAMBIOS
+              Deshacer cambios
             </Boton>
-            <p className="adm-mono adm-publicar-nota">SE PIDE CONFIRMACIÓN ANTES DE EJECUTAR</p>
+            <p className="adm-publicar-nota">Pide confirmación antes de ejecutar</p>
           </section>
         )}
 
         {diff.dispararaGuarda && (
-          <Aviso
-            tono="error"
-            titulo="Un borrador vacío no se puede publicar."
-            meta="P0001 · GUARDA DE CATÁLOGO VACÍO"
-          >
+          <Aviso tono="error" titulo="Un borrador vacío no se puede publicar." meta="P0001">
             <p>
               La base lo rechaza para no borrar el catálogo entero sin vuelta atrás. Para
               vaciarlo a propósito hay que ocultar cada producto y publicar eso.
@@ -257,11 +227,11 @@ export default function PublishView({ borrador, publicado, categorias, onPublica
         )}
 
         <section className="adm-card">
-          <p className="adm-mono adm-regla-grupo">HISTORIAL</p>
+          <p className="adm-regla-grupo">Historial</p>
           <ErrorAviso error={errorHistorial} />
 
           {!publicaciones.length ? (
-            <p className="adm-mono adm-hint">TODAVÍA NO SE PUBLICÓ NUNCA</p>
+            <p className="adm-hint">Todavía no se publicó nunca</p>
           ) : (
             <ul className="adm-historial">
               {publicaciones.map((p) => (
