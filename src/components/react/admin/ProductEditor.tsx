@@ -57,7 +57,6 @@ interface Formulario {
   price: number | null;
   personalizable: boolean;
   max_initials: number | null;
-  group_key: string;
   is_active: boolean;
   sort_order: number | null;
   /** Colores de bordado propios (015). Vacío = heredar la regla de la categoría. */
@@ -75,7 +74,6 @@ function desdeProducto(p: ProductWithPhotos): Formulario {
     price: p.price,
     personalizable: p.personalizable,
     max_initials: p.max_initials,
-    group_key: p.group_key,
     is_active: p.is_active,
     sort_order: p.sort_order,
     initials_palette: p.initials_palette ?? [],
@@ -95,7 +93,6 @@ function formularioNuevo(categoria: Category | undefined, siguienteOrden: number
     price: categoria?.default_price ?? null,
     personalizable: categoria?.personalizable ?? false,
     max_initials: categoria?.max_initials ?? 0,
-    group_key: "",
     is_active: true,
     sort_order: siguienteOrden,
     // Vacío a propósito: un producto nuevo hereda la regla de su categoría hasta que
@@ -129,6 +126,9 @@ export default function ProductEditor({
   const [errorGuardado, setErrorGuardado] = useState<AdminError | null>(null);
 
   const categoria = categorias.find((c) => c.key === form.category_key);
+  // El grupo de color ya no lo escribe el dueño: se toma directo del campo Color.
+  // En la práctica siempre coincidían (agrupar "Beige" con "Beige" es justamente el
+  // caso normal), así que pedirlo aparte era un campo más para llenar sin necesidad.
   const errores = validarProducto({
     ...form,
     variant: form.variant || null,
@@ -136,6 +136,7 @@ export default function ProductEditor({
     price: form.price ?? NaN,
     max_initials: form.max_initials ?? NaN,
     sort_order: form.sort_order ?? NaN,
+    group_key: form.color.trim(),
     origin: producto?.origin ?? "custom",
   });
   const valido = esValido(errores);
@@ -183,7 +184,7 @@ export default function ProductEditor({
         price: form.price!,
         personalizable: form.personalizable,
         max_initials: form.max_initials!,
-        group_key: form.group_key.trim(),
+        group_key: form.color.trim(),
         origin: producto?.origin ?? "custom",
         is_active: form.is_active,
         sort_order: form.sort_order!,
@@ -257,11 +258,13 @@ export default function ProductEditor({
         <div className="adm-editor-form">
           {/* Antes eran tres tarjetas numeradas (Identidad, Clasificación, Precio y
               personalización) con trece campos siempre visibles, incluidos ID, Orden y
-              Grupo de color — que el dueño casi nunca toca. Quedan en una sola tarjeta con
-              lo que sí se decide en cada producto, y ID/Grupo de color se pliegan abajo en
-              "Avanzado". Orden ya no tiene campo: se decide arrastrando la fila en la
-              lista de Productos, no acá — repetir esa decisión acá era lo que producía el
-              23505 al chocar con otro producto que ya tenía el mismo número. */}
+              Grupo de color. Quedan en una sola tarjeta con lo que de verdad se decide por
+              producto. ID ya se ve en la barra de arriba (no se puede cambiar, así que no
+              necesita su propio campo acá) y Grupo de color se calcula solo desde Color —
+              ver el comentario junto a `validarProducto` más abajo. Orden ya no tiene
+              campo: se decide arrastrando la fila en la lista de Productos, no acá —
+              repetir esa decisión acá era lo que producía el 23505 al chocar con otro
+              producto que ya tenía el mismo número. */}
           <section className="adm-card">
             <SectionHead titulo="Producto" />
             <div className="adm-fila-campos">
@@ -390,22 +393,6 @@ export default function ProductEditor({
               </>
             )}
           </section>
-
-          <details className="adm-card adm-avanzado">
-            <summary>Avanzado</summary>
-            <div className="adm-fila-campos">
-              <Campo etiqueta="ID" ayuda="no se puede cambiar">
-                <Texto value={form.id} onChange={() => {}} disabled mono />
-              </Campo>
-              <Campo etiqueta="GRUPO DE COLOR" ayuda="agrupa variantes" error={errores.group_key}>
-                <Texto
-                  value={form.group_key}
-                  onChange={(v) => actualizar("group_key", v)}
-                  invalido={!!errores.group_key}
-                />
-              </Campo>
-            </div>
-          </details>
         </div>
 
         <div className="adm-editor-fotos">

@@ -659,18 +659,6 @@ input.adm-input { display: block; }
 .adm-editor-form { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
 .adm-editor-fotos { width: 400px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; }
 
-/* ID y Grupo de color: se tocan casi nunca (el ID no se puede cambiar nunca), así que
-   quedan plegados. `<details>` nativo en vez de estado en React: el navegador ya sabe
-   manejar el toggle, el foco y el teclado, y no hay nada que sincronizar. */
-.adm-avanzado summary {
-  cursor: pointer; font-size: 11px; color: var(--ink-soft); letter-spacing: 0.06em;
-  list-style: none;
-}
-.adm-avanzado summary::-webkit-details-marker { display: none; }
-.adm-avanzado summary::before { content: "▸ "; }
-.adm-avanzado[open] summary::before { content: "▾ "; }
-.adm-avanzado[open] summary { margin-bottom: 16px; }
-
 @media (max-width: 1100px) {
   .adm-editor-cols { flex-direction: column; padding: 20px; }
   .adm-editor-fotos { width: 100%; }
