@@ -705,37 +705,40 @@
 
     .portada-heading{ padding:0 16px; font-size:21px; margin-bottom:14px; }
 
-    /* EN CELULAR EL CARRUSEL SE VUELVE REJILLA DE DOS COLUMNAS.
-       Deslizando se veía UNA colección por vez, con foto grande, párrafo y botón: casi
-       una pantalla entera por colección y cinco gestos para verlas todas, así que casi
-       nadie llegaba al final. En rejilla se ven cuatro de un golpe y las seis con un
-       scroll corto — la diferencia entre "hay una colección" y "hay un catálogo".
+    /* EN CELULAR EL CARRUSEL SE VUELVE FRANJAS ALTERNADAS (foto + texto).
+       El carrusel deslizable escondía casi todo (una colección por gesto) y la rejilla
+       de dos columnas que hubo antes le quitaba la descripción a cada una. Acá cada
+       colección es una franja completa —foto cuadrada a un lado, texto al otro—
+       alternando izquierda/derecha como una nota de revista: se lee de corrido, con
+       scroll vertical normal, y conserva la descripción y el llamado a la acción.
 
        En computador NO cambia nada: sigue siendo el carrusel de tres tarjetas. */
     .portada-carousel{ padding:0 16px 40px; gap:0; display:block; }
     .portada-viewport{ overflow:visible; }
     .portada{
-      display:grid; grid-template-columns:repeat(2, 1fr); gap:14px 12px;
-      overflow:visible;
+      display:flex; flex-direction:column; gap:2px; overflow:visible;
     }
     .portada-card{
       flex:none; width:auto; scroll-snap-align:none;
       border:0; background:transparent; box-shadow:none;
+      display:flex; flex-direction:row; align-items:center; height:150px;
     }
+    /* Impares a la izquierda, pares invertidas: es lo que arma el zigzag. */
+    .portada-card:nth-child(even){ flex-direction:row-reverse; }
     .portada-card:hover{ transform:none; box-shadow:none; }
-    /* Solo foto, nombre y una flecha. La descripción y el botón sobran cuando la tarjeta
-       entera ya es tocable, y el párrafo era lo que hacía cada tarjeta tan alta. */
-    .portada-body{ padding:8px 2px 0; text-align:center; }
-    .portada-body h3{ font-size:14px; margin:0; }
-    .portada-body p{ display:none; }
-    .portada-body .btn{ display:none; }
-    /* La pista de que se puede tocar. En escritorio no hace falta: ahí está el botón
-       "Ver colección" y el cursor ya cambia sobre un enlace.
-       `display:inline` es obligatorio acá: la regla de escritorio (arriba en el archivo,
-       sin media query) pone `display:none`, y sin anularlo explícitamente esta regla solo
-       cambiaba el color de un elemento que seguía oculto. Así se coló a producción sin
-       que la flecha llegara a verse nunca. */
-    .portada-chevron{ display:inline; color:var(--mocha); font-weight:600; }
+    .portada-img{ width:44%; height:100%; flex-shrink:0; aspect-ratio:auto; }
+    .portada-body{ padding:0 14px; text-align:left; display:block; }
+    .portada-body h3{ font-size:15px; margin:0 0 4px; }
+    .portada-body p{
+      display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+      overflow:hidden; font-size:11px; margin:0 0 8px;
+    }
+    .portada-body .btn{
+      display:inline-block; background:none; border:0; padding:0;
+      font-size:10px; letter-spacing:.08em; color:var(--mocha);
+    }
+    /* La flecha ya no hace falta: el botón de texto cumple el mismo papel de pista. */
+    .portada-chevron{ display:none; }
     /* Sin tira que desplazar, las flechas del carrusel no llevan a ninguna parte. */
     .portada-arrow{ display:none; }
     /* Respuesta al tocar: sin ella, la tarjeta no da ninguna señal física de que el toque
