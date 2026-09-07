@@ -11,6 +11,7 @@
 
 import { rpc } from "../supabase/http";
 import { construirPath, subirImagen } from "../supabase/storage";
+import { optimizarArchivo } from "./image-transform";
 import { comoAdminError, type AdminError } from "../supabase/errors";
 import type { FotoParaGuardar, ReplacePhotosArgs } from "../../types/database";
 
@@ -66,8 +67,12 @@ export async function subirArchivos(
   const fallidas: { nombreArchivo: string; error: AdminError }[] = [];
 
   for (let i = 0; i < archivos.length; i++) {
-    const file = archivos[i]!;
+    const original = archivos[i]!;
     try {
+      // Redimensionar/convertir ANTES de validar: así una foto de celular de más de
+      // 5 MB que igual entra optimizada no se rechaza por gordura de más, y lo que
+      // viaja a Storage siempre es lo liviano, no el original de la cámara.
+      const file = await optimizarArchivo(original);
       // construirPath valida tipo, tamaño y formato ANTES de mandar un solo byte:
       // Storage aceptaría una ruta inválida con 200 y después la base la rechazaría,
       // dejando el archivo huérfano. Ver storage.ts.
@@ -75,7 +80,7 @@ export async function subirArchivos(
       await subirImagen(path, file, (pct) => onProgress?.(i, pct));
       subidas.push(path);
     } catch (e) {
-      fallidas.push({ nombreArchivo: file.name, error: comoAdminError(e) });
+      fallidas.push({ nombreArchivo: original.name, error: comoAdminError(e) });
     }
   }
 

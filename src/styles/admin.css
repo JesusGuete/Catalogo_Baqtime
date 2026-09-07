@@ -970,10 +970,24 @@ input.adm-input { display: block; }
 .adm-estudio-cifra { color: var(--ink-soft); }
 
 .adm-estudio-previas { width: 180px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; }
-.adm-estudio-previa {
-  position: relative; width: 100%; aspect-ratio: 1 / 1; overflow: hidden;
-  border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line-solid);
+/* Tira de miniaturas para saltar a otra foto del mismo producto sin cerrar el
+   estudio — reemplaza a los botones "Foto anterior/siguiente". */
+.adm-estudio-miniaturas { display: flex; flex-wrap: wrap; gap: 6px; }
+.adm-estudio-miniatura {
+  position: relative; width: 40px; height: 40px; padding: 0; overflow: hidden;
+  border-radius: var(--radius); border: 1.5px solid transparent; background: var(--panel);
+  cursor: pointer; opacity: 0.65;
 }
+.adm-estudio-miniatura:hover:not(:disabled) { opacity: 1; }
+.adm-estudio-miniatura.is-activa { opacity: 1; border-color: var(--mocha); }
+.adm-estudio-miniatura:disabled { cursor: not-allowed; }
+.adm-estudio-miniatura img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.adm-estudio-previa {
+  display: block; position: relative; width: 100%; aspect-ratio: 1 / 1; overflow: hidden;
+  border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line-solid);
+  padding: 0; cursor: pointer;
+}
+.adm-estudio-previa:disabled { cursor: not-allowed; }
 .adm-estudio-previa.is-activa { border-color: var(--mocha); box-shadow: 0 0 0 1px var(--mocha); }
 .adm-estudio-previa--editorial { aspect-ratio: 3 / 4; }
 .adm-estudio-previa img { width: 100%; height: 100%; object-fit: cover; display: block; }
