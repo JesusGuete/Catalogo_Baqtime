@@ -106,10 +106,12 @@
   .cart-fondo{
     position:fixed; inset:0; z-index:110;
     background:rgba(31,42,36,0.42);
+    animation:velo-entra .38s ease;
   }
   .cart-panel{
     position:absolute; top:0; right:0; bottom:0; width:100%; max-width:380px;
     background:var(--cream); box-shadow:-8px 0 24px rgba(38,34,29,0.15);
+    animation:cart-entra .42s cubic-bezier(.22,.61,.36,1);
     display:flex; flex-direction:column; padding:20px; overflow-y:auto;
   }
   .cart-panel-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
@@ -997,9 +999,10 @@
   .buscador-velo{
     position:absolute; inset:0;
     background:rgba(31,42,36,0.42);
-    animation:velo-entra .28s ease;
+    animation:velo-entra .38s ease;
   }
   @keyframes velo-entra{ from{ opacity:0; } to{ opacity:1; } }
+  @keyframes cart-entra{ from{ transform:translateX(100%); } to{ transform:none; } }
 
   /* La persiana: pegada al borde de arriba y bajando desde fuera de la pantalla. No
      ocupa todo el alto — se detiene donde termina su contenido, hasta un tope, y por
@@ -1011,7 +1014,7 @@
     background:var(--cream);
     border-bottom:1px solid var(--line);
     padding:26px 20px 34px;
-    animation:persiana .32s cubic-bezier(.22,.61,.36,1);
+    animation:persiana .45s cubic-bezier(.22,.61,.36,1);
   }
   @keyframes persiana{ from{ transform:translateY(-100%); } to{ transform:none; } }
   @media (prefers-reduced-motion: reduce){
@@ -1073,6 +1076,7 @@
   .menu-fondo{
     position:fixed; inset:0; z-index:200;
     background:rgba(31,42,36,0.42);
+    animation:velo-entra .38s ease;
   }
   .menu-panel{
     position:absolute; top:0; left:0; bottom:0;
@@ -1082,12 +1086,12 @@
     display:flex; flex-direction:column;
     padding:20px 0;
     overflow-y:auto;
-    animation:menu-entra .22s ease;
+    animation:menu-entra .42s cubic-bezier(.22,.61,.36,1);
   }
   @keyframes menu-entra{ from{ transform:translateX(-100%); } to{ transform:none; } }
   /* Quien pidió menos movimiento no debería recibir un panel deslizándose. */
   @media (prefers-reduced-motion: reduce){
-    .menu-panel{ animation:none; }
+    .menu-panel, .menu-fondo, .cart-panel, .cart-fondo{ animation:none; }
   }
   .menu-panel-cab{
     display:flex; align-items:center; justify-content:space-between;
