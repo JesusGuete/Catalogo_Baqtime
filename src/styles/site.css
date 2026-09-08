@@ -70,9 +70,6 @@
   .brand-logo{
     height:38px; width:auto; display:block;
   }
-  .cart-note{
-    font-size:12px; color:var(--ink-soft); font-family:'JetBrains Mono',monospace;
-  }
   .header-acciones{ display:flex; align-items:center; gap:14px; }
   /* Píldora sólida y no texto suelto: como enlace gris pasaba desapercibido al lado del
      carrito, y es la única puerta que tiene el cliente para ver su pedido. */
@@ -103,12 +100,18 @@
     min-width:16px; height:16px; border-radius:50%;
     display:flex; align-items:center; justify-content:center; padding:0 2px;
   }
+  /* El velo: mismo patrón que .menu-fondo (MenuBadge.jsx) — cubre la pantalla por
+     detrás del panel, y tocarlo cierra. Antes el carrito no tenía nada detrás: el
+     catálogo seguía desplazándose y no había forma de cerrar tocando afuera. */
+  .cart-fondo{
+    position:fixed; inset:0; z-index:110;
+    background:rgba(31,42,36,0.42);
+  }
   .cart-panel{
-    position:fixed; top:0; right:0; bottom:0; width:100%; max-width:380px;
-    background:var(--cream); z-index:110; box-shadow:-8px 0 24px rgba(38,34,29,0.15);
+    position:absolute; top:0; right:0; bottom:0; width:100%; max-width:380px;
+    background:var(--cream); box-shadow:-8px 0 24px rgba(38,34,29,0.15);
     display:flex; flex-direction:column; padding:20px; overflow-y:auto;
   }
-  .cart-panel.hidden{ display:none; }
   .cart-panel-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
   .cart-panel-head h3{ font-family:'Unna',serif; font-size:20px; margin:0; }
   .cart-items{ flex:1; display:flex; flex-direction:column; gap:12px; }
@@ -347,61 +350,6 @@
     .portada-card{ flex:0 0 calc((100% - 22px)/2); } /* 2 tarjetas visibles en tablet */
   }
 
-  /* ===== BANNER TIENDA ===== */
-  .tienda-banner{
-    position:relative; max-width:1180px; margin:0 auto 50px; padding:0 20px;
-    border-radius:4px; overflow:hidden;
-  }
-  .tienda-banner img{
-    width:100%; height:320px; object-fit:cover; display:block; border-radius:4px;
-  }
-  .tienda-banner-tag{
-    position:absolute; bottom:24px; left:40px;
-    background:rgba(38,34,29,0.75); color:var(--cream);
-    font-family:'JetBrains Mono', monospace; font-size:12px; letter-spacing:0.08em;
-    text-transform:uppercase; padding:10px 18px; border-radius:2px;
-  }
-  @media (max-width:600px){
-    .tienda-banner{ padding:0 16px; margin-bottom:36px; }
-    .tienda-banner img{ height:180px; }
-    .tienda-banner-tag{ left:16px; bottom:14px; font-size:10px; padding:8px 14px; }
-  }
-
-  /* ===== FONDO CATEGORIAS ===== */
-  .cat-bg-wrap{
-    position:relative;
-  }
-  .cat-bg-wrap::before{
-    content:'';
-    position:absolute; inset:0;
-    background-image:var(--cat-bg-img);
-    background-size:cover; background-position:center 15%;
-    opacity:0.10;
-    pointer-events:none;
-    z-index:0;
-  }
-  .cat-bg-wrap > *{ position:relative; z-index:1; }
-
-
-  /* ===== SIGNATURE STRIP: thread colors ===== */
-  .thread-strip{
-    max-width:1180px; margin:0 auto; padding:0 20px 22px;
-  }
-  .thread-strip-inner{
-    display:flex; gap:0; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
-    overflow-x:auto;
-  }
-  .thread-item{
-    flex:1 0 auto;
-    min-width:130px;
-    padding:16px 18px;
-    border-right:1px solid var(--line);
-    display:flex; align-items:center; gap:10px;
-  }
-  .thread-item:last-child{border-right:none;}
-  .thread-dot{ width:14px; height:14px; border-radius:50%; flex-shrink:0; border:1px solid rgba(0,0,0,0.15);}
-  .thread-item span{ font-size:12px; color:var(--ink-soft); white-space:nowrap; }
-
   /* ===== CATALOG ===== */
   .section-title{
     max-width:1180px; margin:0 auto; padding:0 20px;
@@ -488,6 +436,18 @@
     display:flex; align-items:center; justify-content:center;
     cursor:pointer; font-size:16px;
   }
+  /* Mismo círculo que .modal-close, pero SIN position:fixed. .cart-panel-head ya es un
+     flex row pensado para que el botón viva ahí adentro, junto a "Tu carrito" — con
+     position:fixed el botón se sacaba de ese flujo y flotaba por coordenadas fijas del
+     viewport, cayendo encima de la primera línea del carrito y su propia "×" para
+     quitar el producto. */
+  .cart-panel-close{
+    width:34px; height:34px; border-radius:50%; flex-shrink:0;
+    background:var(--white-card); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:16px; color:var(--ink);
+  }
+  .cart-panel-close:hover{ background:var(--panel); }
   .modal-gallery{
     background:var(--panel);
     padding:26px;
@@ -638,8 +598,11 @@
   }
 
   /* ===== PRODUCTOS RELACIONADOS (dentro del modal) — carrusel, mismo formato que
-     "Nuestras colecciones": scroll nativo con scroll-snap, no un grid apretado ===== */
-  .related-products{ margin-bottom:22px; }
+     "Nuestras colecciones": scroll nativo con scroll-snap, no un grid apretado =====
+     margin-top: ahora va después de los botones de comprar y no antes, así que
+     necesita su propio aire arriba — antes lo separaba el margin-bottom de lo que
+     venía justo encima (.advance-note o .price-breakdown). */
+  .related-products{ margin-top:26px; margin-bottom:22px; }
   .related-products .field-label{
     display:block; font-size:11px; color:var(--ink-soft); margin-bottom:10px;
     font-family:'JetBrains Mono', monospace; text-transform:uppercase; letter-spacing:.03em;
@@ -662,12 +625,22 @@
   .related-arrow:hover:not(:disabled){ background:var(--ink); color:var(--cream); border-color:var(--ink); }
   .related-arrow:disabled{ opacity:.35; cursor:default; }
 
-  .shipping-fields{ display:grid; gap:12px; margin-bottom:6px; }
+  /* Espacio GRANDE entre un campo y el siguiente (cada .shipping-field es un grupo
+     rótulo+input+error). El espacio CHICO entre el rótulo y su propio input va en
+     .shipping-field, más abajo — así se nota la diferencia entre "esto va junto" y
+     "esto es lo próximo", en vez de un mismo aire parejo para las dos cosas. */
+  .shipping-fields{ display:flex; flex-direction:column; gap:16px; margin-bottom:6px; }
   .shipping-fields input{
     padding:11px 13px; border:1px solid var(--line); border-radius:2px;
     font-family:'Work Sans',sans-serif; font-size:14px; background:#fff;
   }
-  .doc-hint{ font-size:11px; color:var(--ink-soft); margin-top:-6px; margin-bottom:6px; }
+  /* .field label y .field-error traen su propio margen porque en el resto del sitio
+     aparecen solos (p. ej. "INICIALES" en ProductView), fuera de un grupo con su propio
+     gap. Acá adentro esos márgenes se SUMABAN al gap de .shipping-field en vez de
+     reemplazarlo. Se anulan para que el gap sea la única fuente de espaciado. */
+  .shipping-field{ display:flex; flex-direction:column; gap:6px; }
+  .shipping-fields label{ margin-bottom:0; }
+  .shipping-fields .field-error{ margin-top:0; margin-bottom:0; }
 
   .whatsapp-btn{
     margin-top:20px;
@@ -705,6 +678,10 @@
   .finalizar-btn:hover{ background:var(--ink); color:var(--cream); }
 
   .req-note{ font-size:11px; color:var(--vino); margin-top:8px; min-height:14px; }
+  /* --vino ya significa "error/destructivo" en el resto de la tienda (tokens.css). El
+     único texto que hoy llena .req-note es la confirmación de "Agregado al carrito", así
+     que necesita su propio color de éxito en vez de heredar el de error. */
+  .req-note--ok{ color:var(--olive); }
   .field-error{ font-size:11px; color:var(--vino); margin-top:-6px; margin-bottom:6px; min-height:13px; }
 
   /* zoom overlay */
@@ -724,14 +701,27 @@
     text-align:center; padding:40px 20px 60px; color:var(--ink-soft);
     font-size:12px; font-family:'JetBrains Mono',monospace;
   }
+  footer a{ color:inherit; text-decoration:underline; text-underline-offset:2px; }
+  footer a:hover{ color:var(--mocha); }
+
+  /* ===== PÁGINA NO ENCONTRADA ===== */
+  .not-found{
+    max-width:520px; margin:0 auto; text-align:center;
+    padding:110px 20px 100px;
+  }
+  .not-found h1{ font-size:30px; margin:0 0 14px; }
+  .not-found p{ font-size:14px; color:var(--ink-soft); line-height:1.6; margin:0 0 28px; }
 
   /* ===== AJUSTES MÓVIL ===== */
   @media (max-width:600px){
+    /* El padding y el logo de acá abajo achican el <header> real a 59px (medido), pero
+       --header-h se define una sola vez arriba pensando en el header de escritorio
+       (71px). Sin este ajuste, .modal-overlay y .modal-close (que usan --header-h para
+       no quedar debajo del encabezado) se corren 12px de más en celular: se ve una
+       franja del contenido de atrás asomando arriba del modal. */
+    :root{ --header-h:59px; }
     header{ padding:14px 16px; }
     .brand-logo{ height:30px; }
-    /* En celular no entran logo + ciudades + "Mi pedido" + carrito. La nota de ciudades
-       es lo prescindible: es decorativa, y las otras dos son acciones. */
-    .cart-note{ display:none; }
     .header-zona{ gap:8px; }
     .header-menu span, .search-texto{ display:none; }
     .header-pedido{ font-size:10px; padding:8px 12px; }
@@ -797,7 +787,11 @@
     /* El botón de texto ya no hace falta: sobre la foto a sangre, con el nombre en
        blanco, la tarjeta entera ya se lee como tocable. */
     .portada-body .btn{ display:none; }
-    .portada-chevron{ display:none; }
+    /* La regla base (arriba, fuera de este media query) la oculta para escritorio, donde
+       el botón "Ver colección" ya cumple ese papel — pero acá, en celular, es al revés:
+       esta es la única pista táctil de que la tarjeta lleva a algo, y quedaba pisada por
+       una segunda regla que también decía display:none. */
+    .portada-chevron{ display:inline; }
     /* Sin tira que desplazar, las flechas del carrusel no llevan a ninguna parte. */
     .portada-arrow{ display:none; }
     /* Respuesta al tocar: sin ella, la tarjeta no da ninguna señal física de que el toque
@@ -823,19 +817,6 @@
 
     .section-title{ padding:0 16px; margin-bottom:18px; }
     .section-title h2{ font-size:22px; }
-    .thread-strip{ padding:0 16px 18px; position:relative; }
-    /* Pista visual de que hay más categorías deslizando a la derecha: degradado más
-       ancho y opaco (llega a color sólido a mitad de camino, no al final) + una
-       flechita, para que se note claramente en vez de perderse contra el fondo. */
-    .thread-strip::after{
-      content:'›';
-      position:absolute; top:0; right:0; bottom:18px; width:52px;
-      display:flex; align-items:center; justify-content:flex-end;
-      font-size:22px; font-weight:700; color:var(--ink-soft);
-      background:linear-gradient(to right, rgba(242,242,242,0) 0%, var(--cream) 55%, var(--cream) 100%);
-      pointer-events:none;
-    }
-
 
     .grid{ grid-template-columns:repeat(2, 1fr); gap:14px; padding:0 16px; margin-bottom:50px; }
     .card-body{ padding:12px 12px 14px; }
@@ -850,13 +831,13 @@
     footer{ padding:30px 16px 44px; font-size:11px; }
   }
 
-  @media (max-width:380px){
-    .grid{ grid-template-columns:1fr; }
-  }
-
-  /* ===== BOTÓN FLOTANTE DE WHATSAPP ===== */
+  /* ===== BOTÓN FLOTANTE DE WHATSAPP =====
+     z-index MENOR que .modal-overlay (40) y .cart-fondo (110) a propósito: así el botón
+     queda detrás en cuanto se abre una ficha, el carrito o el checkout —todos usan una de
+     esas dos clases— sin tener que avisarle nada desde React. Antes, con 120, flotaba por
+     encima de "Confirmar pedido" y "Finalizar compra", justo donde cae el pulgar. */
   .wa-widget{
-    position:fixed; right:20px; bottom:20px; z-index:120;
+    position:fixed; right:20px; bottom:20px; z-index:35;
     display:flex; flex-direction:column; align-items:flex-end; gap:12px;
     /* La franja segura de iOS: sin esto el botón queda debajo de la barra de gestos. */
     padding-bottom:env(safe-area-inset-bottom);

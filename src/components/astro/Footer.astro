@@ -1,4 +1,17 @@
 ---
 // Portado tal cual desde <footer> en index.html.
+//
+// El número ahora es un enlace de verdad (wa.me), no texto plano: antes no se podía
+// tocar en un teléfono para abrir el chat. Reusa WHATSAPP_NUMBER de lib/whatsapp.js
+// en vez de repetir el número a mano — es la misma constante que arma el mensaje del
+// checkout, así que un cambio de número no puede quedar desincronizado entre los dos
+// lugares.
+import { WHATSAPP_NUMBER } from "../../lib/whatsapp.js";
 ---
-<footer>© Baqtime — Catálogo digital · Pedidos por WhatsApp +57 313 4954478</footer>
+<footer>
+  © Baqtime — Catálogo digital · Pedidos por
+  {" "}
+  <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener">
+    WhatsApp +57 313 4954478
+  </a>
+</footer>

@@ -108,7 +108,7 @@ export default function Checkout({ items, products, categories = [], onClose }) 
         <CartTotals items={items} products={products} categories={categories} />
 
         {/* Encabeza un grupo de campos, no describe uno solo. Cada input ya lleva su
-            propio aria-label. */}
+            propio <label>. */}
         <div
           className="field cart-shipping-field"
           role="group"
@@ -116,68 +116,87 @@ export default function Checkout({ items, products, categories = [], onClose }) 
         >
           <span className="field-label" id="checkout-envio">Datos de envío</span>
           <div className="shipping-fields">
-            <input
-              type="text"
-              placeholder="Nombre completo"
-              aria-label="Nombre completo"
-              value={form.name}
-              onChange={(e) => set("name", onlyLetters(e.target.value))}
-            />
-            <div className="field-error">{errors.name || ""}</div>
+            {/* Rótulos visibles y no solo placeholder: antes el nombre del campo
+                desaparecía apenas se escribía, así que revisar los datos antes de
+                confirmar era leer cinco valores sueltos sin saber cuál era cuál.
+                autoComplete: sin esto el único formulario que cierra la venta no
+                podía autocompletarse con los datos guardados del navegador.
 
-            <input
-              type="text"
-              placeholder="Ciudad"
-              aria-label="Ciudad"
-              value={form.city}
-              onChange={(e) => set("city", onlyLetters(e.target.value))}
-            />
-            <div className="field-error">{errors.city || ""}</div>
+                Cada campo va en su propio .shipping-field: así el rótulo queda pegado
+                a SU input (gap chico) y el salto más grande queda solo entre un campo
+                y el siguiente, en vez de un mismo espacio parejo para las dos cosas. */}
+            <div className="shipping-field">
+              <label htmlFor="checkout-name">Nombre completo</label>
+              <input
+                id="checkout-name"
+                type="text"
+                autoComplete="name"
+                value={form.name}
+                onChange={(e) => set("name", onlyLetters(e.target.value))}
+              />
+              <div className="field-error">{errors.name || ""}</div>
+            </div>
 
-            <input
-              type="text"
-              placeholder="Dirección exacta"
-              aria-label="Dirección exacta"
-              value={form.address}
-              onChange={(e) => set("address", e.target.value)}
-            />
-            <div className="field-error">{errors.address || ""}</div>
+            <div className="shipping-field">
+              <label htmlFor="checkout-city">Ciudad</label>
+              <input
+                id="checkout-city"
+                type="text"
+                autoComplete="address-level2"
+                value={form.city}
+                onChange={(e) => set("city", onlyLetters(e.target.value))}
+              />
+              <div className="field-error">{errors.city || ""}</div>
+            </div>
 
-            <input
-              type="tel"
-              placeholder="Número de teléfono"
-              aria-label="Número de teléfono"
-              inputMode="numeric"
-              maxLength={10}
-              value={form.phone}
-              onChange={(e) => set("phone", onlyDigits(e.target.value, 10))}
-            />
-            <div className="field-error">{errors.phone || ""}</div>
+            <div className="shipping-field">
+              <label htmlFor="checkout-address">Dirección exacta</label>
+              <input
+                id="checkout-address"
+                type="text"
+                autoComplete="street-address"
+                value={form.address}
+                onChange={(e) => set("address", e.target.value)}
+              />
+              <div className="field-error">{errors.address || ""}</div>
+            </div>
 
-            {/* El texto del campo sigue a la ciudad que se está escribiendo: decir
+            <div className="shipping-field">
+              <label htmlFor="checkout-phone">Número de teléfono</label>
+              <input
+                id="checkout-phone"
+                type="tel"
+                autoComplete="tel"
+                inputMode="numeric"
+                maxLength={10}
+                value={form.phone}
+                onChange={(e) => set("phone", onlyDigits(e.target.value, 10))}
+              />
+              <div className="field-error">{errors.phone || ""}</div>
+            </div>
+
+            {/* El texto del rótulo sigue a la ciudad que se está escribiendo: decir
                 "(opcional)" mientras el envío va a Medellín sería mentir, y el error
-                aparecería recién al intentar enviar. */}
-            <input
-              type="text"
-              placeholder={
-                esEnvioLocal(form.city)
+                aparecería recién al intentar enviar. autoComplete="off": no hay un
+                token estándar para "número de documento colombiano", y dejar que el
+                navegador adivine autocompletaría con un dato que no es este. */}
+            <div className="shipping-field">
+              <label htmlFor="checkout-doc">
+                {esEnvioLocal(form.city)
                   ? "Número de documento (opcional)"
-                  : "Número de documento"
-              }
-              aria-label={
-                esEnvioLocal(form.city)
-                  ? "Número de documento (opcional)"
-                  : "Número de documento (obligatorio)"
-              }
-              inputMode="numeric"
-              maxLength={20}
-              value={form.doc}
-              onChange={(e) => set("doc", onlyDigits(e.target.value, 20))}
-            />
-            <div className="field-error">{errors.doc || ""}</div>
-
-            <div className="doc-hint">
-              Este dato solo es necesario para envíos fuera de Barranquilla.
+                  : "Número de documento"}
+              </label>
+              <input
+                id="checkout-doc"
+                type="text"
+                autoComplete="off"
+                inputMode="numeric"
+                maxLength={20}
+                placeholder="Este dato solo es necesario para envíos fuera de Barranquilla"
+                value={form.doc}
+                onChange={(e) => set("doc", onlyDigits(e.target.value, 20))}
+              />
+              <div className="field-error">{errors.doc || ""}</div>
             </div>
           </div>
         </div>

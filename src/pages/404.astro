@@ -1,0 +1,40 @@
+---
+// Astro usa este archivo automáticamente para cualquier URL que no coincide con
+// ninguna página — un enlace viejo, un typo, un bot probando rutas — y le pone status
+// 404 solo. Antes no existía: esas visitas veían el "404: Not found" pelado del
+// framework, sin logo, sin encabezado y sin ninguna forma de volver a la tienda.
+//
+// El caso de un producto que SÍ tenía página pero se despublicó es distinto —esa URL
+// coincide con /producto/[slug], así que Astro nunca cae acá— y se resuelve directo en
+// esa página con el mismo componente NotFound.
+import Header from "../components/astro/Header.astro";
+import Footer from "../components/astro/Footer.astro";
+import WhatsappWidget from "../components/react/WhatsappWidget.jsx";
+import SiteHead from "../components/astro/SiteHead.astro";
+import NotFound from "../components/astro/NotFound.astro";
+import { loadCatalog } from "../lib/catalog";
+import "../styles/site.css";
+
+const catalog = await loadCatalog();
+const url = new URL(Astro.url.pathname, Astro.site).href;
+const imagen = new URL("/assets/img/og-image.png", Astro.site).href;
+---
+
+<html lang="es-CO">
+  <head>
+    <SiteHead
+      title="Página no encontrada — Baqtime"
+      description="El enlace puede estar mal escrito o la página ya no existe."
+      url={url}
+      image={imagen}
+      imageAlt="Baqtime"
+    />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <Header categorias={catalog.CATS} destacados={catalog.products.slice(0, 6)} />
+    <NotFound />
+    <Footer />
+    <WhatsappWidget client:load />
+  </body>
+</html>

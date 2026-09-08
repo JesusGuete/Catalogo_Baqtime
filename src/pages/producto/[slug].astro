@@ -14,6 +14,7 @@ import Footer from "../../components/astro/Footer.astro";
 import WhatsappWidget from "../../components/react/WhatsappWidget.jsx";
 import SiteHead from "../../components/astro/SiteHead.astro";
 import ShopApp from "../../components/react/ShopApp.jsx";
+import NotFound from "../../components/astro/NotFound.astro";
 import { loadCatalog } from "../../lib/catalog";
 import { productoPorSlug, rutaProducto } from "../../lib/product-url.ts";
 import "../../styles/site.css";
@@ -22,16 +23,21 @@ const { slug } = Astro.params;
 const catalog = await loadCatalog();
 const producto = slug ? productoPorSlug(catalog.products, slug) : undefined;
 
-// Un producto que se despublicó tiene que devolver 404, no una página vacía: si
-// respondiera 200 sin contenido, Google seguiría mostrando la URL en los resultados.
-if (!producto) {
-  return new Response(null, { status: 404, statusText: "Producto no encontrado" });
-}
-
 Astro.response.headers.set(
   "Cache-Control",
   "public, s-maxage=60, stale-while-revalidate=300"
 );
+
+// Un producto que se despublicó tiene que devolver 404, no una página vacía: si
+// respondiera 200 sin contenido, Google seguiría mostrando la URL en los resultados.
+// Antes esto era `return new Response(null, {status:404})`: cerraba la petición ahí
+// mismo con un cuerpo vacío, sin Header, sin Footer, sin forma de volver a la tienda.
+// Ahora se pone el status y se sigue renderizando la página con NotFound —mismo
+// componente que usa la 404 genérica de cualquier URL rota (src/pages/404.astro)—
+// dentro del mismo Header/Footer de siempre.
+if (!producto) {
+  Astro.response.status = 404;
+}
 
 // El catálogo entero viaja serializado en el atributo `props` de la isla para poder
 // hidratarla. De todo eso, la única galería que esta página llega a leer es la del
@@ -41,32 +47,41 @@ Astro.response.headers.set(
 // El resto de los productos sí tienen que seguir estando: el carrito resuelve cada
 // línea contra esta lista y puede contener cualquier producto, no solo los de esta
 // página. Pero de ellos alcanza con `img`, que ya es la primera foto.
+// Sin condicionar a `if (producto)`: cuando no hay producto (404), `producto?.id` nunca
+// coincide con nada y el mapa deja el catálogo intacto salvo por vaciar TODAS las
+// galerías — inofensivo, porque en ese caso nunca se usa. Condicionarlo con `producto &&`
+// le daba a esta variable el tipo `Catalogo | undefined`, y TypeScript no lo reconciliaba
+// con el `producto ? ... : ...` de más abajo que decide si ShopApp llega a montarse.
 const catalogoLigero = {
   ...catalog,
   products: catalog.products.map((p) =>
-    p.id === producto.id ? p : { ...p, gallery: [] }
+    p.id === producto?.id ? p : { ...p, gallery: [] }
   ),
 };
 
-const categoria = catalog.categories.find((c) => c.key === producto.category);
-const url = new URL(rutaProducto(producto), Astro.site).href;
+const categoria = producto && catalog.categories.find((c) => c.key === producto.category);
+const url = producto
+  ? new URL(rutaProducto(producto), Astro.site).href
+  : new URL(Astro.url.pathname, Astro.site).href;
 // Un producto sin fotos cae en la tarjeta de marca, no en el logo suelto: el logo mide
 // 998x297 y LinkedIn lo descarta por chico.
 const imagen =
-  producto.gallery[0] ?? new URL("/assets/img/og-image.png", Astro.site).href;
+  producto?.gallery[0] ?? new URL("/assets/img/og-image.png", Astro.site).href;
 
-const detalle = [producto.variant ?? producto.color, categoria?.label]
+const detalle = producto && [producto.variant ?? producto.color, categoria?.label]
   .filter(Boolean)
   .join(" · ");
-const titulo = `${producto.name} — Baqtime`;
-const descripcion = producto.personalizable
-  ? `${producto.name} (${detalle}). Personalizalo con tus iniciales bordadas. Hecho en Barranquilla y Cartagena, pedidos por WhatsApp.`
+const titulo = producto ? `${producto.name} — Baqtime` : "Producto no encontrado — Baqtime";
+const descripcion = !producto
+  ? "Es posible que este producto ya no esté disponible o que el enlace esté mal escrito."
+  : producto.personalizable
+  ? `${producto.name} (${detalle}). Personalízalo con tus iniciales bordadas. Hecho en Barranquilla y Cartagena, pedidos por WhatsApp.`
   : `${producto.name} (${detalle}). Hecho en Barranquilla y Cartagena, pedidos por WhatsApp.`;
 
 // schema.org/Product. `priceCurrency` es COP porque los precios de la base son pesos
 // colombianos enteros. `availability` sale de que el producto esté publicado: si no
-// estuviera activo, esta página ya habría devuelto 404 más arriba.
-const datosEstructurados = {
+// estuviera activo, esta página ya habría entrado al bloque `!producto` de arriba.
+const datosEstructurados = producto && {
   "@context": "https://schema.org",
   "@type": "Product",
   name: producto.name,
@@ -95,21 +110,32 @@ const datosEstructurados = {
       description={descripcion}
       url={url}
       image={imagen}
-      imageAlt={`${producto.name} — Baqtime`}
-      type="product"
+      imageAlt={producto ? `${producto.name} — Baqtime` : "Baqtime"}
+      type={producto ? "product" : "website"}
     />
-    <meta property="product:price:amount" content={String(producto.price)} />
-    <meta property="product:price:currency" content="COP" />
-
-    <script
-      is:inline
-      type="application/ld+json"
-      set:html={JSON.stringify(datosEstructurados)}
-    />
+    {!producto && <meta name="robots" content="noindex" />}
+    {producto && (
+      <>
+        <meta property="product:price:amount" content={String(producto.price)} />
+        <meta property="product:price:currency" content="COP" />
+        <script
+          is:inline
+          type="application/ld+json"
+          set:html={JSON.stringify(datosEstructurados)}
+        />
+      </>
+    )}
   </head>
   <body>
     <Header categorias={catalog.CATS} destacados={catalog.products.slice(0, 6)} />
-    <ShopApp client:load catalog={catalogoLigero} initialProductId={producto.id} />
+    {producto ? (
+      <ShopApp client:load catalog={catalogoLigero} initialProductId={producto.id} />
+    ) : (
+      <NotFound
+        titulo="Producto no encontrado"
+        mensaje="Es posible que este producto ya no esté disponible o que el enlace esté mal escrito."
+      />
+    )}
     <Footer />
     <WhatsappWidget client:load />
   </body>

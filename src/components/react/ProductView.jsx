@@ -397,6 +397,18 @@ export default function ProductView({
               </div>
             )}
 
+            {/* El botón de comprar va ANTES de "También te puede interesar", no después:
+                con el carrusel en medio, el cliente que ya decidió este producto tenía que
+                pasar por una invitación a mirar otro antes de encontrar cómo pagar el que
+                tiene en pantalla. */}
+            <button className="whatsapp-btn" onClick={handleAddToCart}>
+              Agregar al carrito
+            </button>
+            <button className="finalizar-btn" onClick={handleFinalizarCompra}>
+              Finalizar compra
+            </button>
+            <div className={"req-note" + (addedMsg ? " req-note--ok" : "")}>{addedMsg}</div>
+
             {related.length > 0 && (
               <div className="related-products">
                 <h3 className="field-label">También te puede interesar</h3>
@@ -430,14 +442,6 @@ export default function ProductView({
                 </div>
               </div>
             )}
-
-            <button className="whatsapp-btn" onClick={handleAddToCart}>
-              Agregar al carrito
-            </button>
-            <button className="finalizar-btn" onClick={handleFinalizarCompra}>
-              Finalizar compra
-            </button>
-            <div className="req-note">{addedMsg}</div>
           </div>
         </div>
       </div>

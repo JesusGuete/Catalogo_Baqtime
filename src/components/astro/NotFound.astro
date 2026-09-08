@@ -1,0 +1,20 @@
+---
+// Contenido de "no encontrado", compartido por dos casos: cualquier URL que no
+// coincide con ninguna página (src/pages/404.astro) y un producto que existía pero
+// se despublicó (producto/[slug].astro) — antes ese segundo caso devolvía una
+// respuesta 404 completamente vacía, sin Header, sin Footer, sin nada, y era un
+// callejón sin salida para quien llegaba desde un enlace viejo de WhatsApp o de Google.
+interface Props {
+  titulo?: string;
+  mensaje?: string;
+}
+const {
+  titulo = "Página no encontrada",
+  mensaje = "El enlace puede estar mal escrito o la página ya no existe.",
+} = Astro.props;
+---
+<main class="not-found">
+  <h1>{titulo}</h1>
+  <p>{mensaje}</p>
+  <a href="/catalogo" class="btn btn-ghost">Ver catálogo</a>
+</main>

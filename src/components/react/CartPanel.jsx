@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { fmt, PRICE_SHIP, precioLinea, subtotalCarrito } from "../../lib/pricing.js";
 import { removeFromCart } from "../../lib/cart-store.js";
+import { IconoBolsa } from "./Iconos.jsx";
 
 // Detalle legible de una línea (color/variante + iniciales). Portado de lineDetail().
 export function lineDetail(item) {
@@ -32,7 +34,7 @@ export function CartLine({ item, products, categories = [] }) {
           <p className="cart-line-price mono">{fmt(total)}</p>
         ) : (
           <p className="cart-line-price mono cart-line-agotado">
-            Ya no está disponible · quitalo para continuar
+            Ya no está disponible · quítalo para continuar
           </p>
         )}
       </div>
@@ -72,30 +74,55 @@ export function CartTotals({ items, products = [], categories = [] }) {
 }
 
 // Panel lateral: vistazo rápido (lista + totales + "Finalizar compra").
+//
+// Mismo patrón que el panel del menú (MenuBadge.jsx): un velo de fondo que bloquea el
+// scroll y cierra al Escape o al tocarlo, con el panel flotando encima. Antes el
+// carrito no tenía nada de eso — el catálogo se seguía desplazando por detrás y la
+// única salida era la ✕, sin Escape ni clic afuera.
 export default function CartPanel({ items, products, categories = [], onClose, onCheckout }) {
+  useEffect(() => {
+    const previo = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function alTeclear(e) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", alTeclear);
+    return () => {
+      document.body.style.overflow = previo;
+      window.removeEventListener("keydown", alTeclear);
+    };
+  }, [onClose]);
+
   return (
-    <div className="cart-panel">
-      <div className="cart-panel-head">
-        <h3>Tu carrito</h3>
-        <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar carrito">
-          ✕
-        </button>
-      </div>
-      <div className="cart-items">
-        {items.length === 0 ? (
-          <p className="cart-empty">Tu carrito está vacío.</p>
-        ) : (
-          items.map((item) => (
-            <CartLine key={item.id} item={item} products={products} categories={categories} />
-          ))
+    <div
+      className="cart-fondo"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="cart-panel" role="dialog" aria-modal="true" aria-label="Tu carrito">
+        <div className="cart-panel-head">
+          <h3>Tu carrito</h3>
+          <button type="button" className="cart-panel-close" onClick={onClose} aria-label="Cerrar carrito">
+            <IconoBolsa size={18} />
+          </button>
+        </div>
+        <div className="cart-items">
+          {items.length === 0 ? (
+            <p className="cart-empty">Tu carrito está vacío.</p>
+          ) : (
+            items.map((item) => (
+              <CartLine key={item.id} item={item} products={products} categories={categories} />
+            ))
+          )}
+        </div>
+        <CartTotals items={items} products={products} categories={categories} />
+        {items.length > 0 && (
+          <button className="whatsapp-btn" onClick={onCheckout}>
+            Finalizar compra
+          </button>
         )}
       </div>
-      <CartTotals items={items} products={products} categories={categories} />
-      {items.length > 0 && (
-        <button className="whatsapp-btn" onClick={onCheckout}>
-          Finalizar compra
-        </button>
-      )}
     </div>
   );
 }
