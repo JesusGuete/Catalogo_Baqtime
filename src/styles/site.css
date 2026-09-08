@@ -580,8 +580,11 @@
   }
 
   /* ===== PRODUCTOS RELACIONADOS (dentro del modal) — carrusel, mismo formato que
-     "Nuestras colecciones": scroll nativo con scroll-snap, no un grid apretado ===== */
-  .related-products{ margin-bottom:22px; }
+     "Nuestras colecciones": scroll nativo con scroll-snap, no un grid apretado =====
+     margin-top: ahora va después de los botones de comprar y no antes, así que
+     necesita su propio aire arriba — antes lo separaba el margin-bottom de lo que
+     venía justo encima (.advance-note o .price-breakdown). */
+  .related-products{ margin-top:26px; margin-bottom:22px; }
   .related-products .field-label{
     display:block; font-size:11px; color:var(--ink-soft); margin-bottom:10px;
     font-family:'JetBrains Mono', monospace; text-transform:uppercase; letter-spacing:.03em;
