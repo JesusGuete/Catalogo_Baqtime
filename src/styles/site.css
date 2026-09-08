@@ -436,6 +436,18 @@
     display:flex; align-items:center; justify-content:center;
     cursor:pointer; font-size:16px;
   }
+  /* Mismo círculo que .modal-close, pero SIN position:fixed. .cart-panel-head ya es un
+     flex row pensado para que el botón viva ahí adentro, junto a "Tu carrito" — con
+     position:fixed el botón se sacaba de ese flujo y flotaba por coordenadas fijas del
+     viewport, cayendo encima de la primera línea del carrito y su propia "×" para
+     quitar el producto. */
+  .cart-panel-close{
+    width:34px; height:34px; border-radius:50%; flex-shrink:0;
+    background:var(--white-card); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:16px; color:var(--ink);
+  }
+  .cart-panel-close:hover{ background:var(--panel); }
   .modal-gallery{
     background:var(--panel);
     padding:26px;

@@ -102,7 +102,7 @@ export default function CartPanel({ items, products, categories = [], onClose, o
       <div className="cart-panel" role="dialog" aria-modal="true" aria-label="Tu carrito">
         <div className="cart-panel-head">
           <h3>Tu carrito</h3>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar carrito">
+          <button type="button" className="cart-panel-close" onClick={onClose} aria-label="Cerrar carrito">
             ✕
           </button>
         </div>
