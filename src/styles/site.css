@@ -100,12 +100,18 @@
     min-width:16px; height:16px; border-radius:50%;
     display:flex; align-items:center; justify-content:center; padding:0 2px;
   }
+  /* El velo: mismo patrón que .menu-fondo (MenuBadge.jsx) — cubre la pantalla por
+     detrás del panel, y tocarlo cierra. Antes el carrito no tenía nada detrás: el
+     catálogo seguía desplazándose y no había forma de cerrar tocando afuera. */
+  .cart-fondo{
+    position:fixed; inset:0; z-index:110;
+    background:rgba(31,42,36,0.42);
+  }
   .cart-panel{
-    position:fixed; top:0; right:0; bottom:0; width:100%; max-width:380px;
-    background:var(--cream); z-index:110; box-shadow:-8px 0 24px rgba(38,34,29,0.15);
+    position:absolute; top:0; right:0; bottom:0; width:100%; max-width:380px;
+    background:var(--cream); box-shadow:-8px 0 24px rgba(38,34,29,0.15);
     display:flex; flex-direction:column; padding:20px; overflow-y:auto;
   }
-  .cart-panel.hidden{ display:none; }
   .cart-panel-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
   .cart-panel-head h3{ font-family:'Unna',serif; font-size:20px; margin:0; }
   .cart-items{ flex:1; display:flex; flex-direction:column; gap:12px; }
@@ -794,7 +800,7 @@
   }
 
   /* ===== BOTÓN FLOTANTE DE WHATSAPP =====
-     z-index MENOR que .modal-overlay (40) y .cart-panel (110) a propósito: así el botón
+     z-index MENOR que .modal-overlay (40) y .cart-fondo (110) a propósito: así el botón
      queda detrás en cuanto se abre una ficha, el carrito o el checkout —todos usan una de
      esas dos clases— sin tener que avisarle nada desde React. Antes, con 120, flotaba por
      encima de "Confirmar pedido" y "Finalizar compra", justo donde cae el pulgar. */
