@@ -107,19 +107,21 @@ export default function SearchBadge({ destacados = [] }) {
 
           <div className="buscador-sugerencias">
             <span className="buscador-sugerencias-titulo mono">BÚSQUEDAS FRECUENTES</span>
-            {sugerencias.map((s) => (
-              <button
-                key={s}
-                type="button"
-                className="buscador-sugerencia"
-                onClick={() => {
-                  setTexto(s);
-                  buscar(s);
-                }}
-              >
-                {s}
-              </button>
-            ))}
+            <div className="buscador-sugerencias-chips">
+              {sugerencias.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="buscador-sugerencia"
+                  onClick={() => {
+                    setTexto(s);
+                    buscar(s);
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
 
           {visibles.length > 0 && (
