@@ -108,7 +108,7 @@ export default function Checkout({ items, products, categories = [], onClose }) 
         <CartTotals items={items} products={products} categories={categories} />
 
         {/* Encabeza un grupo de campos, no describe uno solo. Cada input ya lleva su
-            propio aria-label. */}
+            propio <label>. */}
         <div
           className="field cart-shipping-field"
           role="group"
@@ -116,37 +116,46 @@ export default function Checkout({ items, products, categories = [], onClose }) 
         >
           <span className="field-label" id="checkout-envio">Datos de envío</span>
           <div className="shipping-fields">
+            {/* Rótulos visibles y no solo placeholder: antes el nombre del campo
+                desaparecía apenas se escribía, así que revisar los datos antes de
+                confirmar era leer cinco valores sueltos sin saber cuál era cuál.
+                autoComplete: sin esto el único formulario que cierra la venta no
+                podía autocompletarse con los datos guardados del navegador. */}
+            <label htmlFor="checkout-name">Nombre completo</label>
             <input
+              id="checkout-name"
               type="text"
-              placeholder="Nombre completo"
-              aria-label="Nombre completo"
+              autoComplete="name"
               value={form.name}
               onChange={(e) => set("name", onlyLetters(e.target.value))}
             />
             <div className="field-error">{errors.name || ""}</div>
 
+            <label htmlFor="checkout-city">Ciudad</label>
             <input
+              id="checkout-city"
               type="text"
-              placeholder="Ciudad"
-              aria-label="Ciudad"
+              autoComplete="address-level2"
               value={form.city}
               onChange={(e) => set("city", onlyLetters(e.target.value))}
             />
             <div className="field-error">{errors.city || ""}</div>
 
+            <label htmlFor="checkout-address">Dirección exacta</label>
             <input
+              id="checkout-address"
               type="text"
-              placeholder="Dirección exacta"
-              aria-label="Dirección exacta"
+              autoComplete="street-address"
               value={form.address}
               onChange={(e) => set("address", e.target.value)}
             />
             <div className="field-error">{errors.address || ""}</div>
 
+            <label htmlFor="checkout-phone">Número de teléfono</label>
             <input
+              id="checkout-phone"
               type="tel"
-              placeholder="Número de teléfono"
-              aria-label="Número de teléfono"
+              autoComplete="tel"
               inputMode="numeric"
               maxLength={10}
               value={form.phone}
@@ -154,21 +163,20 @@ export default function Checkout({ items, products, categories = [], onClose }) 
             />
             <div className="field-error">{errors.phone || ""}</div>
 
-            {/* El texto del campo sigue a la ciudad que se está escribiendo: decir
+            {/* El texto del rótulo sigue a la ciudad que se está escribiendo: decir
                 "(opcional)" mientras el envío va a Medellín sería mentir, y el error
-                aparecería recién al intentar enviar. */}
+                aparecería recién al intentar enviar. autoComplete="off": no hay un
+                token estándar para "número de documento colombiano", y dejar que el
+                navegador adivine autocompletaría con un dato que no es este. */}
+            <label htmlFor="checkout-doc">
+              {esEnvioLocal(form.city)
+                ? "Número de documento (opcional)"
+                : "Número de documento"}
+            </label>
             <input
+              id="checkout-doc"
               type="text"
-              placeholder={
-                esEnvioLocal(form.city)
-                  ? "Número de documento (opcional)"
-                  : "Número de documento"
-              }
-              aria-label={
-                esEnvioLocal(form.city)
-                  ? "Número de documento (opcional)"
-                  : "Número de documento (obligatorio)"
-              }
+              autoComplete="off"
               inputMode="numeric"
               maxLength={20}
               value={form.doc}
