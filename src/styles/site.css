@@ -625,17 +625,20 @@
   .related-arrow:hover:not(:disabled){ background:var(--ink); color:var(--cream); border-color:var(--ink); }
   .related-arrow:disabled{ opacity:.35; cursor:default; }
 
-  .shipping-fields{ display:grid; gap:12px; margin-bottom:6px; }
+  /* Espacio GRANDE entre un campo y el siguiente (cada .shipping-field es un grupo
+     rótulo+input+error). El espacio CHICO entre el rótulo y su propio input va en
+     .shipping-field, más abajo — así se nota la diferencia entre "esto va junto" y
+     "esto es lo próximo", en vez de un mismo aire parejo para las dos cosas. */
+  .shipping-fields{ display:flex; flex-direction:column; gap:16px; margin-bottom:6px; }
   .shipping-fields input{
     padding:11px 13px; border:1px solid var(--line); border-radius:2px;
     font-family:'Work Sans',sans-serif; font-size:14px; background:#fff;
   }
   /* .field label y .field-error traen su propio margen porque en el resto del sitio
-     aparecen solos (p. ej. "INICIALES" en ProductView), fuera de un grid con su propio
-     gap. Acá adentro esos márgenes se SUMABAN al gap:12px del grid en vez de
-     reemplazarlo: cada campo terminaba con ~44px de aire de más entre el input y el
-     siguiente rótulo. Se anulan para que el gap del grid sea la única fuente de
-     espaciado. */
+     aparecen solos (p. ej. "INICIALES" en ProductView), fuera de un grupo con su propio
+     gap. Acá adentro esos márgenes se SUMABAN al gap de .shipping-field en vez de
+     reemplazarlo. Se anulan para que el gap sea la única fuente de espaciado. */
+  .shipping-field{ display:flex; flex-direction:column; gap:6px; }
   .shipping-fields label{ margin-bottom:0; }
   .shipping-fields .field-error{ margin-top:0; margin-bottom:0; }
 
