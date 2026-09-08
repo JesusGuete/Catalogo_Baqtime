@@ -34,7 +34,7 @@ export function CartLine({ item, products, categories = [] }) {
           <p className="cart-line-price mono">{fmt(total)}</p>
         ) : (
           <p className="cart-line-price mono cart-line-agotado">
-            Ya no está disponible · quitalo para continuar
+            Ya no está disponible · quítalo para continuar
           </p>
         )}
       </div>

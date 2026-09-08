@@ -701,6 +701,16 @@
     text-align:center; padding:40px 20px 60px; color:var(--ink-soft);
     font-size:12px; font-family:'JetBrains Mono',monospace;
   }
+  footer a{ color:inherit; text-decoration:underline; text-underline-offset:2px; }
+  footer a:hover{ color:var(--mocha); }
+
+  /* ===== PÁGINA NO ENCONTRADA ===== */
+  .not-found{
+    max-width:520px; margin:0 auto; text-align:center;
+    padding:110px 20px 100px;
+  }
+  .not-found h1{ font-size:30px; margin:0 0 14px; }
+  .not-found p{ font-size:14px; color:var(--ink-soft); line-height:1.6; margin:0 0 28px; }
 
   /* ===== AJUSTES MÓVIL ===== */
   @media (max-width:600px){
