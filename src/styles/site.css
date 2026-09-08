@@ -756,24 +756,19 @@
   .footer-col a:hover{ color:var(--mocha); text-decoration:underline; text-underline-offset:2px; }
   .footer-fine{ font-size:14px; line-height:1.6; color:var(--ink); margin:0; }
 
-  /* En escritorio el acordeón no tiene razón de ser (las columnas ya caben una al
-     lado de la otra): el <summary> se ve exactamente como el <h4> que reemplazó
-     — sin flecha, sin cursor de "clic", siempre con su contenido visible. */
+  /* El HTML ya trae `open` de fábrica (Footer.astro) y un script lo quita en
+     celular antes del primer pintado — así el contenido siempre está
+     realmente abierto según el navegador, y no hay que pelear por CSS contra
+     su display:none nativo del estado cerrado (no es fiable entre navegadores
+     forzarlo con display:contents !important, lo intentamos y falló en Chrome
+     de verdad aunque funcionaba en el navegador de pruebas). */
   .footer-acc{ margin:0; }
   .footer-acc summary{
-    cursor:default; list-style:none; margin:0 0 18px;
+    cursor:default; list-style:none; margin:0 0 18px; pointer-events:none;
   }
   .footer-acc summary::-webkit-details-marker{ display:none; }
+  .footer-acc summary::marker{ content:''; }
   .footer-acc[open] summary{ margin-bottom:18px; }
-  /* IMPORTANTE: cualquier regla de autor sobre .footer-acc-body le gana al
-     display:none que el navegador aplica por defecto cuando el <details> está
-     cerrado — sin importar la especificidad, un estilo de autor siempre vence a
-     un estilo de user-agent normal. Por eso esta regla vive SOLO dentro del
-     media de escritorio: si quedara suelta aquí afuera, forzaría el contenido
-     visible también en celular y el acordeón nunca cerraría. */
-  @media (min-width:821px){
-    .footer-acc-body{ display:contents !important; }
-  }
 
   .footer-bottom{
     text-align:center; padding:20px; border-top:1px solid var(--line);
@@ -794,7 +789,7 @@
     .footer-col{ border-top:1px solid var(--line); }
     .footer-col:last-child{ border-bottom:1px solid var(--line); }
     .footer-acc summary{
-      cursor:pointer; margin:0; padding:16px 0;
+      cursor:pointer; pointer-events:auto; margin:0; padding:16px 0;
       display:flex; align-items:center; justify-content:space-between;
     }
     .footer-acc summary::after{
