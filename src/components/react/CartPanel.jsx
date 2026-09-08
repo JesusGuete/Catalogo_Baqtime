@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { fmt, PRICE_SHIP, precioLinea, subtotalCarrito } from "../../lib/pricing.js";
 import { removeFromCart } from "../../lib/cart-store.js";
+import { IconoBolsa } from "./Iconos.jsx";
 
 // Detalle legible de una línea (color/variante + iniciales). Portado de lineDetail().
 export function lineDetail(item) {
@@ -103,7 +104,7 @@ export default function CartPanel({ items, products, categories = [], onClose, o
         <div className="cart-panel-head">
           <h3>Tu carrito</h3>
           <button type="button" className="cart-panel-close" onClick={onClose} aria-label="Cerrar carrito">
-            ✕
+            <IconoBolsa size={18} />
           </button>
         </div>
         <div className="cart-items">
