@@ -43,6 +43,23 @@ export default function ProductView({
   const [fotoActiva, setFotoActiva] = useState(0);
   const addedTimer = useRef(null);
   const slidesRef = useRef(null);
+  const relatedRef = useRef(null);
+
+  // El viewport oculta su scrollbar (site.css) para que se vea como el carrusel de
+  // "Nuestras colecciones", así que sin estas flechas no había ninguna forma visible
+  // de moverlo con mouse — solo funcionaba a golpe de trackpad o arrastre táctil.
+  function scrollRelated(dir) {
+    const el = relatedRef.current;
+    if (!el) return;
+    // Un solo "paso" de 150px+gap se sentía como un tirón corto y brusco por el
+    // scroll-snap mandatory (site.css) peleando contra la animación. Mover casi el
+    // ancho completo del viewport (redondeado a la tarjeta más cercana) da un
+    // desplazamiento visible de una sola vez, que es lo que se siente fluido.
+    const card = el.querySelector(".card");
+    const cardStep = card ? card.getBoundingClientRect().width + 12 : 162;
+    const cards = Math.max(1, Math.floor(el.clientWidth / cardStep));
+    el.scrollBy({ left: dir * cardStep * cards, behavior: "smooth" });
+  }
 
   // Al cambiar de producto (ej. clic en un color o en un relacionado) se reinicia
   // la configuración, igual que hacía openModal().
@@ -413,7 +430,15 @@ export default function ProductView({
               <div className="related-products">
                 <h3 className="field-label">También te puede interesar</h3>
                 <div className="related-carousel">
-                  <div className="related-viewport">
+                  <button
+                    type="button"
+                    className="related-arrow"
+                    aria-label="Ver anteriores"
+                    onClick={() => scrollRelated(-1)}
+                  >
+                    ‹
+                  </button>
+                  <div className="related-viewport" ref={relatedRef}>
                     <div className="related-grid">
                       {related.map((p) => (
                         // Mismo criterio que las tarjetas del catálogo: un enlace de
@@ -439,6 +464,14 @@ export default function ProductView({
                       ))}
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    className="related-arrow"
+                    aria-label="Ver más"
+                    onClick={() => scrollRelated(1)}
+                  >
+                    ›
+                  </button>
                 </div>
               </div>
             )}
