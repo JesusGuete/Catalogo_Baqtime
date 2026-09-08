@@ -630,7 +630,14 @@
     padding:11px 13px; border:1px solid var(--line); border-radius:2px;
     font-family:'Work Sans',sans-serif; font-size:14px; background:#fff;
   }
-  .doc-hint{ font-size:11px; color:var(--ink-soft); margin-top:-6px; margin-bottom:6px; }
+  /* .field label y .field-error traen su propio margen porque en el resto del sitio
+     aparecen solos (p. ej. "INICIALES" en ProductView), fuera de un grid con su propio
+     gap. Acá adentro esos márgenes se SUMABAN al gap:12px del grid en vez de
+     reemplazarlo: cada campo terminaba con ~44px de aire de más entre el input y el
+     siguiente rótulo. Se anulan para que el gap del grid sea la única fuente de
+     espaciado. */
+  .shipping-fields label{ margin-bottom:0; }
+  .shipping-fields .field-error{ margin-top:0; margin-bottom:0; }
 
   .whatsapp-btn{
     margin-top:20px;

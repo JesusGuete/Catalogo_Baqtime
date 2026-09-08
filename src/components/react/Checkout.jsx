@@ -179,14 +179,11 @@ export default function Checkout({ items, products, categories = [], onClose }) 
               autoComplete="off"
               inputMode="numeric"
               maxLength={20}
+              placeholder="Este dato solo es necesario para envíos fuera de Barranquilla"
               value={form.doc}
               onChange={(e) => set("doc", onlyDigits(e.target.value, 20))}
             />
             <div className="field-error">{errors.doc || ""}</div>
-
-            <div className="doc-hint">
-              Este dato solo es necesario para envíos fuera de Barranquilla.
-            </div>
           </div>
         </div>
 
