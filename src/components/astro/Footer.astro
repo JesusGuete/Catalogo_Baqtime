@@ -86,21 +86,33 @@ const CATEGORIAS_FOOTER = [
     </div>
 
     <div class="footer-col">
-      <h4>Categorías</h4>
-      {CATEGORIAS_FOOTER.map((c) => (
-        <a href={`/catalogo?categoria=${c.key}`}>{c.label}</a>
-      ))}
+      {/* <details> nativo: en celular arranca cerrado y se toca para desplegar —
+          sin esto el footer era un muro de scroll larguísimo en el teléfono. En
+          escritorio site.css lo fuerza siempre abierto y el <summary> se ve
+          idéntico al <h4> que tenía antes (misma fuente, tamaño y color). */}
+      <details class="footer-acc">
+        <summary>Categorías</summary>
+        <div class="footer-acc-body">
+          {CATEGORIAS_FOOTER.map((c) => (
+            <a href={`/catalogo?categoria=${c.key}`}>{c.label}</a>
+          ))}
+        </div>
+      </details>
     </div>
 
     <div class="footer-col">
-      <h4>Ayuda y contacto</h4>
-      <a href="/catalogo">Ver catálogo</a>
-      <a href={whatsappHref} target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
-      <p class="footer-fine">
-        Horario de atención: lunes a domingo
-        <br />
-        10:00 a.m. a 10:00 p.m.
-      </p>
+      <details class="footer-acc">
+        <summary>Ayuda y contacto</summary>
+        <div class="footer-acc-body">
+          <a href="/catalogo">Ver catálogo</a>
+          <a href={whatsappHref} target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
+          <p class="footer-fine">
+            Horario de atención: lunes a domingo
+            <br />
+            10:00 a.m. a 10:00 p.m.
+          </p>
+        </div>
+      </details>
     </div>
   </div>
 
