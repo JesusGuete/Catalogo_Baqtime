@@ -437,7 +437,7 @@ export default function ProductView({
             <button className="finalizar-btn" onClick={handleFinalizarCompra}>
               Finalizar compra
             </button>
-            <div className="req-note">{addedMsg}</div>
+            <div className={"req-note" + (addedMsg ? " req-note--ok" : "")}>{addedMsg}</div>
           </div>
         </div>
       </div>
