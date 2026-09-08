@@ -86,11 +86,12 @@ const CATEGORIAS_FOOTER = [
     </div>
 
     <div class="footer-col">
-      {/* <details> nativo: en celular arranca cerrado y se toca para desplegar —
-          sin esto el footer era un muro de scroll larguísimo en el teléfono. En
-          escritorio site.css lo fuerza siempre abierto y el <summary> se ve
-          idéntico al <h4> que tenía antes (misma fuente, tamaño y color). */}
-      <details class="footer-acc">
+      {/* `open` va siempre en el HTML — así se ve abierto de entrada en CUALQUIER
+          navegador sin depender de que el CSS le gane al display:none nativo del
+          <details> cerrado (probamos forzarlo por CSS y no es fiable entre
+          navegadores). El script de abajo es lo que lo cierra en celular, antes
+          de pintar, para que ahí sí arranque como acordeón. */}
+      <details class="footer-acc" open>
         <summary>Categorías</summary>
         <div class="footer-acc-body">
           {CATEGORIAS_FOOTER.map((c) => (
@@ -101,7 +102,7 @@ const CATEGORIAS_FOOTER = [
     </div>
 
     <div class="footer-col">
-      <details class="footer-acc">
+      <details class="footer-acc" open>
         <summary>Ayuda y contacto</summary>
         <div class="footer-acc-body">
           <a href="/catalogo">Ver catálogo</a>
@@ -115,6 +116,15 @@ const CATEGORIAS_FOOTER = [
       </details>
     </div>
   </div>
+
+  <script is:inline>
+    // Corre sincrónico, antes de que el usuario llegue a ver el footer (está
+    // más abajo del alto de cualquier pantalla): en celular arranca cerrado,
+    // en escritorio se queda con el `open` que ya trae el HTML.
+    document.querySelectorAll(".footer-acc").forEach(function (d) {
+      if (window.innerWidth <= 820) d.removeAttribute("open");
+    });
+  </script>
 
   <div class="footer-bottom">
     © Baqtime — Catálogo digital · Pedidos por
