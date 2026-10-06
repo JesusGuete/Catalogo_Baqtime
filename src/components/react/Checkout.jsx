@@ -6,9 +6,11 @@ import {
   onlyDigits,
   onlyLetters,
   esEnvioLocal,
+  filtrarCorreo,
+  sugerirCorreo,
 } from "../../lib/shipping-validation.js";
 
-const EMPTY = { name: "", city: "", address: "", phone: "", doc: "" };
+const EMPTY = { name: "", city: "", address: "", phone: "", email: "", doc: "" };
 
 // Página completa de "Finalizar compra" — portada desde #checkoutOverlay en
 // index.html + sendCartWhatsapp() en cart.js. Mismo markup/clases, mismos textos
@@ -36,6 +38,8 @@ export default function Checkout({ items, products, categories = [], onClose }) 
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
   }
+
+  const sugerencia = sugerirCorreo(form.email);
 
   // El pedido se GUARDA antes de que el navegador se vaya a ningún lado.
   //
@@ -173,6 +177,38 @@ export default function Checkout({ items, products, categories = [], onClose }) 
                 onChange={(e) => set("phone", onlyDigits(e.target.value, 10))}
               />
               <div className="field-error">{errors.phone || ""}</div>
+            </div>
+
+            {/* Junto al teléfono: los dos datos de contacto quedan juntos y el documento
+                —que cambia de obligatorio a opcional según la ciudad— sigue último.
+                La sugerencia corrige errores de dedo en dominios comunes (gmial.com); es
+                la causa número uno de "nunca me llegó el correo". */}
+            <div className="shipping-field">
+              <label htmlFor="checkout-email">Correo electrónico</label>
+              <input
+                id="checkout-email"
+                type="email"
+                autoComplete="email"
+                inputMode="email"
+                autoCapitalize="none"
+                spellCheck={false}
+                aria-describedby="checkout-email-ayuda"
+                value={form.email}
+                onChange={(e) => set("email", filtrarCorreo(e.target.value))}
+              />
+              {sugerencia && (
+                <button
+                  type="button"
+                  className="field-sug"
+                  onClick={() => set("email", sugerencia)}
+                >
+                  ¿Quisiste decir <u>{sugerencia}</u>?
+                </button>
+              )}
+              <div className="field-error">{errors.email || ""}</div>
+              <p className="field-hint" id="checkout-email-ayuda">
+                Te enviaremos aquí el resumen de tu pedido.
+              </p>
             </div>
 
             {/* El texto del rótulo sigue a la ciudad que se está escribiendo: decir

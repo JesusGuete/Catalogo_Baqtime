@@ -5,13 +5,16 @@
 // no toca estas tablas.
 //
 // LO QUE ESTE ARCHIVO NO PUEDE HACER, Y NO ES UNA CONVENCIÓN: la base solo concede UPDATE
-// sobre cuatro columnas (carrier, tracking_number, estimated_date, payment_note). Cambiar
+// sobre cuatro columnas (carrier, tracking_number, estimated_date, payment_note), más el
+// correo del cliente desde 019_correo_cliente.sql. Cambiar
 // `status`, `paid_at` o `shipped_at` con un PATCH devuelve 42501 aunque quien lo intente
 // sea admin. Esos tres se mueven exclusivamente por las funciones de abajo, que escriben
 // la fila del historial en la misma transacción — así la línea de tiempo que ve el cliente
 // no puede contradecir el estado real. Ver 010_orders.sql.
 
 import { rest, rpc } from "../supabase/http";
+import { getAccessToken } from "../supabase/auth-store";
+import { AdminError, desdeRed } from "../supabase/errors";
 import {
   SELECT_PEDIDO_LISTA,
   SELECT_PEDIDO_DETALLE,
@@ -88,6 +91,45 @@ export async function confirmarPago(id: string, nota?: string): Promise<void> {
  */
 export async function eliminar(id: string): Promise<void> {
   await rpc<void>("eliminar_pedido", { p_order_id: id }, CTX);
+}
+
+/**
+ * Vuelve a mandarle al cliente el correo "Recibimos tu pedido".
+ *
+ * NO va a Supabase como el resto de este archivo, sino al servidor de la tienda: mandar un
+ * correo necesita la clave de Resend, que es un secreto del Worker y nunca llega al
+ * navegador. El servidor lee el pedido con ESTA sesión, así que la regla de "solo admins"
+ * la sigue decidiendo RLS (ver src/pages/api/pedidos/reenviar-correo.ts).
+ *
+ * Si el envío falla, el servidor ya lo dejó anotado en el pedido; acá además se lanza el
+ * error para que el panel lo muestre en el momento.
+ */
+export async function reenviarCorreo(id: string): Promise<void> {
+  const token = getAccessToken();
+  if (!token) {
+    throw new AdminError("Tu sesión expiró. Vuelve a iniciar sesión.", {
+      code: "NO_SESSION",
+      status: 401,
+    });
+  }
+
+  let res: Response;
+  try {
+    res = await fetch("/api/pedidos/reenviar-correo", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+  } catch (e) {
+    throw desdeRed(e);
+  }
+  if (res.ok) return;
+
+  const cuerpo = (await res.json().catch(() => null)) as { error?: string } | null;
+  throw new AdminError(cuerpo?.error ?? `Error ${res.status} al reenviar el correo.`, {
+    code: res.status === 401 ? "NO_SESSION" : null,
+    status: res.status,
+  });
 }
 
 /**

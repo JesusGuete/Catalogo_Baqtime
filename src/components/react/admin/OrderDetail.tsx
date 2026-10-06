@@ -9,6 +9,7 @@ import * as pedidosRepo from "../../../lib/admin/orders.repo";
 import { useAccion } from "../../../lib/admin/useAdminData";
 import { comoAdminError, type AdminError } from "../../../lib/supabase/errors";
 import { TRANSPORTADORA_POR_DEFECTO } from "../../../lib/tracking";
+import { correoValido, normalizarCorreo } from "../../../lib/shipping-validation.js";
 import {
   Aviso,
   Boton,
@@ -44,6 +45,11 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
   const [notaPago, setNotaPago] = useState("");
   const [guardado, setGuardado] = useState(false);
 
+  // El correo se edita aparte de la logística: corregirlo tiene sentido solo para
+  // reenviarlo, así que vive junto a su botón y se guarda con él.
+  const [correo, setCorreo] = useState("");
+  const [correoEnviado, setCorreoEnviado] = useState(false);
+
   async function cargar() {
     setCargando(true);
     setError(null);
@@ -55,6 +61,7 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
         setGuia(p.tracking_number ?? "");
         setFechaEstimada(p.estimated_date ?? "");
         setNotaPago(p.payment_note ?? "");
+        setCorreo(p.customer_email ?? "");
       }
     } catch (e) {
       setError(comoAdminError(e));
@@ -94,6 +101,22 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
     await cargar();
     setGuardado(true);
     setTimeout(() => setGuardado(false), 2500);
+  });
+
+  // Si el correo cambió, primero se guarda y después se envía: así lo que queda en el
+  // pedido es siempre a dónde se mandó el último correo.
+  const reenviar = useAccion(async (nuevo: string) => {
+    if (nuevo !== (pedido?.customer_email ?? "")) {
+      await pedidosRepo.editarLogistica(pedidoId, { customer_email: nuevo });
+    }
+    try {
+      await pedidosRepo.reenviarCorreo(pedidoId);
+    } finally {
+      // También si falló: el servidor anotó el motivo y la tarjeta tiene que mostrarlo.
+      await cargar();
+    }
+    setCorreoEnviado(true);
+    setTimeout(() => setCorreoEnviado(false), 2500);
   });
 
   if (cargando && !pedido) return <Cargando />;
@@ -185,7 +208,12 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
 
       <ErrorAviso
         error={
-          error ?? confirmar.error ?? cambiar.error ?? guardarLogistica.error ?? eliminar.error
+          error ??
+          confirmar.error ??
+          cambiar.error ??
+          guardarLogistica.error ??
+          reenviar.error ??
+          eliminar.error
         }
       />
 
@@ -196,6 +224,7 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
             <div className="adm-ped-datos">
               <Dato etiqueta="NOMBRE" valor={pedido.customer_name} />
               <Dato etiqueta="TELÉFONO" valor={pedido.customer_phone} mono />
+              <Dato etiqueta="CORREO" valor={pedido.customer_email ?? "—"} ancho />
               <Dato etiqueta="DOCUMENTO" valor={pedido.customer_doc ?? "—"} mono />
               <Dato etiqueta="CIUDAD" valor={pedido.ship_city} />
               <Dato etiqueta="DIRECCIÓN" valor={pedido.ship_address} ancho />
@@ -332,6 +361,66 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
                 ENTREGA ESTIMADA · {fechaSola(pedido.estimated_date).toUpperCase()}
               </p>
             )}
+          </section>
+
+          <section className="adm-card">
+            <p className="adm-mono adm-regla-grupo">CORREO AL CLIENTE</p>
+            {/* El error va primero aunque haya una fecha de envío: es lo ÚLTIMO que pasó
+                (ver registrar_correo_pedido en 019_correo_cliente.sql). */}
+            {pedido.email_error ? (
+              <Aviso
+                tono="error"
+                titulo="El último correo no se envió."
+                meta={pedido.email_error.toUpperCase()}
+              />
+            ) : pedido.email_sent_at ? (
+              <Aviso
+                tono="exito"
+                titulo="Resumen del pedido enviado."
+                meta={fecha(pedido.email_sent_at).toUpperCase()}
+              />
+            ) : (
+              <Aviso
+                tono="info"
+                titulo={
+                  pedido.customer_email
+                    ? "Todavía no hay registro de envío."
+                    : "Este pedido no tiene correo."
+                }
+                meta={pedido.customer_email ? undefined : "ES ANTERIOR AL CAMPO DE CORREO"}
+              />
+            )}
+            <Campo
+              etiqueta="CORREO"
+              ayuda="corrígelo aquí si el cliente lo escribió mal"
+              error={correo && !correoValido(correo) ? "No parece un correo válido." : undefined}
+            >
+              <Texto
+                value={correo}
+                onChange={(v) => setCorreo(v.replace(/\s/g, ""))}
+                invalido={Boolean(correo) && !correoValido(correo)}
+                mono
+              />
+            </Campo>
+            <Boton
+              onClick={() => {
+                const nuevo = normalizarCorreo(correo);
+                if (!correoValido(nuevo)) return;
+                if (window.confirm(`¿Enviar el resumen del pedido a ${nuevo}?`)) {
+                  void reenviar.ejecutar(nuevo);
+                }
+              }}
+              variante="primario"
+              ancho
+              cargando={reenviar.enCurso}
+              disabled={!correoValido(correo)}
+            >
+              {correoEnviado
+                ? "Enviado ✓"
+                : pedido.email_sent_at || pedido.email_error
+                  ? "Reenviar correo"
+                  : "Enviar correo"}
+            </Boton>
           </section>
 
           <section className="adm-card">

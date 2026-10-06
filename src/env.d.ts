@@ -18,6 +18,19 @@ interface ImportMeta {
 }
 
 /**
+ * Lo que el adaptador de Cloudflare deja en `Astro.locals`. Solo se declara lo que se usa.
+ *
+ * `cfContext.waitUntil` mantiene vivo el Worker hasta que termine una promesa, aunque la
+ * respuesta ya haya salido. Lo usa api/pedidos.ts para mandar el correo de confirmación sin
+ * hacer esperar al cliente. Opcional porque fuera de Cloudflare no existe.
+ */
+declare namespace App {
+  interface Locals {
+    cfContext?: { waitUntil(promise: Promise<unknown>): void };
+  }
+}
+
+/**
  * El entorno del Worker de Cloudflare: variables y secretos que NUNCA llegan al navegador.
  *
  * Es un módulo virtual del runtime, así que no existe en disco y ningún @types instalado

@@ -93,7 +93,10 @@ const POR_CODIGO: Record<string, (ctx: ContextoError) => string> = {
   "23514": (ctx) =>
     ctx === "initials_colors"
       ? "El color tiene que ser #RRGGBB con los 6 dígitos, y el nombre no puede quedar vacío."
-      : "Hay un dato con formato inválido. Revisa que el color sea #RRGGBB con los 6 dígitos y que el precio no sea negativo.",
+      : ctx === "pedidos"
+        ? // El único CHECK de `orders` que el panel puede tocar es el del correo (019).
+          "Ese correo no tiene un formato válido. Revisa que sea algo como nombre@gmail.com."
+        : "Hay un dato con formato inválido. Revisa que el color sea #RRGGBB con los 6 dígitos y que el precio no sea negativo.",
   "55P03": () => "Hay otra publicación en curso. Espera unos segundos y vuelve a intentar.",
   P0001: () =>
     "El borrador está vacío y el catálogo publicado tiene productos. La base se niega a publicar eso para no borrarte todo. Para vaciar el catálogo a propósito, oculta cada producto y publica.",

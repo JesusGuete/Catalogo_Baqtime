@@ -265,9 +265,18 @@ export interface Order {
   status: OrderStatus;
   customer_name: string;
   customer_phone: string;
+  /**
+   * Obligatorio desde 019_correo_cliente.sql. `null` solo en pedidos anteriores a eso.
+   * NO está en `OrderPublic`: la página de seguimiento no lo muestra.
+   */
+  customer_email: string | null;
   customer_doc: string | null;
   ship_city: string;
   ship_address: string;
+  /** Cuándo salió el último correo que el proveedor aceptó. Lo escribe solo el servidor. */
+  email_sent_at: Timestamptz | null;
+  /** Por qué falló el ÚLTIMO intento de envío; `null` si salió bien o nunca se intentó. */
+  email_error: string | null;
   /** Pesos enteros, congelados al confirmar el pedido. */
   subtotal: number;
   shipping_cost: number;
@@ -288,13 +297,17 @@ export interface Order {
  * Lo único que el panel puede editar con un PATCH directo.
  *
  * No es una convención: 010_orders.sql revoca UPDATE sobre el resto de las columnas y
- * solo concede estas cuatro. `status`, `paid_at` y `shipped_at` se mueven exclusivamente
- * por set_order_status() / confirm_order_payment(), que escriben el historial en la misma
- * transacción. Agregar un campo acá sin concederlo en el SQL da un 42501, no un cambio
- * silencioso.
+ * solo concede estas cuatro, más `customer_email` desde 019_correo_cliente.sql (para
+ * corregir un correo mal escrito y reenviarlo). `status`, `paid_at` y `shipped_at` se
+ * mueven exclusivamente por set_order_status() / confirm_order_payment(), que escriben el
+ * historial en la misma transacción. Agregar un campo acá sin concederlo en el SQL da un
+ * 42501, no un cambio silencioso.
  */
 export type OrderUpdate = Partial<
-  Pick<Order, "carrier" | "tracking_number" | "estimated_date" | "payment_note">
+  Pick<
+    Order,
+    "carrier" | "tracking_number" | "estimated_date" | "payment_note" | "customer_email"
+  >
 >;
 
 export interface OrderItem {
@@ -508,6 +521,9 @@ const columnasPedidoLista = [
 const columnasPedidoDetalle = [
   ...columnasPedidoLista,
   "public_token",
+  "customer_email",
+  "email_sent_at",
+  "email_error",
   "customer_doc",
   "ship_address",
   "subtotal",
