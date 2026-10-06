@@ -651,6 +651,18 @@
   .shipping-fields label{ margin-bottom:0; }
   .shipping-fields .field-error{ margin-top:0; margin-bottom:0; }
 
+  /* Para qué se pide el correo (Ley 1581: hay que decirlo al pedir el dato). Gris y
+     chico: es información, no una instrucción que haya que cumplir. */
+  .field-hint{ font-size:11px; color:var(--ink-soft); margin:0; }
+  /* "¿Quisiste decir …?" — un botón con forma de texto: se corrige con un toque, pero no
+     debe gritar como un error, porque puede que el cliente haya escrito bien. */
+  .field-sug{
+    align-self:flex-start; font-size:12px; color:var(--draft-text);
+    background:none; border:none; padding:0; cursor:pointer; text-align:left;
+    font-family:'Work Sans',sans-serif;
+  }
+  .field-sug u{ font-weight:600; }
+
   .whatsapp-btn{
     margin-top:20px;
     width:100%;

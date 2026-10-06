@@ -14,7 +14,9 @@
 //     no está declarada en src/env.d.ts: si no está en el tipo, escribirla en código de
 //     cliente es un error de compilación, no una cuestión de criterio.
 //
-// La escritura en sí la hace create_order() (010_orders.sql) en una sola transacción.
+// La escritura en sí la hace create_order() (010_orders.sql, con el correo desde
+// 019_correo_cliente.sql) en una sola transacción. Después de guardar, se le manda al
+// cliente el correo con el resumen (src/lib/correo.ts), sin que un fallo ahí afecte al pedido.
 
 import type { APIRoute } from "astro";
 // El entorno del Worker. `Astro.locals.runtime.env` existía hasta Astro 5 y fue eliminado
@@ -24,7 +26,8 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import type { Category } from "../../types/database";
 import { PRICE_SHIP, recargoIniciales } from "../../lib/pricing.js";
-import { validateShipping } from "../../lib/shipping-validation.js";
+import { normalizarCorreo, validateShipping } from "../../lib/shipping-validation.js";
+import { enviarConfirmacionPedido } from "../../lib/correo";
 
 export const prerender = false;
 
@@ -42,6 +45,7 @@ interface DatosEnvio {
   city: string;
   address: string;
   phone: string;
+  email: string;
   doc: string;
 }
 
@@ -81,7 +85,7 @@ function leerSecreto(nombre: string): string | undefined {
   return env[nombre] || undefined;
 }
 
-export const POST: APIRoute = async ({ request, url }) => {
+export const POST: APIRoute = async ({ request, url, locals }) => {
   const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
   const SERVICE_KEY = leerSecreto("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -113,6 +117,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     city: String(envio.city ?? ""),
     address: String(envio.address ?? ""),
     phone: String(envio.phone ?? ""),
+    email: String(envio.email ?? ""),
     doc: String(envio.doc ?? ""),
   };
   const errores = validateShipping(datos);
@@ -205,7 +210,8 @@ export const POST: APIRoute = async ({ request, url }) => {
   const total = subtotal + envioCosto;
 
   // --- Escritura atómica ---------------------------------------------------
-  let creado: { order_number: string; public_token: string };
+  const correo = normalizarCorreo(datos.email);
+  let creado: { id: string; order_number: string; public_token: string };
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/create_order`, {
       method: "POST",
@@ -218,6 +224,7 @@ export const POST: APIRoute = async ({ request, url }) => {
         p_order: {
           customer_name: datos.name.trim(),
           customer_phone: datos.phone.trim(),
+          customer_email: correo,
           customer_doc: datos.doc.trim(),
           ship_city: datos.city.trim(),
           ship_address: datos.address.trim(),
@@ -235,14 +242,48 @@ export const POST: APIRoute = async ({ request, url }) => {
     return json({ error: "No pudimos guardar tu pedido. Intenta de nuevo." }, 502);
   }
 
+  // Absoluta: va dentro del correo y tiene que funcionar desde cualquier teléfono, no solo
+  // desde la pestaña donde se hizo el pedido.
+  const seguimiento = new URL(`/pedido/${creado.public_token}`, url.origin).href;
+
+  // --- Correo de confirmación ------------------------------------------------
+  // El pedido YA está guardado. De acá en adelante nada puede devolverle un error al
+  // cliente: enviarConfirmacionPedido() no lanza, y si falla lo anota en el pedido para
+  // que el dueño lo reenvíe desde el panel.
+  //
+  // Se deja corriendo en segundo plano con waitUntil: el Worker termina el envío aunque la
+  // respuesta ya haya salido, así el cliente no espera al proveedor de correo para ver su
+  // número de pedido. Si el contexto no está (no debería pasar en Cloudflare), se espera.
+  //
+  // La clave de idempotencia es el id del pedido: si esto se reintenta, Resend no le manda
+  // dos correos iguales al cliente.
+  const envioCorreo = enviarConfirmacionPedido({
+    supabaseUrl: SUPABASE_URL,
+    serviceKey: SERVICE_KEY,
+    orderId: creado.id,
+    para: correo,
+    idempotencia: `pedido-${creado.id}`,
+    datos: {
+      order_number: creado.order_number,
+      customer_name: datos.name.trim(),
+      ship_city: datos.city.trim(),
+      ship_address: datos.address.trim(),
+      subtotal,
+      shipping_cost: envioCosto,
+      total,
+      items: lineas,
+      seguimiento,
+    },
+  });
+  if (locals.cfContext) locals.cfContext.waitUntil(envioCorreo);
+  else await envioCorreo;
+
   return json(
     {
       order_number: creado.order_number,
       public_token: creado.public_token,
       total,
-      // Absoluta: el mensaje de WhatsApp la lleva adentro y tiene que funcionar desde
-      // cualquier teléfono, no solo desde la pestaña donde se hizo el pedido.
-      seguimiento: new URL(`/pedido/${creado.public_token}`, url.origin).href,
+      seguimiento,
     },
     201
   );

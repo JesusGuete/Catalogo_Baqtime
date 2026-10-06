@@ -68,6 +68,14 @@ const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
 
         <a class="ped-btn-wa" href={enlaceWhatsapp}>Confirmar pago por WhatsApp</a>
 
+        {/* Sin mostrar la dirección: esta página no la conoce (pedido_publico no devuelve
+            el correo, a propósito). Lo de Spam va porque los primeros correos de un
+            dominio nuevo son los que más caen ahí. */}
+        <p class="ped-correo">
+          Te enviamos el resumen a tu correo. Si no lo ves en unos minutos, revisa la carpeta
+          de Spam o Promociones.
+        </p>
+
         <p class="ped-nota">
           Guarda tu número: con él puedes consultar el estado cuando quieras desde
           <strong>Mi pedido</strong>, arriba en esta misma página.
@@ -176,6 +184,13 @@ const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
       }
       .ped-btn-wa:hover {
         background: var(--mocha);
+      }
+      .ped-correo {
+        margin: 12px 0 0;
+        font-size: 12px;
+        line-height: 1.55;
+        color: var(--ink-soft);
+        text-align: center;
       }
       /* El número es lo único que el cliente necesita recordar, así que se lleva el
          tamaño y el acento de la marca. */
