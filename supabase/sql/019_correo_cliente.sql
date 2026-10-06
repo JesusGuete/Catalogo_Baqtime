@@ -24,7 +24,8 @@ alter table public.orders add column if not exists email_error    text;
 -- ADMITE NULL, Y NO ES UN DESCUIDO: los pedidos anteriores a este archivo no tienen correo.
 -- Un `not null` —incluso como NOT VALID— no sirve: un CHECK se evalúa en CADA update de la
 -- fila, así que el pedido viejo dejaría de poder cambiar de estado. La obligatoriedad vive
--- en create_order(), que es el único camino por el que entra un pedido nuevo.
+-- en create_order(), que es el único camino por el que entra un pedido nuevo — desde
+-- 020_correo_obligatorio.sql, ver la nota en create_order() más abajo.
 --
 -- Lo que sí se impone para todas las filas es la FORMA: si hay correo, tiene que parecer
 -- uno. Es la misma regla que valida el formulario (src/lib/shipping-validation.js), sin
@@ -53,7 +54,7 @@ alter table public.orders add constraint orders_customer_email_formato check (
 grant update (customer_email) on table public.orders to authenticated;
 
 -- ============================================================================
--- create_order(jsonb, jsonb) — ahora con correo, y obligatorio
+-- create_order(jsonb, jsonb) — ahora con correo
 -- ============================================================================
 -- Igual que en 010 salvo por el correo. Sigue sin calcular un solo precio.
 
@@ -71,10 +72,13 @@ begin
 
   -- Normalizado acá y no solo en el endpoint: dos pedidos del mismo cliente tienen que
   -- guardar el mismo texto, se escriba como se escriba.
+  --
+  -- TODAVÍA NO SE EXIGE, A PROPÓSITO. Esta migración se corre ANTES de publicar el código
+  -- que manda el correo, y mientras tanto la tienda en vivo sigue llamando a esta función
+  -- sin él. Exigirlo acá rompería todos los pedidos en ese intervalo. Hoy lo exige el
+  -- endpoint (validateShipping); 020_correo_obligatorio.sql lo vuelve obligatorio también
+  -- en la base, y se corre DESPUÉS de publicar.
   v_email := nullif(lower(btrim(coalesce(p_order->>'customer_email', ''))), '');
-  if v_email is null then
-    raise exception 'create_order: falta el correo del cliente' using errcode = '22023';
-  end if;
 
   insert into public.orders (
     customer_name, customer_phone, customer_email, customer_doc,
