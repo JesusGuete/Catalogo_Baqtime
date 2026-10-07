@@ -4,10 +4,10 @@
 //
 //   Tote Bag Negro - Cordones Negros (AL en Blanco)
 //
-//   Adriana Guete
-//   CC.1002326883
-//   Tel.3147394682
-//   Diagonal 32 #88-699
+//   Ana Pérez
+//   CC.1234567890
+//   Tel.3001234567
+//   Calle 10 #20-30
 //
 // Lo primero es lo que hay que coser (una línea por bolso: producto, variante e iniciales con
 // el color del hilo); lo segundo, a quién se le envía. Lleva los datos del cliente porque la

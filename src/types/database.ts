@@ -289,6 +289,16 @@ export interface Order {
   shipped_at: Timestamptz | null;
   /** `date`, no `timestamptz`: es una fecha, no un instante. Manual y opcional. */
   estimated_date: string | null;
+  /**
+   * Prueba de la autorización de datos (024_autorizacion_datos.sql): cuándo la dio el
+   * cliente y qué versión de /politica-de-datos aceptó. `null` en pedidos anteriores a la
+   * casilla. Fuera de las listas de columnas del panel hasta que 024 esté corrido en todos
+   * lados: pedir una columna que no existe hace fallar toda la consulta.
+   */
+  data_consent_at: Timestamptz | null;
+  data_policy_version: string | null;
+  /** Autorización aparte y opcional para recibir promociones. */
+  marketing_consent: boolean;
   created_at: Timestamptz;
   updated_at: Timestamptz;
 }

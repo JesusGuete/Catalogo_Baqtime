@@ -6,6 +6,7 @@
 // Supabase; son las mismas 6 líneas de producto de CATEGORY_LABELS en
 // mock-catalog.js, que no cambian con la frecuencia de un producto puntual.
 import { WHATSAPP_NUMBER } from "../../lib/whatsapp.js";
+import { POLITICA_DATOS_RUTA, RESPONSABLE, TERMINOS_RUTA } from "../../lib/legal";
 
 const whatsappHref = `https://wa.me/${WHATSAPP_NUMBER}`;
 
@@ -107,6 +108,9 @@ const CATEGORIAS_FOOTER = [
         <div class="footer-acc-body">
           <a href="/catalogo">Ver catálogo</a>
           <a href={whatsappHref} target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
+          <a href={`mailto:${RESPONSABLE.correo}`}>{RESPONSABLE.correo}</a>
+          <a href={TERMINOS_RUTA}>Términos y condiciones</a>
+          <a href={POLITICA_DATOS_RUTA}>Política de datos personales</a>
           <p class="footer-fine">
             Horario de atención: lunes a domingo
             <br />

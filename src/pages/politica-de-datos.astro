@@ -1,0 +1,220 @@
+---
+// Política de Tratamiento de Datos Personales (Ley 1581 de 2012, Decreto 1377 de 2013).
+//
+// El contenido mínimo lo fija el art. 13 del Decreto 1377: quién es el responsable, qué se
+// hace con los datos y para qué, los derechos del titular, quién atiende las solicitudes,
+// el procedimiento y la vigencia. Cada sección de abajo responde una de esas exigencias.
+//
+// Los datos de contacto salen de src/lib/legal.ts. Si el texto cambia de fondo, hay que
+// subir POLITICA_DATOS_VERSION allá: cada pedido guarda la versión que aceptó el cliente.
+import Header from "../components/astro/Header.astro";
+import Footer from "../components/astro/Footer.astro";
+import WhatsappWidget from "../components/react/WhatsappWidget.jsx";
+import SiteHead from "../components/astro/SiteHead.astro";
+import { RESPONSABLE, POLITICA_DATOS_VERSION, POLITICA_DATOS_VIGENCIA } from "../lib/legal";
+import "../styles/site.css";
+
+// Estática, y sin catálogo a propósito: el checkout enlaza acá en el momento de pedir la
+// autorización, así que esta página tiene que abrir aunque Supabase esté caído. El menú
+// queda sin la lista de categorías, igual que en las páginas de pedido.
+export const prerender = true;
+
+const url = new URL("/politica-de-datos", Astro.site).href;
+const imagen = new URL("/assets/img/og-image.png", Astro.site).href;
+const correo = `mailto:${RESPONSABLE.correo}`;
+---
+
+<html lang="es-CO">
+  <head>
+    <SiteHead
+      title="Política de Tratamiento de Datos Personales — Baqtime"
+      description="Cómo Baqtime recoge, usa y protege tus datos personales, y cómo ejercer tus derechos como titular."
+      url={url}
+      image={imagen}
+      imageAlt="Baqtime"
+    />
+  </head>
+  <body>
+    <Header />
+
+    <main class="legal">
+      <p class="legal-eyebrow mono">LEGAL</p>
+      <h1>Política de Tratamiento de Datos Personales</h1>
+      <p class="legal-meta mono">
+        Vigente desde el {POLITICA_DATOS_VIGENCIA} · Versión {POLITICA_DATOS_VERSION}
+      </p>
+
+      <p>
+        En Baqtime cuidamos los datos que nos confías al hacer un pedido. Esta política explica
+        qué datos recogemos, para qué los usamos, con quién los compartimos y cómo puedes
+        consultarlos, corregirlos o pedir que los borremos. Se rige por la Ley 1581 de 2012, el
+        Decreto 1377 de 2013 (compilado en el Decreto 1074 de 2015) y las demás normas que los
+        modifiquen o complementen.
+      </p>
+
+      <h2>1. Responsable del tratamiento</h2>
+      <ul class="legal-datos">
+        <li><strong>Nombre comercial:</strong> {RESPONSABLE.nombre} (persona natural)</li>
+        <li><strong>Dirección de notificación:</strong> {RESPONSABLE.direccion}</li>
+        <li><strong>Correo:</strong> <a href={correo}>{RESPONSABLE.correo}</a></li>
+        <li><strong>Teléfono y WhatsApp:</strong> {RESPONSABLE.telefono}</li>
+        <li><strong>Sitio web:</strong> <a href="/">baqtime.store</a></li>
+      </ul>
+      <p>
+        Baqtime no tiene punto de atención al público: la dirección de arriba es para
+        notificaciones. Las solicitudes sobre datos personales se atienden por correo.
+      </p>
+
+      <h2>2. Qué datos recogemos</h2>
+      <p>Cuando haces un pedido en baqtime.store te pedimos:</p>
+      <ul>
+        <li>Nombre completo.</li>
+        <li>Número de teléfono.</li>
+        <li>Correo electrónico.</li>
+        <li>Ciudad y dirección de entrega.</li>
+        <li>
+          Número de documento de identidad, solo para envíos fuera de Barranquilla: la
+          transportadora lo exige para entregar el paquete.
+        </li>
+        <li>Los productos que compras, las iniciales que eliges y el valor del pedido.</li>
+      </ul>
+      <p>
+        <strong>No recogemos datos sensibles</strong> (salud, origen étnico, orientación
+        política, religiosa o sexual, datos biométricos). Tampoco guardamos números de
+        tarjetas ni claves bancarias: los pagos se hacen directamente en el banco, la
+        billetera digital o la plataforma de pago que elijas. Si eres menor de edad, haz tu
+        pedido con tu madre, padre o un adulto responsable.
+      </p>
+
+      <h2>3. Para qué usamos tus datos</h2>
+      <ul>
+        <li>Registrar, producir y personalizar tu pedido.</li>
+        <li>Coordinar el pago contigo por WhatsApp.</li>
+        <li>Enviarte el resumen del pedido y los avisos de su estado por correo.</li>
+        <li>Entregar el pedido, directamente o a través de una transportadora.</li>
+        <li>Atender preguntas, quejas, reclamos, cambios y garantías.</li>
+        <li>Cumplir obligaciones contables, tributarias y legales.</li>
+        <li>
+          <strong>Solo si lo autorizas aparte:</strong> enviarte novedades, lanzamientos y
+          promociones de Baqtime por correo o WhatsApp. Puedes dejar de recibirlos cuando
+          quieras escribiéndonos.
+        </li>
+      </ul>
+      <p>No vendemos ni alquilamos tus datos a nadie.</p>
+
+      <h2>4. Autorización</h2>
+      <p>
+        Antes de confirmar un pedido te pedimos que autorices el tratamiento de tus datos
+        marcando la casilla correspondiente. Guardamos la fecha y hora de esa autorización y la
+        versión de esta política que aceptaste, como prueba. Sin esa autorización no podemos
+        registrar el pedido, porque los datos son necesarios para producirlo y entregarlo.
+      </p>
+
+      <h2>5. Con quién compartimos tus datos</h2>
+      <p>
+        Para funcionar, Baqtime se apoya en proveedores que tratan los datos por cuenta
+        nuestra (encargados) y solo para las finalidades de esta política:
+      </p>
+      <ul>
+        <li><strong>Supabase:</strong> base de datos donde se guardan los pedidos.</li>
+        <li><strong>Cloudflare:</strong> alojamiento y seguridad del sitio web.</li>
+        <li><strong>Resend:</strong> envío de los correos del pedido.</li>
+        <li><strong>Google (Gmail):</strong> correo de la tienda, donde recibimos la copia de cada pedido.</li>
+        <li><strong>WhatsApp (Meta):</strong> conversación para coordinar el pago y la entrega.</li>
+        <li>
+          <strong>Transportadoras</strong> (por ejemplo, Inter Rapidísimo): nombre, teléfono,
+          dirección y documento, solo para entregar el paquete.
+        </li>
+      </ul>
+      <p>
+        Algunos de estos proveedores tienen sus servidores fuera de Colombia, por ejemplo en
+        Estados Unidos. Al autorizar el tratamiento aceptas que tus datos se transmitan a ellos
+        para las finalidades descritas. Además, entregaremos tus datos a una autoridad si una
+        ley o una orden judicial lo exige.
+      </p>
+
+      <h2>6. Datos que se guardan en tu navegador (cookies)</h2>
+      <p>
+        El sitio <strong>no usa cookies de publicidad ni de analítica</strong>. Solo guarda en
+        tu propio navegador lo necesario para funcionar:
+      </p>
+      <ul>
+        <li><code>baqtime_cart</code>: los productos de tu carrito, para que no se pierdan al cambiar de página.</li>
+        <li><code>baqtime_carga_vista</code>: recuerda que ya viste la pantalla de carga en esta visita.</li>
+      </ul>
+      <p>
+        Esos datos no salen de tu dispositivo y los puedes borrar cuando quieras desde la
+        configuración de tu navegador. Las fuentes tipográficas del sitio se descargan de
+        Google Fonts, que recibe la dirección IP de tu conexión al cargarlas. Si en el futuro
+        usamos herramientas de analítica o publicidad, te pediremos permiso antes de activarlas
+        y actualizaremos esta política.
+      </p>
+
+      <h2>7. Tus derechos</h2>
+      <p>Como titular de los datos tienes derecho a:</p>
+      <ul>
+        <li>Conocer, actualizar y corregir tus datos.</li>
+        <li>Pedir prueba de la autorización que nos diste.</li>
+        <li>Saber qué uso le hemos dado a tus datos.</li>
+        <li>
+          Revocar la autorización o pedir que borremos tus datos, salvo cuando una ley o un
+          contrato nos obligue a conservarlos (por ejemplo, los soportes de una venta).
+        </li>
+        <li>Acceder gratis a tus datos.</li>
+        <li>
+          Presentar quejas ante la Superintendencia de Industria y Comercio (SIC), después de
+          haber hecho la solicitud directamente con nosotros.
+        </li>
+      </ul>
+
+      <h2>8. Cómo ejercer tus derechos</h2>
+      <p>
+        Escríbenos a <a href={correo}>{RESPONSABLE.correo}</a> con el asunto
+        <em>“Datos personales”</em>, indicando tu nombre, tu número de pedido o el teléfono con el
+        que compraste, y qué necesitas. Si la solicitud la hace otra persona en tu nombre, debe
+        demostrar que te representa. Es el propio Baqtime quien atiende estas solicitudes.
+      </p>
+      <ul>
+        <li>
+          <strong>Consultas</strong> (saber qué datos tenemos y cómo los usamos): respondemos en
+          máximo <strong>10 días hábiles</strong>. Si no alcanzamos, te avisamos el motivo y
+          respondemos en máximo 5 días hábiles más.
+        </li>
+        <li>
+          <strong>Reclamos</strong> (corregir, actualizar o borrar datos, o revocar la
+          autorización): respondemos en máximo <strong>15 días hábiles</strong>, prorrogables 8
+          días hábiles más avisándote el motivo. Si al reclamo le falta información, te la
+          pediremos dentro de los 5 días siguientes; si pasan 2 meses sin que la envíes,
+          entenderemos que desististe.
+        </li>
+      </ul>
+
+      <h2>9. Seguridad</h2>
+      <p>
+        Protegemos tus datos con medidas técnicas razonables: conexión cifrada (HTTPS), acceso a
+        la base de datos solo para los administradores de la tienda, y enlaces de seguimiento de
+        pedido con un código aleatorio imposible de adivinar. La página de seguimiento no
+        muestra tu documento, tu dirección ni tu correo.
+      </p>
+
+      <h2>10. Cuánto tiempo guardamos tus datos</h2>
+      <p>
+        Conservamos los datos de cada pedido mientras sean necesarios para las finalidades de
+        esta política, y después durante el tiempo que exijan las normas contables, tributarias
+        y comerciales. Cumplido ese plazo, o cuando pidas que los borremos y no exista una
+        obligación de conservarlos, los eliminamos. Las bases de datos de Baqtime estarán
+        vigentes mientras la tienda desarrolle su actividad.
+      </p>
+
+      <h2>11. Cambios a esta política</h2>
+      <p>
+        Si cambiamos esta política de forma importante, publicaremos la nueva versión en esta
+        misma página con su fecha. Si el cambio afecta las finalidades para las que nos diste tu
+        autorización, te pediremos una nueva.
+      </p>
+    </main>
+
+    <Footer />
+    <WhatsappWidget client:load />
+  </body>
+</html>
