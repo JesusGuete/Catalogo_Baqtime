@@ -148,14 +148,16 @@ export default function PublishView({ borrador, publicado, categorias, onPublica
               liberadas
             </p>
 
-            {/* La tienda es HTML estático: loadCatalog() corre en el build, no en cada
-                visita. Publicar actualiza la base, pero baqtime.store sigue sirviendo el
-                HTML de la última construcción. Decir "ya está en el sitio" sería mentir, y
-                el dueño lo descubriría abriendo la tienda y no viendo su cambio. */}
-            <Aviso tono="borrador" titulo="Falta un paso: el sitio todavía no muestra esto.">
+            {/* La tienda se renderiza en cada visita (output: 'server', ver
+                docs/frontend-contract.md), no se construye una vez. Lo único que demora un
+                cambio es la caché de Cloudflare: s-maxage=60 y stale-while-revalidate=300 en
+                portada, catálogo y fichas. Hubo un aviso aquí que mandaba a "reconstruir el
+                sitio desde Cloudflare", de cuando la tienda era HTML estático; ya no aplica y
+                confundía justo cuando algo parecía no publicarse. */}
+            <Aviso tono="exito" titulo="Ya está publicado.">
               <p>
-                Los cambios ya están guardados y no se pierden. Para que se vean en
-                baqtime.store hay que reconstruir el sitio desde Cloudflare.
+                La tienda puede tardar unos minutos en mostrar los cambios. Si no los ves,
+                recarga la página.
               </p>
             </Aviso>
             {resultado.errorLimpieza && (
