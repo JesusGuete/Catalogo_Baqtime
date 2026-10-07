@@ -13,7 +13,7 @@ import Header from "../components/astro/Header.astro";
 import Footer from "../components/astro/Footer.astro";
 import WhatsappWidget from "../components/react/WhatsappWidget.jsx";
 import SiteHead from "../components/astro/SiteHead.astro";
-import { RESPONSABLE, TERMINOS_VIGENCIA, POLITICA_DATOS_RUTA } from "../lib/legal";
+import { RESPONSABLE, POLITICA_DATOS_RUTA } from "../lib/legal";
 import { PRICE_SHIP, fmt } from "../lib/pricing.js";
 import "../styles/site.css";
 
@@ -38,9 +38,7 @@ const correo = `mailto:${RESPONSABLE.correo}`;
     <Header />
 
     <main class="legal">
-      <p class="legal-eyebrow mono">LEGAL</p>
       <h1>Términos y condiciones</h1>
-      <p class="legal-meta mono">Vigentes desde el {TERMINOS_VIGENCIA}</p>
 
       <p>
         Estos términos aplican a las compras hechas en baqtime.store. Al confirmar un pedido
@@ -48,20 +46,20 @@ const correo = `mailto:${RESPONSABLE.correo}`;
         por las leyes de Colombia, en especial la Ley 1480 de 2011 (Estatuto del Consumidor).
       </p>
 
-      <h2 id="vendedor">1. Quién vende</h2>
+      <h2 id="vendedor">Quién vende</h2>
       <ul class="legal-datos">
-        <li><strong>Nombre comercial:</strong> {RESPONSABLE.nombre} (persona natural)</li>
-        <li><strong>Dirección de notificación:</strong> {RESPONSABLE.direccion}</li>
-        <li><strong>Correo:</strong> <a href={correo}>{RESPONSABLE.correo}</a></li>
-        <li><strong>Teléfono y WhatsApp:</strong> {RESPONSABLE.telefono}</li>
-        <li><strong>Horario de atención:</strong> lunes a domingo, 10:00 a.m. a 10:00 p.m.</li>
+        <li>Nombre comercial: {RESPONSABLE.nombre} (persona natural)</li>
+        <li>Dirección de notificación: {RESPONSABLE.direccion}</li>
+        <li>Correo: <a href={correo}>{RESPONSABLE.correo}</a></li>
+        <li>Teléfono y WhatsApp: {RESPONSABLE.telefono}</li>
+        <li>Horario de atención: lunes a domingo, 10:00 a.m. a 10:00 p.m.</li>
       </ul>
       <p>
         Baqtime no tiene tienda física: vendemos solo por este sitio web y atendemos por
         WhatsApp y correo.
       </p>
 
-      <h2 id="pedidos">2. Cómo funciona un pedido</h2>
+      <h2 id="pedidos">Cómo funciona un pedido</h2>
       <ol>
         <li>Eliges el producto, su color y, si es personalizable, las iniciales y el color del hilo.</li>
         <li>
@@ -69,8 +67,8 @@ const correo = `mailto:${RESPONSABLE.correo}`;
           correo.
         </li>
         <li>
-          Coordinamos el pago contigo por WhatsApp. <strong>Si el pago no se hace en las 24
-          horas siguientes, el pedido se cancela automáticamente.</strong>
+          Coordinamos el pago contigo por WhatsApp. Si el pago no se hace en las 24
+          horas siguientes, el pedido se cancela automáticamente.
         </li>
         <li>Cuando aprobamos el pago, empezamos a producir tu pedido.</li>
       </ol>
@@ -79,7 +77,7 @@ const correo = `mailto:${RESPONSABLE.correo}`;
         <a href="/pedido">baqtime.store/pedido</a> con tu número de pedido.
       </p>
 
-      <h2 id="precios">3. Precios</h2>
+      <h2 id="precios">Precios</h2>
       <ul>
         <li>Los precios están en pesos colombianos (COP) y son el precio total de cada producto.</li>
         <li>
@@ -95,18 +93,18 @@ const correo = `mailto:${RESPONSABLE.correo}`;
         </li>
       </ul>
 
-      <h2 id="pagos">4. Medios de pago</h2>
+      <h2 id="pagos">Medios de pago</h2>
       <p>
         Aceptamos transferencia bancaria, Nequi, tarjeta de crédito y otros medios
         electrónicos. El pago se coordina por WhatsApp después de confirmar el pedido.
-        Baqtime no guarda datos de tarjetas, y <strong>nunca te pediremos claves ni códigos
-        de verificación</strong>.
+        Baqtime no guarda datos de tarjetas, y nunca te pediremos claves ni códigos
+        de verificación.
       </p>
 
-      <h2 id="envios">5. Tiempos de entrega y envíos</h2>
+      <h2 id="envios">Tiempos de entrega y envíos</h2>
       <ul>
         <li>
-          Entregamos en <strong>2 a 4 días hábiles</strong> contados desde que aprobamos el
+          Entregamos en 2 a 4 días hábiles contados desde que aprobamos el
           pago. Ese tiempo incluye la producción y el envío.
         </li>
         <li>
@@ -126,16 +124,16 @@ const correo = `mailto:${RESPONSABLE.correo}`;
         </li>
       </ul>
 
-      <h2 id="personalizados">6. Productos personalizados</h2>
+      <h2 id="personalizados">Productos personalizados</h2>
       <ul>
         <li>
-          <strong>Revisa las iniciales y el color del hilo antes de confirmar:</strong>
+          Revisa las iniciales y el color del hilo antes de confirmar:
           bordamos exactamente lo que escribiste en el pedido.
         </li>
         <li>
-          Por ser hechos a tu medida, los productos personalizados <strong>no tienen derecho de
-          retracto ni cambios por gusto</strong> (Ley 1480 de 2011, art. 47). Sí tienen garantía
-          (sección 8).
+          Por ser hechos a tu medida, los productos personalizados no tienen derecho de
+          retracto ni cambios por gusto (Ley 1480 de 2011, art. 47). Sí tienen garantía
+          (ver "Garantía").
         </li>
         <li>
           Si el bordado no coincide con lo que pediste, es un error nuestro: lo corregimos o
@@ -147,9 +145,9 @@ const correo = `mailto:${RESPONSABLE.correo}`;
         </li>
       </ul>
 
-      <h2 id="danado">7. Si te llega un producto equivocado o dañado</h2>
+      <h2 id="danado">Si te llega un producto equivocado o dañado</h2>
       <p>
-        Avísanos dentro de los <strong>2 días hábiles siguientes a la entrega</strong>, por
+        Avísanos dentro de los 2 días hábiles siguientes a la entrega, por
         WhatsApp o a <a href={correo}>{RESPONSABLE.correo}</a>, con tu número de pedido y fotos
         o video donde se vea el problema. Te enviamos el producto correcto o, si no es posible,
         te devolvemos el dinero. Los envíos corren por nuestra cuenta.
@@ -158,18 +156,18 @@ const correo = `mailto:${RESPONSABLE.correo}`;
         Pasado ese plazo, los defectos de fabricación siguen cubiertos por la garantía.
       </p>
 
-      <h2 id="garantia">8. Garantía</h2>
+      <h2 id="garantia">Garantía</h2>
       <ul>
         <li>
-          Todos nuestros productos tienen <strong>1 mes de garantía</strong> desde la entrega,
+          Todos nuestros productos tienen 1 mes de garantía desde la entrega,
           por defectos de fabricación: costuras, bordado, herrajes, cierres o materiales.
         </li>
         <li>
-          Para pedirla, escríbenos con tu número de pedido y <strong>fotos o video claros del
-          defecto</strong>. Con eso lo evaluamos y te respondemos en máximo 15 días hábiles.
+          Para pedirla, escríbenos con tu número de pedido y fotos o video claros del
+          defecto. Con eso lo evaluamos y te respondemos en máximo 15 días hábiles.
         </li>
         <li>
-          Si el defecto tiene reparación, <strong>lo reparamos sin costo</strong>. Si no tiene
+          Si el defecto tiene reparación, lo reparamos sin costo. Si no tiene
           reparación, o si la falla se repite, te cambiamos el producto o te devolvemos el
           dinero.
         </li>
@@ -180,33 +178,33 @@ const correo = `mailto:${RESPONSABLE.correo}`;
         </li>
       </ul>
 
-      <h2 id="cancelaciones">9. Cancelaciones</h2>
+      <h2 id="cancelaciones">Cancelaciones</h2>
       <p>
-        Puedes cancelar tu pedido <strong>mientras no hayamos empezado a producirlo</strong>.
+        Puedes cancelar tu pedido mientras no hayamos empezado a producirlo.
         Escríbenos por WhatsApp o correo; si ya pagaste, te devolvemos el 100 %. Puedes ver si
         tu pedido ya está “En producción” en la página de seguimiento. Una vez empezada la
         producción, el pedido ya no se puede cancelar.
       </p>
 
-      <h2 id="retracto">10. Derecho de retracto</h2>
+      <h2 id="retracto">Derecho de retracto</h2>
       <p>
-        Los productos personalizados no tienen derecho de retracto (sección 6). Si compras un
-        producto <strong>sin personalizar</strong>, puedes retractarte dentro de los 5 días
+        Los productos personalizados no tienen derecho de retracto (ver "Productos personalizados"). Si compras un
+        producto sin personalizar, puedes retractarte dentro de los 5 días
         hábiles siguientes a la entrega: el producto debe volver sin uso, en el mismo estado en
         que lo recibiste y con su empaque. En ese caso el envío de la devolución lo paga el
         cliente (Ley 1480 de 2011, art. 47) y te devolvemos el dinero en máximo 15 días
         calendario.
       </p>
 
-      <h2 id="devoluciones">11. Devoluciones de dinero</h2>
+      <h2 id="devoluciones">Devoluciones de dinero</h2>
       <p>
         Cuando corresponda devolver dinero (garantía, cancelación, producto equivocado o error
-        de precio), lo hacemos en <strong>1 a 15 días hábiles</strong>, por el mismo medio con
+        de precio), lo hacemos en 1 a 15 días hábiles, por el mismo medio con
         el que pagaste o por el que acordemos contigo. Si pagaste con tarjeta, el tiempo en que
         ves el dinero también depende de tu banco.
       </p>
 
-      <h2 id="reversion">12. Reversión del pago</h2>
+      <h2 id="reversion">Reversión del pago</h2>
       <p>
         Si pagaste con tarjeta de crédito, débito u otro medio de pago electrónico, puedes
         pedir la reversión del pago si fuiste víctima de fraude, si no solicitaste la compra,
@@ -216,7 +214,7 @@ const correo = `mailto:${RESPONSABLE.correo}`;
         art. 51).
       </p>
 
-      <h2 id="pqr">13. Preguntas, quejas y reclamos</h2>
+      <h2 id="pqr">Preguntas, quejas y reclamos</h2>
       <p>
         Escríbenos por WhatsApp al {RESPONSABLE.telefono} o a
         <a href={correo}>{RESPONSABLE.correo}</a>. Respondemos en máximo 15 días hábiles. Si no
@@ -224,20 +222,20 @@ const correo = `mailto:${RESPONSABLE.correo}`;
         (<a href="https://www.sic.gov.co" target="_blank" rel="noopener">sic.gov.co</a>).
       </p>
 
-      <h2 id="propiedad">14. Propiedad intelectual</h2>
+      <h2 id="propiedad">Propiedad intelectual</h2>
       <p>
         La marca Baqtime, el logo, las fotos, los textos y los diseños de este sitio son de
         Baqtime. Puedes compartirlos para uso personal, pero no copiarlos, modificarlos ni
         usarlos con fines comerciales sin nuestro permiso.
       </p>
 
-      <h2 id="datos">15. Datos personales</h2>
+      <h2 id="datos">Datos personales</h2>
       <p>
-        Tratamos tus datos según nuestra
+        Tratamos tus datos según nuestra{" "}
         <a href={POLITICA_DATOS_RUTA}>Política de Tratamiento de Datos Personales</a>.
       </p>
 
-      <h2 id="cambios-terminos">16. Cambios a estos términos</h2>
+      <h2 id="cambios-terminos">Cambios a estos términos</h2>
       <p>
         Podemos actualizar estos términos y publicaremos la nueva versión en esta página con su
         fecha. Cada pedido se rige por los términos vigentes el día en que lo confirmaste.
