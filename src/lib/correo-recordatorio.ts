@@ -50,10 +50,9 @@ export function armarCorreoRecordatorio(
       "Guardamos tu pedido, pero todavía no hemos recibido el pago.",
       `Si no lo confirmamos ${plazoEnPalabras(p.horas_restantes)}, se marcará como no confirmado. Escríbenos por WhatsApp y te compartimos los medios de pago.`,
     ],
-    caja: [
-      { etiqueta: "TU NÚMERO DE PEDIDO", valor: p.order_number, mono: true },
-      { etiqueta: "TOTAL A PAGAR", valor: fmt(p.total) },
-    ],
+    numero: p.order_number,
+    paso: 2, // sigue esperando el pago
+    caja: [{ etiqueta: "TOTAL A PAGAR", valor: fmt(p.total) }],
     botones: [
       {
         // El mismo mensaje que la página de gracias: nombra lo que se compró y el número.
