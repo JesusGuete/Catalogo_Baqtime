@@ -18,6 +18,8 @@ import {
   botonesCorreo,
   cajaDatos,
   envolverCorreo,
+  pieLegalHtml,
+  PIE_LEGAL_TEXTO,
   esc,
   primerNombre,
   progresoPedido,
@@ -211,7 +213,7 @@ ${botonesCorreo(c.botones)}
     titulo: c.asunto,
     bandeja: c.bandeja,
     contenido,
-    pie: `Recibes este correo porque hiciste un pedido en baqtime.store. ${ayuda}`,
+    pie: `Recibes este correo porque hiciste un pedido en baqtime.store. ${ayuda}${pieLegalHtml()}`,
   });
 
   const texto = [
@@ -226,6 +228,7 @@ ${botonesCorreo(c.botones)}
     ``,
     `--`,
     `Recibes este correo porque hiciste un pedido en baqtime.store. ${ayuda}`,
+    PIE_LEGAL_TEXTO,
   ].join("\n");
 
   return { asunto: c.asunto, html, texto };
