@@ -112,7 +112,8 @@ function contenidoDe(tipo: TipoAviso, p: DatosCorreoEstado): Contenido {
     const filas: Contenido["caja"] = [];
     if (p.carrier) filas.push({ etiqueta: "TRANSPORTADORA", valor: p.carrier });
     if (p.tracking_number) {
-      filas.push({ etiqueta: "NÚMERO DE GUÍA", valor: p.tracking_number, mono: true });
+      // Misma letra y tamaño que la transportadora de arriba: sin `mono`, que la pasaría a letra de máquina.
+      filas.push({ etiqueta: "NÚMERO DE GUÍA", valor: p.tracking_number });
     }
     const fecha = p.estimated_date ? fechaLarga(p.estimated_date) : null;
     if (fecha) filas.push({ etiqueta: "ENTREGA ESTIMADA", valor: fecha });
