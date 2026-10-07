@@ -32,6 +32,8 @@ export interface DatosCorreoPedido {
   items: OrderPublicItem[];
   /** Enlace privado de seguimiento, absoluto: el correo se abre lejos de la tienda. */
   seguimiento: string;
+  /** "6 a 8 días hábiles". Opcional: el reenvío desde el panel no lo recalcula. */
+  entrega?: string;
 }
 
 export interface CorreoArmado {
@@ -364,7 +366,14 @@ ${progresoPedido(2)}
 
               <p style="margin:18px 0 0;font-family:${SANS};font-size:13px;line-height:1.55;color:${C.inkSoft};">
                 <strong style="color:${C.ink};">Se envía a:</strong> ${esc(p.ship_city)} · ${esc(p.ship_address)}
-              </p>
+              </p>${
+                p.entrega
+                  ? `
+              <p style="margin:6px 0 0;font-family:${SANS};font-size:13px;line-height:1.55;color:${C.inkSoft};">
+                <strong style="color:${C.ink};">Entrega:</strong> ${esc(p.entrega)} después de aprobado el pago.
+              </p>`
+                  : ""
+              }
 ${botonesCorreo([
     { href: enlaceWhatsapp, texto: "Confirmar pago por WhatsApp", principal: true },
     { href: p.seguimiento, texto: "Ver el estado de mi pedido", principal: false },
@@ -401,6 +410,7 @@ ${botonesCorreo([
     `Total a pagar: ${fmt(p.total)}`,
     ``,
     `Se envía a: ${p.ship_city} · ${p.ship_address}`,
+    ...(p.entrega ? [`Entrega: ${p.entrega} después de aprobado el pago.`] : []),
     ``,
     `Confirmar pago por WhatsApp: ${enlaceWhatsapp}`,
     `Ver el estado de mi pedido: ${p.seguimiento}`,

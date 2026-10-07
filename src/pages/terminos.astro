@@ -14,7 +14,8 @@ import Footer from "../components/astro/Footer.astro";
 import WhatsappWidget from "../components/react/WhatsappWidget.jsx";
 import SiteHead from "../components/astro/SiteHead.astro";
 import { RESPONSABLE, POLITICA_DATOS_RUTA } from "../lib/legal";
-import { PRICE_SHIP, fmt } from "../lib/pricing.js";
+import { RECARGO_BOLSO_ADICIONAL, ENVIO_DESDE } from "../lib/envios.js";
+import { fmt } from "../lib/pricing.js";
 import "../styles/site.css";
 
 export const prerender = true;
@@ -81,7 +82,9 @@ const correo = `mailto:${RESPONSABLE.correo}`;
       <ul>
         <li>Los precios están en pesos colombianos (COP) y son el precio total de cada producto.</li>
         <li>
-          El envío ({fmt(PRICE_SHIP)}) se suma al total y lo ves antes de confirmar el pedido.
+          El envío depende del municipio de entrega (desde {fmt(ENVIO_DESDE)}) y lo ves antes de
+          confirmar el pedido. Cada bolso adicional al primero suma {fmt(RECARGO_BOLSO_ADICIONAL)}
+          al envío.
         </li>
         <li>
           El precio de tu pedido queda fijo al confirmarlo. Los precios del catálogo pueden
@@ -104,8 +107,10 @@ const correo = `mailto:${RESPONSABLE.correo}`;
       <h2 id="envios">Tiempos de entrega y envíos</h2>
       <ul>
         <li>
-          Entregamos en 2 a 4 días hábiles contados desde que aprobamos el
-          pago. Ese tiempo incluye la producción y el envío.
+          En Barranquilla y su área metropolitana entregamos en 2 a 4 días hábiles contados
+          desde que aprobamos el pago. Para otros municipios se suman los días que tarda la
+          transportadora; el tiempo exacto lo ves en el checkout al elegir el municipio, y te
+          llega en el correo del pedido. Ese tiempo incluye la producción y el envío.
         </li>
         <li>
           Enviamos a toda Colombia con transportadora (por ejemplo, Inter Rapidísimo). En
