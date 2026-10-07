@@ -13,6 +13,7 @@
  *   vino   → error o acción destructiva */
 
 @import "./tokens.css";
+@import "./fonts.css";
 
 * { box-sizing: border-box; }
 

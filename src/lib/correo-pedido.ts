@@ -19,6 +19,7 @@
 import type { OrderPublicItem } from "../types/database";
 import { fmt } from "./pricing.js";
 import { buildOrderMessage, whatsappUrl } from "./whatsapp.js";
+import { POLITICA_DATOS_RUTA, TERMINOS_RUTA } from "./legal";
 
 export interface DatosCorreoPedido {
   order_number: string;
@@ -68,9 +69,24 @@ export const C = {
 export const LOGO_URL = "https://baqtime.store/assets/img/logo.png";
 const LOGO_ANCHO = 150;
 
+/**
+ * Enlaces a la política de datos y a los términos, al pie de todo correo que recibe el
+ * cliente: es el lugar donde la Ley 1581 pide que sepa cómo consultar qué se hace con sus
+ * datos. Absolutos por la misma razón que el logo. La copia interna de la tienda no los lleva.
+ */
+const SITIO = "https://baqtime.store";
+export const PIE_LEGAL_TEXTO = `Política de datos: ${SITIO}${POLITICA_DATOS_RUTA} · Términos y condiciones: ${SITIO}${TERMINOS_RUTA}`;
+
 export const SERIF = "Georgia, 'Times New Roman', serif";
 export const SANS = "Helvetica, Arial, sans-serif";
 export const MONO = "'Courier New', Courier, monospace";
+
+/** La versión HTML de PIE_LEGAL_TEXTO, en el mismo gris del resto del pie. */
+export function pieLegalHtml(): string {
+  const enlace = (ruta: string, texto: string) =>
+    `<a href="${SITIO}${ruta}" style="color:${C.inkSoft};text-decoration:underline;">${texto}</a>`;
+  return `<br>${enlace(POLITICA_DATOS_RUTA, "Política de datos")} · ${enlace(TERMINOS_RUTA, "Términos y condiciones")}`;
+}
 
 /**
  * Todo lo que escribió el cliente pasa por acá antes de entrar al HTML. La dirección es
@@ -361,7 +377,7 @@ ${botonesCorreo([
     titulo: asunto,
     bandeja: `Pedido ${p.order_number} · Total ${fmt(p.total)}. El siguiente paso es confirmar el pago por WhatsApp.`,
     contenido,
-    pie: `Recibes este correo porque hiciste un pedido en baqtime.store. ${ayuda}`,
+    pie: `Recibes este correo porque hiciste un pedido en baqtime.store. ${ayuda}${pieLegalHtml()}`,
   });
 
   // La versión en texto plano no es un adorno: hay clientes de correo que solo muestran
@@ -393,6 +409,7 @@ ${botonesCorreo([
     ``,
     `--`,
     `Recibes este correo porque hiciste un pedido en baqtime.store. ${ayuda}`,
+    PIE_LEGAL_TEXTO,
   ].join("\n");
 
   return { asunto, html, texto };

@@ -8,6 +8,9 @@
 // El `noindex` va acompañado de la cabecera X-Robots-Tag (ver cabecerasPrivadas en
 // src/lib/pedido.ts): la etiqueta sirve si el rastreador llega a leer el HTML, la cabecera
 // sirve aunque no lo lea.
+import fuenteTexto from "../../assets/fonts/work-sans-latin-400-normal.woff2?url";
+import fuenteTitulos from "../../assets/fonts/unna-latin-400-normal.woff2?url";
+
 interface Props {
   title: string;
 }
@@ -30,9 +33,6 @@ const { title } = Astro.props;
 <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 <meta name="theme-color" content="#F2F2F2" />
 
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  href="https://fonts.googleapis.com/css2?family=Unna:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
-  rel="stylesheet"
-/>
+<!-- Fuentes propias (src/styles/fonts.css), precargadas igual que en SiteHead. -->
+<link rel="preload" href={fuenteTexto} as="font" type="font/woff2" crossorigin />
+<link rel="preload" href={fuenteTitulos} as="font" type="font/woff2" crossorigin />

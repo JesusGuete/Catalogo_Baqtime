@@ -4,6 +4,9 @@
 // Estaba copiado en las dos páginas y ya había empezado a separarse: la de producto
 // tenía etiquetas que la portada no. Con un solo lugar, la próxima etiqueta entra en
 // las dos o en ninguna.
+import fuenteTexto from "../../assets/fonts/work-sans-latin-400-normal.woff2?url";
+import fuenteTitulos from "../../assets/fonts/unna-latin-400-normal.woff2?url";
+
 interface Props {
   title: string;
   description: string;
@@ -61,12 +64,8 @@ const {
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:image:alt" content={imageAlt} />
 
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<!-- Los archivos .woff2 no salen de googleapis.com sino de gstatic.com, y ese dominio
-     recién se descubre al leer el CSS. Sin este preconnect el navegador paga DNS + TLS
-     completo justo cuando ya necesita la fuente. -->
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  href="https://fonts.googleapis.com/css2?family=Unna:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
-  rel="stylesheet"
-/>
+<!-- Las fuentes se sirven desde el propio sitio (src/styles/fonts.css). Se precargan las
+     dos que aparecen apenas abre la página —el texto y los títulos— para que el navegador
+     las pida junto con el CSS en vez de descubrirlas después de leerlo. -->
+<link rel="preload" href={fuenteTexto} as="font" type="font/woff2" crossorigin />
+<link rel="preload" href={fuenteTitulos} as="font" type="font/woff2" crossorigin />

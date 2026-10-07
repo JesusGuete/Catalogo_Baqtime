@@ -20,7 +20,7 @@ Normas base:
 | Correos | Correo del cliente → resumen y avisos de estado | `src/lib/correo.ts` (Resend, EE. UU.) |
 | WhatsApp | Mensaje del pedido para coordinar el pago | `src/lib/whatsapp.js` |
 | Navegador | `localStorage: baqtime_cart` (carrito) y `sessionStorage: baqtime_carga_vista` (pantalla de carga) | `src/lib/cart-store.js`, `PantallaCarga.astro` |
-| Terceros | Google Fonts (recibe la IP del visitante), Cloudflare (hosting) | `SiteHead.astro`, `wrangler.jsonc` |
+| Terceros | ~~Google Fonts~~ (quitado en el paso 7), Cloudflare (hosting), Supabase (fotos) | `SiteHead.astro`, `wrangler.jsonc` |
 
 **Huecos encontrados:**
 1. No existe política de tratamiento de datos publicada.
@@ -208,12 +208,18 @@ Si empieza a llevarla o a facturar, hay que revisar el plazo.
 
 ---
 
-## Paso 7 — Mejoras opcionales
+## Paso 7 — Mejoras opcionales ✅
 
-1. **Auto-hospedar las fuentes** (Unna, Work Sans, JetBrains Mono) en vez de Google Fonts: el
-   navegador del cliente deja de enviar su IP a Google y la página carga más rápido.
-2. Enlace a la política en el pie de los correos de pedido (`src/lib/correo-pedido.ts`).
-3. Revisar cada año la política y subir la versión.
+**Hecho:**
+1. **Fuentes propias:** Unna, Work Sans y JetBrains Mono salen de `src/assets/fonts/` (Fontsource
+   5.3.0, solo el subconjunto latino y los mismos pesos de antes, licencia OFL) en vez de Google
+   Fonts. Se cargan con `src/styles/fonts.css` desde `site.css` y `admin.css`, y las dos
+   principales se precargan en `SiteHead` y `PedidoHead`. El sitio ya no pide nada a Google.
+2. **Correos:** el pie de todo correo al cliente (pedido, avisos de estado, recordatorio) enlaza
+   la política de datos y los términos. La copia interna de la tienda no los lleva.
+3. **Política:** la sección 6 ya no menciona Google Fonts, y la sección 5 aclara que Supabase
+   también guarda las fotos del catálogo. La versión sube a `2026-10-07.3`.
+4. **Revisión anual:** queda en `docs/procedimiento-datos.md`, sección 8.
 
 ---
 
@@ -228,6 +234,6 @@ Si empieza a llevarla o a facturar, hay que revisar el plazo.
 | 4 | Cookies | 1 | ✅ como sección de la política; página aparte opcional |
 | 5 | Canal PQR + procedimiento | 0 | ✅ |
 | 6 | Conservación y supresión | 1 | ✅ (falta correr 025) |
-| 7 | Opcionales | — | ⬜ |
+| 7 | Opcionales | — | ✅ |
 
-Siguiente: Paso 7 (opcionales).
+Plan completo. Pendiente solo de mantenimiento: limpieza mensual de Gmail y WhatsApp, y revisión anual.

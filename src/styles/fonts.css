@@ -1,0 +1,73 @@
+/* Las fuentes de la marca, servidas desde el propio sitio.
+ *
+ * Antes venían de Google Fonts: cada visita le mandaba a Google la IP del visitante, y la
+ * política de datos tenía que decirlo. Ahora los archivos viven en src/assets/fonts/ y Vite
+ * los publica con nombre con huella (/_astro/…), así que el navegador los puede guardar sin
+ * miedo a quedarse con una versión vieja.
+ *
+ * Son los mismos pesos que se pedían a Google, ni uno más, y solo el subconjunto latino: cubre
+ * todo el español (á, ñ, ü, ¿, ¡). Lo que no esté en el archivo (un ✕, por ejemplo) sale con la
+ * fuente del sistema, igual que antes.
+ *
+ * Licencia: SIL Open Font License 1.1 (src/assets/fonts/LICENSE-*.txt). Los archivos salen de
+ * los paquetes de Fontsource 5.3.0 (@fontsource/unna, /work-sans, /jetbrains-mono).
+ */
+
+@font-face {
+  font-family: 'Unna';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/unna-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: 'Unna';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/unna-latin-400-italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: 'Unna';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../assets/fonts/unna-latin-700-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: 'Work Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/work-sans-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: 'Work Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../assets/fonts/work-sans-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: 'Work Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../assets/fonts/work-sans-latin-600-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../assets/fonts/jetbrains-mono-latin-500-normal.woff2") format("woff2");
+}

@@ -1,6 +1,7 @@
 /* La paleta vive en tokens.css: la comparten la tienda y el panel de administración.
    Los valores son los mismos que estaban acá, movidos sin cambios. */
 @import "./tokens.css";
+@import "./fonts.css";
 
   :root{
     /* Alto real del <header> (padding 16px + logo 38.8px + borde 1px). Lo usan el
