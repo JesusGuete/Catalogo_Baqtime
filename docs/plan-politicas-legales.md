@@ -172,7 +172,12 @@ actualiza esta página.
 
 ---
 
-## Paso 5 — Canal de PQR y procedimiento interno
+## Paso 5 — Canal de PQR y procedimiento interno ✅
+
+**Hecho:** `docs/procedimiento-datos.md`. Tiene canales, plazos legales, paso a paso, consultas SQL
+para buscar, corregir, dar de baja de promociones y borrar o anonimizar (probadas contra la base
+real), plantillas de respuesta, registro de solicitudes e incidentes de seguridad. El correo de
+contacto ya está en el footer, la política y los términos.
 
 **Entregables:**
 1. Correo dedicado (insumo 4) visible en footer, política y términos.
@@ -214,8 +219,8 @@ actualiza esta página.
 | 2 | Autorización en checkout | 1 | ✅ (falta correr 024) |
 | 3 | Términos + identificación | 0 | ✅ |
 | 4 | Cookies | 1 | ✅ como sección de la política; página aparte opcional |
-| 5 | Canal PQR + procedimiento | 0 | ⬜ |
+| 5 | Canal PQR + procedimiento | 0 | ✅ |
 | 6 | Conservación y supresión | 1 | ⬜ |
 | 7 | Opcionales | — | ⬜ |
 
-Siguiente: Paso 5 (procedimiento interno para responder PQR y solicitudes de datos).
+Siguiente: Paso 6 (conservación y supresión: plazo con el contador y, opcional, botón de anonimizar en el panel).
