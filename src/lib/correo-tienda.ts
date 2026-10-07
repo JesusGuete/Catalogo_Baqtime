@@ -50,7 +50,7 @@ export function whatsappDelCliente(telefono: string): string | null {
 function fila(etiqueta: string, valorHtml: string): string {
   return `
                 <tr>
-                  <td style="padding:7px 12px 7px 0;font-family:${MONO};font-size:10px;letter-spacing:1.5px;color:${C.draftText};vertical-align:top;white-space:nowrap;">${esc(etiqueta)}</td>
+                  <td style="padding:7px 12px 7px 0;font-family:${MONO};font-size:10px;letter-spacing:1.5px;color:${C.inkSoft};vertical-align:top;white-space:nowrap;">${esc(etiqueta)}</td>
                   <td style="padding:7px 0;font-family:${SANS};font-size:14px;color:${C.ink};line-height:1.45;">${valorHtml}</td>
                 </tr>`;
 }
@@ -70,7 +70,7 @@ export function armarCorreoTienda(p: DatosCorreoTienda): CorreoArmado {
     fila("DIRECCIÓN", esc(p.ship_address)),
   ].join("");
 
-  // Una tarjeta por producto, con las iniciales bordadas en una pastilla dorada: es lo que se
+  // Una tarjeta por producto, con las iniciales bordadas en una pastilla gris: es lo que se
   // produce a mano y lo que más conviene revisar. Mismo estilo que los correos al cliente.
   const productos = p.items
     .map((it) => {
@@ -78,11 +78,11 @@ export function armarCorreoTienda(p: DatosCorreoTienda): CorreoArmado {
       return `
                 <tr>
                   <td style="padding:5px 0;">
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.tarjeta};border-radius:12px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.suave};border-radius:12px;">
                       <tr>
                         <td style="padding:13px 14px;font-family:${SANS};font-size:14px;font-weight:bold;color:${C.ink};">${esc(it.product_name)}${
                           detalle
-                            ? `<div style="margin-top:5px;"><span style="display:inline-block;background:${C.pastilla};color:${C.draftText};font-size:11px;font-weight:normal;padding:3px 9px;border-radius:10px;">${esc(detalle)}</span></div>`
+                            ? `<div style="margin-top:5px;"><span style="display:inline-block;background:${C.pastilla};color:${C.inkSoft};font-size:11px;font-weight:normal;padding:3px 9px;border-radius:10px;">${esc(detalle)}</span></div>`
                             : ""
                         }</td>
                         <td align="right" style="padding:13px 14px;font-family:${SANS};font-size:14px;color:${C.ink};white-space:nowrap;vertical-align:top;">${esc(fmt(it.line_total))}</td>
@@ -99,14 +99,14 @@ export function armarCorreoTienda(p: DatosCorreoTienda): CorreoArmado {
                   <td align="right" style="padding:4px 2px;font-family:${SANS};font-size:13px;color:${C.inkSoft};white-space:nowrap;">${esc(fmt(valor))}</td>
                 </tr>`;
 
-  const contenido = `              <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;letter-spacing:2px;color:${C.mocha};">AVISO DE LA TIENDA</p>
+  const contenido = `              <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;letter-spacing:2px;color:${C.inkSoft};">AVISO DE LA TIENDA</p>
               <h1 style="margin:0 0 8px;font-family:${SANS};font-size:26px;line-height:1.2;font-weight:bold;color:${C.ink};">Llegó un pedido nuevo</h1>
               <p style="margin:0;font-family:${SANS};font-size:14px;line-height:1.6;color:${C.inkSoft};">
                 Pendiente de pago. Total ${esc(fmt(p.total))}.
               </p>
 ${bloqueNumeroPedido(p.order_number, { etiqueta: "NUEVO PEDIDO" })}
 
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;background:${C.draftBg};border:1px solid ${C.draftBorder};border-radius:12px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;background:${C.suave};border:1px solid ${C.line};border-radius:12px;">
                 <tr>
                   <td style="padding:12px 20px;">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${datos}
@@ -121,9 +121,9 @@ ${bloqueNumeroPedido(p.order_number, { etiqueta: "NUEVO PEDIDO" })}
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;">${linea("Subtotal", p.subtotal)}${linea("Envío", p.shipping_cost)}
               </table>
 
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;background:${C.draftBg};border:1px solid ${C.draftBorder};border-radius:12px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;background:${C.suave};border:1px solid ${C.line};border-radius:12px;">
                 <tr>
-                  <td style="padding:16px;font-family:${SANS};font-size:13px;color:${C.draftText};">Total</td>
+                  <td style="padding:16px;font-family:${SANS};font-size:13px;color:${C.inkSoft};">Total</td>
                   <td align="right" style="padding:16px;font-family:${SANS};font-size:24px;font-weight:bold;color:${C.ink};white-space:nowrap;">${esc(fmt(p.total))}</td>
                 </tr>
               </table>

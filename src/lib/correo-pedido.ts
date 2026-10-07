@@ -39,27 +39,26 @@ export interface CorreoArmado {
   texto: string;
 }
 
-// tokens.css
+/** Blanco, negro y grises neutros: sin tinte cálido ni colores de acento. */
 export const C = {
-  ink: "#26221D",
-  inkSoft: "#6b6259",
-  cream: "#F2F2F2",
-  line: "#E2DED8",
-  draftBg: "#FDFAF4",
-  draftBorder: "#E8D9BC",
-  draftText: "#8a6420",
-  blanco: "#FFFFFF",
-  /** --vino: el color del encabezado de la tienda. */
-  vino: "#6E1F2A",
-  /** --mocha: el dorado de las etiquetas. */
-  mocha: "#B68234",
-  /** Fondo de las tarjetas de cada producto. */
-  tarjeta: "#FAF7F2",
-  /** Texto y borde de lo que todavía no pasó (pasos pendientes). */
-  apagado: "#A39B90",
-  apagadoBorde: "#D8D3CB",
+  /** El negro de los títulos, del bloque del número y de los botones. */
+  ink: "#111111",
+  /** Texto secundario. */
+  inkSoft: "#666666",
+  /** Fondo detrás de la tarjeta. */
+  cream: "#F4F4F4",
+  /** Líneas finas y bordes. */
+  line: "#E6E6E6",
+  /** Fondo de las tarjetas de producto, de datos y del total. */
+  suave: "#F7F7F7",
+  /** Lo que todavía no pasó (pasos pendientes). */
+  apagado: "#B3B3B3",
+  apagadoBorde: "#D6D6D6",
   /** Fondo de las "pastillas" con las iniciales bordadas. */
-  pastilla: "#F3E8D2",
+  pastilla: "#ECECEC",
+  /** Texto pequeño sobre el bloque negro. */
+  sobreNegro: "#BDBDBD",
+  blanco: "#FFFFFF",
 };
 
 /**
@@ -172,8 +171,8 @@ export function detalleItem(it: OrderPublicItem): string {
 
 /**
  * EL NÚMERO DE PEDIDO, EN GRANDE. Es lo único que el cliente necesita recordar para consultar
- * su pedido, y en el diseño anterior se perdía dentro de una caja pequeña. Va en un bloque vino
- * (el color del encabezado de la tienda) con el número en blanco, que es lo más fuerte del correo.
+ * su pedido, y en el diseño anterior se perdía dentro de una caja pequeña. Va en un bloque negro
+ * con el número en blanco, que es lo más fuerte del correo.
  *
  * @param pista Una línea pequeña debajo del número, solo en el correo donde el cliente lo recibe
  *   por primera vez.
@@ -184,14 +183,14 @@ export function bloqueNumeroPedido(
 ): string {
   const { etiqueta = "TU NÚMERO DE PEDIDO", pista } = opciones;
   return `
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;background:${C.vino};border-radius:14px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;background:${C.ink};border-radius:14px;">
                 <tr>
                   <td align="center" style="padding:20px 16px;">
-                    <div style="font-family:${MONO};font-size:11px;letter-spacing:3px;color:#E3C79B;">${esc(etiqueta)}</div>
+                    <div style="font-family:${MONO};font-size:11px;letter-spacing:3px;color:${C.sobreNegro};">${esc(etiqueta)}</div>
                     <div style="font-family:${MONO};font-size:34px;font-weight:bold;letter-spacing:3px;line-height:1.15;color:${C.blanco};margin-top:8px;">${esc(numero)}</div>${
                       pista
                         ? `
-                    <div style="font-family:${SANS};font-size:12px;line-height:1.45;color:#EBD6D6;margin-top:10px;">${esc(pista)}</div>`
+                    <div style="font-family:${SANS};font-size:12px;line-height:1.45;color:${C.sobreNegro};margin-top:10px;">${esc(pista)}</div>`
                         : ""
                     }
                   </td>
@@ -213,8 +212,8 @@ export function progresoPedido(paso: PasoPedido): string {
     const hecho = n < paso;
     const actual = n === paso;
     const fondo = hecho ? C.ink : C.blanco;
-    const borde = hecho ? C.ink : actual ? C.mocha : C.apagadoBorde;
-    const color = hecho ? C.blanco : actual ? C.draftText : C.apagado;
+    const borde = hecho || actual ? C.ink : C.apagadoBorde;
+    const color = hecho ? C.blanco : actual ? C.ink : C.apagado;
     const etiqueta = paso === 5 && n === 4 ? "Entregado" : nombre;
     return `
                   <td align="center" width="25%" style="vertical-align:top;padding:0 2px;">
@@ -235,12 +234,12 @@ export function cajaDatos(filas: { etiqueta: string; valor: string; mono?: boole
   const celdas = filas
     .map(
       (f, i) => `
-                    <div style="font-family:${MONO};font-size:10px;letter-spacing:2px;color:${C.draftText};${i ? "margin-top:14px;" : ""}">${esc(f.etiqueta)}</div>
+                    <div style="font-family:${MONO};font-size:10px;letter-spacing:2px;color:${C.inkSoft};${i ? "margin-top:14px;" : ""}">${esc(f.etiqueta)}</div>
                     <div style="font-family:${f.mono ? MONO : SANS};font-size:${f.mono ? "22px" : "15px"};${f.mono ? "letter-spacing:2px;" : ""}color:${C.ink};margin-top:6px;">${esc(f.valor)}</div>`
     )
     .join("");
   return `
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;background:${C.draftBg};border:1px solid ${C.draftBorder};border-radius:12px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;background:${C.suave};border:1px solid ${C.line};border-radius:12px;">
                 <tr>
                   <td style="padding:16px 20px;">${celdas}
                   </td>
@@ -293,7 +292,7 @@ export function armarCorreoPedido(p: DatosCorreoPedido, puedeResponder: boolean)
   const aviso24h =
     "Recuerda confirmar el pago en las próximas 24 horas. Pasado ese tiempo, el pedido queda como no confirmado.";
 
-  // Una tarjeta por producto; las iniciales bordadas van en una pastilla dorada porque son lo que
+  // Una tarjeta por producto; las iniciales bordadas van en una pastilla gris porque son lo que
   // se produce a mano y lo que más conviene que el cliente revise.
   const tarjetasItems = p.items
     .map((it) => {
@@ -301,13 +300,13 @@ export function armarCorreoPedido(p: DatosCorreoPedido, puedeResponder: boolean)
       return `
                 <tr>
                   <td style="padding:5px 0;">
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.tarjeta};border-radius:12px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.suave};border-radius:12px;">
                       <tr>
                         <td style="padding:13px 14px;font-family:${SANS};font-size:14px;font-weight:bold;color:${C.ink};">
                           ${esc(it.product_name)}${
                             detalle
                               ? `
-                          <div style="margin-top:5px;"><span style="display:inline-block;background:${C.pastilla};color:${C.draftText};font-size:11px;font-weight:normal;padding:3px 9px;border-radius:10px;">${esc(detalle)}</span></div>`
+                          <div style="margin-top:5px;"><span style="display:inline-block;background:${C.pastilla};color:${C.inkSoft};font-size:11px;font-weight:normal;padding:3px 9px;border-radius:10px;">${esc(detalle)}</span></div>`
                               : ""
                           }
                         </td>
@@ -319,7 +318,7 @@ export function armarCorreoPedido(p: DatosCorreoPedido, puedeResponder: boolean)
     })
     .join("");
 
-  const contenido = `              <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;letter-spacing:2px;color:${C.mocha};">PEDIDO REGISTRADO</p>
+  const contenido = `              <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;letter-spacing:2px;color:${C.inkSoft};">PEDIDO REGISTRADO</p>
               <h1 style="margin:0 0 8px;font-family:${SANS};font-size:26px;line-height:1.2;font-weight:bold;color:${C.ink};">¡Gracias, ${esc(nombre)}!</h1>
               <p style="margin:0;font-family:${SANS};font-size:14px;line-height:1.6;color:${C.inkSoft};">
                 Tu pedido quedó guardado. El siguiente paso es coordinar el pago por WhatsApp.
@@ -341,9 +340,9 @@ ${progresoPedido(2)}
                 </tr>
               </table>
 
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;background:${C.draftBg};border:1px solid ${C.draftBorder};border-radius:12px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;background:${C.suave};border:1px solid ${C.line};border-radius:12px;">
                 <tr>
-                  <td style="padding:16px;font-family:${SANS};font-size:13px;color:${C.draftText};">Total a pagar</td>
+                  <td style="padding:16px;font-family:${SANS};font-size:13px;color:${C.inkSoft};">Total a pagar</td>
                   <td align="right" style="padding:16px;font-family:${SANS};font-size:24px;font-weight:bold;color:${C.ink};white-space:nowrap;">${esc(fmt(p.total))}</td>
                 </tr>
               </table>

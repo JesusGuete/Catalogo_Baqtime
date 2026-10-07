@@ -196,7 +196,7 @@ export function armarDesdeContenido(c: Contenido, puedeResponder: boolean): Corr
     )
     .join("");
 
-  const contenido = `              <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;letter-spacing:2px;color:${C.mocha};">${esc(c.etiqueta)}</p>
+  const contenido = `              <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;letter-spacing:2px;color:${C.inkSoft};">${esc(c.etiqueta)}</p>
               <h1 style="margin:0 0 8px;font-family:${SANS};font-size:26px;line-height:1.2;font-weight:bold;color:${C.ink};">${esc(c.titulo)}</h1>${parrafos}
 ${bloqueNumeroPedido(c.numero)}
 ${progresoPedido(c.paso)}
