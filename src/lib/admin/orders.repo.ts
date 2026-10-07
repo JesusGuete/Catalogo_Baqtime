@@ -19,6 +19,7 @@ import {
   SELECT_PEDIDO_LISTA,
   SELECT_PEDIDO_DETALLE,
   type Order,
+  type OrderNotificationType,
   type OrderStatus,
   type OrderUpdate,
   type OrderWithDetail,
@@ -127,6 +128,45 @@ export async function reenviarCorreo(id: string): Promise<void> {
 
   const cuerpo = (await res.json().catch(() => null)) as { error?: string } | null;
   throw new AdminError(cuerpo?.error ?? `Error ${res.status} al reenviar el correo.`, {
+    code: res.status === 401 ? "NO_SESSION" : null,
+    status: res.status,
+  });
+}
+
+/**
+ * Le avisa al cliente por correo de un cambio de estado (pago confirmado, enviado, entregado).
+ *
+ * Va al servidor de la tienda y no a Supabase, por lo mismo que reenviarCorreo(): mandar un
+ * correo necesita la clave de Resend, un secreto del Worker. Se llama DESPUÉS de cambiar el
+ * estado, y el servidor comprueba en la base que el pedido de verdad esté en ese punto.
+ *
+ * Si el envío falla, el servidor ya lo dejó anotado en el pedido (order_notifications); acá
+ * además se lanza el error para que el panel lo muestre en el momento. El cambio de estado
+ * en sí NO se deshace: el pedido ya avanzó, y avisarle al cliente es un paso aparte.
+ */
+export async function notificarEstado(id: string, tipo: OrderNotificationType): Promise<void> {
+  const token = getAccessToken();
+  if (!token) {
+    throw new AdminError("Tu sesión expiró. Vuelve a iniciar sesión.", {
+      code: "NO_SESSION",
+      status: 401,
+    });
+  }
+
+  let res: Response;
+  try {
+    res = await fetch("/api/pedidos/notificar-estado", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ id, tipo }),
+    });
+  } catch (e) {
+    throw desdeRed(e);
+  }
+  if (res.ok) return;
+
+  const cuerpo = (await res.json().catch(() => null)) as { error?: string } | null;
+  throw new AdminError(cuerpo?.error ?? `Error ${res.status} al avisar al cliente.`, {
     code: res.status === 401 ? "NO_SESSION" : null,
     status: res.status,
   });

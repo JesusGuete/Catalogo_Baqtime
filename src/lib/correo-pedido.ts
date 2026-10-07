@@ -38,7 +38,7 @@ export interface CorreoArmado {
 }
 
 // tokens.css
-const C = {
+export const C = {
   ink: "#26221D",
   inkSoft: "#6b6259",
   cream: "#F2F2F2",
@@ -49,16 +49,16 @@ const C = {
   blanco: "#FFFFFF",
 };
 
-const SERIF = "Georgia, 'Times New Roman', serif";
-const SANS = "Helvetica, Arial, sans-serif";
-const MONO = "'Courier New', Courier, monospace";
+export const SERIF = "Georgia, 'Times New Roman', serif";
+export const SANS = "Helvetica, Arial, sans-serif";
+export const MONO = "'Courier New', Courier, monospace";
 
 /**
  * Todo lo que escribió el cliente pasa por acá antes de entrar al HTML. La dirección es
  * texto libre: sin esto, alguien podría meter etiquetas y cambiar lo que dice el correo
  * que sale firmado por Baqtime.
  */
-function esc(texto: string | null | undefined): string {
+export function esc(texto: string | null | undefined): string {
   return String(texto ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -67,8 +67,61 @@ function esc(texto: string | null | undefined): string {
     .replace(/'/g, "&#39;");
 }
 
+/**
+ * El marco común de todos los correos de Baqtime: cabecera, caja blanca y pie.
+ *
+ * `contenido` y `pie` son HTML ya armado y se insertan tal cual: quien llama escapa lo que
+ * escribió el cliente (ver esc()). `titulo` y `bandeja` son texto plano y se escapan acá.
+ * `bandeja` es lo que la bandeja de entrada muestra junto al asunto antes de abrir el correo.
+ */
+export function envolverCorreo(o: {
+  titulo: string;
+  bandeja: string;
+  contenido: string;
+  pie: string;
+}): string {
+  return `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>${esc(o.titulo)}</title>
+</head>
+<body style="margin:0;padding:0;background:${C.cream};">
+  <!-- Lo que muestra la bandeja de entrada junto al asunto, antes de abrir el correo. -->
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+    ${esc(o.bandeja)}
+  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.cream};">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:${C.blanco};border:1px solid ${C.line};">
+          <tr>
+            <td align="center" style="background:${C.ink};padding:22px 24px;font-family:${MONO};font-size:15px;letter-spacing:8px;color:${C.blanco};">
+              BAQTIME
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px 28px 8px;">
+${o.contenido}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:18px 28px 24px;border-top:1px solid ${C.line};font-family:${SANS};font-size:11px;line-height:1.55;color:${C.inkSoft};">
+              ${o.pie}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 /** El primer nombre, como en la página de gracias: "¡Gracias, Laura!". */
-function primerNombre(nombre: string): string {
+export function primerNombre(nombre: string): string {
   return nombre.trim().split(/\s+/)[0] ?? "";
 }
 
@@ -127,31 +180,7 @@ export function armarCorreoPedido(p: DatosCorreoPedido, puedeResponder: boolean)
           <td align="right" style="padding:${final ? "12px" : "8px"} 0 0 12px;font-family:${SANS};font-size:${final ? "15px" : "13px"};color:${final ? C.ink : C.inkSoft};white-space:nowrap;${final ? "font-weight:bold;" : ""}">${esc(fmt(valor))}</td>
         </tr>`;
 
-  const html = `<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light only">
-<title>${esc(asunto)}</title>
-</head>
-<body style="margin:0;padding:0;background:${C.cream};">
-  <!-- Lo que muestra la bandeja de entrada junto al asunto, antes de abrir el correo. -->
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
-    Pedido ${esc(p.order_number)} · Total ${esc(fmt(p.total))}. El siguiente paso es confirmar el pago por WhatsApp.
-  </div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.cream};">
-    <tr>
-      <td align="center" style="padding:24px 12px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:${C.blanco};border:1px solid ${C.line};">
-          <tr>
-            <td align="center" style="background:${C.ink};padding:22px 24px;font-family:${MONO};font-size:15px;letter-spacing:8px;color:${C.blanco};">
-              BAQTIME
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:32px 28px 8px;">
-              <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;letter-spacing:2px;color:#B68234;">PEDIDO REGISTRADO</p>
+  const contenido = `              <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;letter-spacing:2px;color:#B68234;">PEDIDO REGISTRADO</p>
               <h1 style="margin:0 0 8px;font-family:${SERIF};font-size:28px;line-height:1.15;font-weight:bold;color:${C.ink};">¡Gracias, ${esc(nombre)}!</h1>
               <p style="margin:0 0 24px;font-family:${SANS};font-size:14px;line-height:1.6;color:${C.inkSoft};">
                 Tu pedido quedó guardado. El siguiente paso es coordinar el pago por WhatsApp.
@@ -194,20 +223,14 @@ export function armarCorreoPedido(p: DatosCorreoPedido, puedeResponder: boolean)
 
               <p style="margin:20px 0 28px;font-family:${SANS};font-size:12px;line-height:1.55;color:${C.inkSoft};">
                 ${aviso24h}
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:18px 28px 24px;border-top:1px solid ${C.line};font-family:${SANS};font-size:11px;line-height:1.55;color:${C.inkSoft};">
-              Recibes este correo porque hiciste un pedido en baqtime.store. ${ayuda}
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+              </p>`;
+
+  const html = envolverCorreo({
+    titulo: asunto,
+    bandeja: `Pedido ${p.order_number} · Total ${fmt(p.total)}. El siguiente paso es confirmar el pago por WhatsApp.`,
+    contenido,
+    pie: `Recibes este correo porque hiciste un pedido en baqtime.store. ${ayuda}`,
+  });
 
   // La versión en texto plano no es un adorno: hay clientes de correo que solo muestran
   // esta, y que falte es una de las señales que usan los filtros de spam.
