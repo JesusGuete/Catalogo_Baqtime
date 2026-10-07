@@ -24,3 +24,7 @@ export const RESPONSABLE = {
 export const POLITICA_DATOS_VERSION = "2026-10-07";
 export const POLITICA_DATOS_VIGENCIA = "7 de octubre de 2026";
 export const POLITICA_DATOS_RUTA = "/politica-de-datos";
+
+/** Términos y condiciones de venta. Misma regla: un cambio de fondo actualiza la fecha. */
+export const TERMINOS_VIGENCIA = "7 de octubre de 2026";
+export const TERMINOS_RUTA = "/terminos";

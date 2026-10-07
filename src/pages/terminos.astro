@@ -1,0 +1,250 @@
+---
+// Términos y condiciones de venta (Ley 1480 de 2011 — Estatuto del Consumidor — y Ley 2439
+// de 2024 para comercio electrónico).
+//
+// La estructura toma como referencia la de Vélez (velez.com.co), adaptada a una tienda de
+// productos personalizados que vende por pedido y cobra por WhatsApp. Las reglas propias de
+// Baqtime (plazos de entrega, garantía, cancelación, devoluciones) las fijó el dueño el
+// 2026-10-07; están anotadas en docs/plan-politicas-legales.md.
+//
+// Estática por la misma razón que /politica-de-datos: el checkout enlaza acá en el momento
+// de confirmar, así que tiene que abrir aunque Supabase esté caído.
+import Header from "../components/astro/Header.astro";
+import Footer from "../components/astro/Footer.astro";
+import WhatsappWidget from "../components/react/WhatsappWidget.jsx";
+import SiteHead from "../components/astro/SiteHead.astro";
+import { RESPONSABLE, TERMINOS_VIGENCIA, POLITICA_DATOS_RUTA } from "../lib/legal";
+import { PRICE_SHIP, fmt } from "../lib/pricing.js";
+import "../styles/site.css";
+
+export const prerender = true;
+
+const url = new URL("/terminos", Astro.site).href;
+const imagen = new URL("/assets/img/og-image.png", Astro.site).href;
+const correo = `mailto:${RESPONSABLE.correo}`;
+---
+
+<html lang="es-CO">
+  <head>
+    <SiteHead
+      title="Términos y condiciones — Baqtime"
+      description="Condiciones de compra en Baqtime: pedidos, pagos, tiempos de entrega, productos personalizados, garantía, cancelaciones y devoluciones."
+      url={url}
+      image={imagen}
+      imageAlt="Baqtime"
+    />
+  </head>
+  <body>
+    <Header />
+
+    <main class="legal">
+      <p class="legal-eyebrow mono">LEGAL</p>
+      <h1>Términos y condiciones</h1>
+      <p class="legal-meta mono">Vigentes desde el {TERMINOS_VIGENCIA}</p>
+
+      <p>
+        Estos términos aplican a las compras hechas en baqtime.store. Al confirmar un pedido
+        aceptas estas condiciones, así que te recomendamos leerlas antes de comprar. Se rigen
+        por las leyes de Colombia, en especial la Ley 1480 de 2011 (Estatuto del Consumidor).
+      </p>
+
+      <h2 id="vendedor">1. Quién vende</h2>
+      <ul class="legal-datos">
+        <li><strong>Nombre comercial:</strong> {RESPONSABLE.nombre} (persona natural)</li>
+        <li><strong>Dirección de notificación:</strong> {RESPONSABLE.direccion}</li>
+        <li><strong>Correo:</strong> <a href={correo}>{RESPONSABLE.correo}</a></li>
+        <li><strong>Teléfono y WhatsApp:</strong> {RESPONSABLE.telefono}</li>
+        <li><strong>Horario de atención:</strong> lunes a domingo, 10:00 a.m. a 10:00 p.m.</li>
+      </ul>
+      <p>
+        Baqtime no tiene tienda física: vendemos solo por este sitio web y atendemos por
+        WhatsApp y correo.
+      </p>
+
+      <h2 id="pedidos">2. Cómo funciona un pedido</h2>
+      <ol>
+        <li>Eliges el producto, su color y, si es personalizable, las iniciales y el color del hilo.</li>
+        <li>
+          Llenas tus datos de envío y confirmas. Recibes un número de pedido y un resumen en tu
+          correo.
+        </li>
+        <li>
+          Coordinamos el pago contigo por WhatsApp. <strong>Si el pago no se hace en las 24
+          horas siguientes, el pedido se cancela automáticamente.</strong>
+        </li>
+        <li>Cuando aprobamos el pago, empezamos a producir tu pedido.</li>
+      </ol>
+      <p>
+        Puedes consultar el estado de tu pedido cuando quieras en
+        <a href="/pedido">baqtime.store/pedido</a> con tu número de pedido.
+      </p>
+
+      <h2 id="precios">3. Precios</h2>
+      <ul>
+        <li>Los precios están en pesos colombianos (COP) y son el precio total de cada producto.</li>
+        <li>
+          El envío ({fmt(PRICE_SHIP)}) se suma al total y lo ves antes de confirmar el pedido.
+        </li>
+        <li>
+          El precio de tu pedido queda fijo al confirmarlo. Los precios del catálogo pueden
+          cambiar para pedidos nuevos.
+        </li>
+        <li>
+          Si por un error evidente un producto aparece con un precio equivocado, podemos
+          cancelar el pedido. Si ya pagaste, te devolvemos el 100 %.
+        </li>
+      </ul>
+
+      <h2 id="pagos">4. Medios de pago</h2>
+      <p>
+        Aceptamos transferencia bancaria, Nequi, tarjeta de crédito y otros medios
+        electrónicos. El pago se coordina por WhatsApp después de confirmar el pedido.
+        Baqtime no guarda datos de tarjetas, y <strong>nunca te pediremos claves ni códigos
+        de verificación</strong>.
+      </p>
+
+      <h2 id="envios">5. Tiempos de entrega y envíos</h2>
+      <ul>
+        <li>
+          Entregamos en <strong>2 a 4 días hábiles</strong> contados desde que aprobamos el
+          pago. Ese tiempo incluye la producción y el envío.
+        </li>
+        <li>
+          Enviamos a toda Colombia con transportadora (por ejemplo, Inter Rapidísimo). En
+          Barranquilla la entrega es local.
+        </li>
+        <li>
+          Cuando despachamos, te enviamos el número de guía para que sigas el paquete.
+        </li>
+        <li>
+          Revisa bien tus datos de envío. Fuera de Barranquilla, la transportadora pide el
+          documento de quien recibe.
+        </li>
+        <li>
+          Si la transportadora tiene un retraso o hay un caso de fuerza mayor, te avisamos y te
+          damos una nueva fecha.
+        </li>
+      </ul>
+
+      <h2 id="personalizados">6. Productos personalizados</h2>
+      <ul>
+        <li>
+          <strong>Revisa las iniciales y el color del hilo antes de confirmar:</strong>
+          bordamos exactamente lo que escribiste en el pedido.
+        </li>
+        <li>
+          Por ser hechos a tu medida, los productos personalizados <strong>no tienen derecho de
+          retracto ni cambios por gusto</strong> (Ley 1480 de 2011, art. 47). Sí tienen garantía
+          (sección 8).
+        </li>
+        <li>
+          Si el bordado no coincide con lo que pediste, es un error nuestro: lo corregimos o
+          rehacemos el producto sin costo.
+        </li>
+        <li>
+          Los colores pueden verse un poco distintos según la pantalla. Como los productos son
+          hechos a mano, pueden tener pequeñas variaciones que no son defectos.
+        </li>
+      </ul>
+
+      <h2 id="danado">7. Si te llega un producto equivocado o dañado</h2>
+      <p>
+        Avísanos dentro de los <strong>2 días hábiles siguientes a la entrega</strong>, por
+        WhatsApp o a <a href={correo}>{RESPONSABLE.correo}</a>, con tu número de pedido y fotos
+        o video donde se vea el problema. Te enviamos el producto correcto o, si no es posible,
+        te devolvemos el dinero. Los envíos corren por nuestra cuenta.
+      </p>
+      <p>
+        Pasado ese plazo, los defectos de fabricación siguen cubiertos por la garantía.
+      </p>
+
+      <h2 id="garantia">8. Garantía</h2>
+      <ul>
+        <li>
+          Todos nuestros productos tienen <strong>1 mes de garantía</strong> desde la entrega,
+          por defectos de fabricación: costuras, bordado, herrajes, cierres o materiales.
+        </li>
+        <li>
+          Para pedirla, escríbenos con tu número de pedido y <strong>fotos o video claros del
+          defecto</strong>. Con eso lo evaluamos y te respondemos en máximo 15 días hábiles.
+        </li>
+        <li>
+          Si el defecto tiene reparación, <strong>lo reparamos sin costo</strong>. Si no tiene
+          reparación, o si la falla se repite, te cambiamos el producto o te devolvemos el
+          dinero.
+        </li>
+        <li>Los envíos de la garantía corren por cuenta de Baqtime.</li>
+        <li>
+          La garantía no cubre el desgaste normal por uso, el mal uso, los accidentes, ni los
+          daños por lavado o cuidados indebidos, o por arreglos hechos por terceros.
+        </li>
+      </ul>
+
+      <h2 id="cancelaciones">9. Cancelaciones</h2>
+      <p>
+        Puedes cancelar tu pedido <strong>mientras no hayamos empezado a producirlo</strong>.
+        Escríbenos por WhatsApp o correo; si ya pagaste, te devolvemos el 100 %. Puedes ver si
+        tu pedido ya está “En producción” en la página de seguimiento. Una vez empezada la
+        producción, el pedido ya no se puede cancelar.
+      </p>
+
+      <h2 id="retracto">10. Derecho de retracto</h2>
+      <p>
+        Los productos personalizados no tienen derecho de retracto (sección 6). Si compras un
+        producto <strong>sin personalizar</strong>, puedes retractarte dentro de los 5 días
+        hábiles siguientes a la entrega: el producto debe volver sin uso, en el mismo estado en
+        que lo recibiste y con su empaque. En ese caso el envío de la devolución lo paga el
+        cliente (Ley 1480 de 2011, art. 47) y te devolvemos el dinero en máximo 15 días
+        calendario.
+      </p>
+
+      <h2 id="devoluciones">11. Devoluciones de dinero</h2>
+      <p>
+        Cuando corresponda devolver dinero (garantía, cancelación, producto equivocado o error
+        de precio), lo hacemos en <strong>1 a 15 días hábiles</strong>, por el mismo medio con
+        el que pagaste o por el que acordemos contigo. Si pagaste con tarjeta, el tiempo en que
+        ves el dinero también depende de tu banco.
+      </p>
+
+      <h2 id="reversion">12. Reversión del pago</h2>
+      <p>
+        Si pagaste con tarjeta de crédito, débito u otro medio de pago electrónico, puedes
+        pedir la reversión del pago si fuiste víctima de fraude, si no solicitaste la compra,
+        si no recibiste el producto o si el producto no corresponde a lo que pediste o está
+        defectuoso. Debes pedirla dentro de los 5 días hábiles siguientes a cuando te enteraste,
+        avisándonos a nosotros y a la entidad que emitió tu medio de pago (Ley 1480 de 2011,
+        art. 51).
+      </p>
+
+      <h2 id="pqr">13. Preguntas, quejas y reclamos</h2>
+      <p>
+        Escríbenos por WhatsApp al {RESPONSABLE.telefono} o a
+        <a href={correo}>{RESPONSABLE.correo}</a>. Respondemos en máximo 15 días hábiles. Si no
+        quedas conforme, puedes acudir a la Superintendencia de Industria y Comercio
+        (<a href="https://www.sic.gov.co" target="_blank" rel="noopener">sic.gov.co</a>).
+      </p>
+
+      <h2 id="propiedad">14. Propiedad intelectual</h2>
+      <p>
+        La marca Baqtime, el logo, las fotos, los textos y los diseños de este sitio son de
+        Baqtime. Puedes compartirlos para uso personal, pero no copiarlos, modificarlos ni
+        usarlos con fines comerciales sin nuestro permiso.
+      </p>
+
+      <h2 id="datos">15. Datos personales</h2>
+      <p>
+        Tratamos tus datos según nuestra
+        <a href={POLITICA_DATOS_RUTA}>Política de Tratamiento de Datos Personales</a>.
+      </p>
+
+      <h2 id="cambios-terminos">16. Cambios a estos términos</h2>
+      <p>
+        Podemos actualizar estos términos y publicaremos la nueva versión en esta página con su
+        fecha. Cada pedido se rige por los términos vigentes el día en que lo confirmaste.
+      </p>
+    </main>
+
+    <Footer />
+    <WhatsappWidget client:load />
+  </body>
+</html>

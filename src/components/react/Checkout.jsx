@@ -9,7 +9,7 @@ import {
   filtrarCorreo,
   sugerirCorreo,
 } from "../../lib/shipping-validation.js";
-import { POLITICA_DATOS_RUTA } from "../../lib/legal";
+import { POLITICA_DATOS_RUTA, TERMINOS_RUTA } from "../../lib/legal";
 
 const EMPTY = { name: "", city: "", address: "", phone: "", email: "", doc: "" };
 
@@ -280,6 +280,14 @@ export default function Checkout({ items, products, categories = [], onClose }) 
             <span>Quiero recibir novedades y promociones de Baqtime (opcional).</span>
           </label>
         </div>
+
+        <p className="checkout-terminos">
+          Al confirmar aceptas los{" "}
+          <a href={TERMINOS_RUTA} target="_blank" rel="noopener">
+            Términos y condiciones
+          </a>
+          . Los productos personalizados no tienen cambio ni retracto, salvo por garantía.
+        </p>
 
         {errorEnvio && (
           <div className="field-error" role="alert" style={{ marginBottom: "10px" }}>

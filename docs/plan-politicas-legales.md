@@ -115,7 +115,18 @@ publicar el código. Si se publica primero, los pedidos se crean igual pero sin 
 
 ---
 
-## Paso 3 — Términos y condiciones + identificación del vendedor
+## Paso 3 — Términos y condiciones + identificación del vendedor ✅
+
+**Hecho:** `src/pages/terminos.astro` (estática), aviso en el checkout ("Al confirmar aceptas
+los Términos… los personalizados no tienen cambio ni retracto, salvo por garantía") y, en el
+footer, el correo y los enlaces a Términos y a la Política.
+
+**Reglas que fijó Jesús (2026-10-07):**
+- Producto equivocado o dañado: avisar dentro de **2 días hábiles** desde la entrega.
+- Cancelación: solo **antes de empezar la producción**.
+- Garantía: si tiene reparación, se repara; si no, cambio o devolución. Los envíos los paga Baqtime.
+- Devolución de dinero: **1 a 15 días hábiles** (retracto de productos sin personalizar: máximo
+  15 días calendario, por Ley 2439 de 2024).
 
 **Entregable:** página `src/pages/terminos.astro` → `baqtime.store/terminos`.
 
@@ -126,11 +137,6 @@ aprobado por el cliente no tiene cambio ni devolución salvo garantía), reporte
 fotos en un plazo fijo y cancelación del pedido. No aplican (son de una S.A.S. grande): origen
 de fondos, línea de transparencia, reportes a Supersociedades.
 
-**Decisiones pendientes de Jesús:**
-- Plazo para reportar un producto que llegó dañado o equivocado (Vélez usa 5 días hábiles).
-- ¿Se puede cancelar un pedido? ¿Hasta cuándo? (p. ej., antes de empezar a producirlo).
-- En una garantía aceptada: ¿reparación, cambio o devolución del dinero? ¿Quién paga el envío?
-- Tiempo de devolución del dinero cuando aplique (Ley 2439: máximo 15 días calendario en retracto).
 
 Contenido:
 1. Identificación del vendedor (Ley 1480, art. 50).
@@ -206,10 +212,10 @@ actualiza esta página.
 | 0 | Insumos | — | ✅ |
 | 1 | Política de datos | 0 | ✅ |
 | 2 | Autorización en checkout | 1 | ✅ (falta correr 024) |
-| 3 | Términos + identificación | 0 | ⬜ |
+| 3 | Términos + identificación | 0 | ✅ |
 | 4 | Cookies | 1 | ✅ como sección de la política; página aparte opcional |
 | 5 | Canal PQR + procedimiento | 0 | ⬜ |
 | 6 | Conservación y supresión | 1 | ⬜ |
 | 7 | Opcionales | — | ⬜ |
 
-Siguiente: Paso 3 (términos), en cuanto Jesús defina las decisiones pendientes.
+Siguiente: Paso 5 (procedimiento interno para responder PQR y solicitudes de datos).
