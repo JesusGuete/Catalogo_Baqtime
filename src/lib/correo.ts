@@ -21,6 +21,7 @@
 
 import { env } from "cloudflare:workers";
 import { armarCorreoPedido, type DatosCorreoPedido } from "./correo-pedido";
+import { armarCorreoEstado, type DatosCorreoEstado, type TipoAviso } from "./correo-estado";
 
 const RESEND_URL = "https://api.resend.com/emails";
 const REMITENTE_POR_DEFECTO = "Baqtime <pedidos@baqtime.store>";
@@ -153,5 +154,67 @@ export async function enviarConfirmacionPedido(o: OpcionesConfirmacion): Promise
     resultado = { ok: false, error: "No se pudo armar el correo del pedido." };
   }
   await registrar(o.supabaseUrl, o.serviceKey, o.orderId, resultado.ok ? null : resultado.error);
+  return resultado;
+}
+
+export interface OpcionesAvisoEstado {
+  supabaseUrl: string;
+  serviceKey: string;
+  orderId: string;
+  para: string;
+  tipo: TipoAviso;
+  datos: DatosCorreoEstado;
+}
+
+/**
+ * Anota cómo salió un aviso de cambio de estado (021_avisos_estado.sql). Igual que
+ * registrar(): si ESTO falla solo se deja en el log, porque el correo ya salió o ya falló.
+ */
+async function registrarAviso(
+  supabaseUrl: string,
+  serviceKey: string,
+  orderId: string,
+  tipo: TipoAviso,
+  error: string | null
+): Promise<void> {
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/registrar_aviso_estado`, {
+      method: "POST",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ p_order_id: orderId, p_tipo: tipo, p_error: error }),
+    });
+    if (!res.ok) console.error(`[correo] registrar aviso ${res.status}: ${await res.text()}`);
+  } catch (e) {
+    console.error("[correo] No se pudo anotar el resultado del aviso:", e);
+  }
+}
+
+/**
+ * Arma, envía y anota un aviso de cambio de estado (pago confirmado, enviado, entregado).
+ * La usa el panel, por /api/pedidos/notificar-estado. No lanza nunca.
+ *
+ * SIN clave de idempotencia, a propósito: avisar de nuevo es una decisión del dueño, y con la
+ * clave Resend devolvería el envío anterior en silencio durante 24 horas sin mandar nada.
+ * Lo que evita el doble clic es el botón del panel, que queda deshabilitado mientras envía.
+ */
+export async function enviarAvisoEstado(o: OpcionesAvisoEstado): Promise<ResultadoEnvio> {
+  let resultado: ResultadoEnvio;
+  try {
+    const correo = armarCorreoEstado(o.tipo, o.datos, Boolean(leer("CORREO_RESPONDER_A")));
+    resultado = await enviarCorreo({
+      para: o.para,
+      asunto: correo.asunto,
+      html: correo.html,
+      texto: correo.texto,
+    });
+  } catch (e) {
+    console.error("[correo] No se pudo armar el aviso:", e);
+    resultado = { ok: false, error: "No se pudo armar el correo del aviso." };
+  }
+  await registrarAviso(o.supabaseUrl, o.serviceKey, o.orderId, o.tipo, resultado.ok ? null : resultado.error);
   return resultado;
 }

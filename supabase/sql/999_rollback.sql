@@ -44,6 +44,7 @@ delete from storage.buckets where id in ('product-images', 'site-images');
 -- Orders first: order_items and order_status_history point at orders, and nothing in the
 -- catalog points at any of them (010_orders.sql keeps order_items FK-free on purpose).
 
+drop table if exists public.order_notifications;
 drop table if exists public.order_items;
 drop table if exists public.order_status_history;
 drop table if exists public.orders;
@@ -75,6 +76,7 @@ end $$;
 drop function if exists public.create_order(jsonb, jsonb);
 drop function if exists public.eliminar_pedido(uuid);
 drop function if exists public.registrar_correo_pedido(uuid, text);
+drop function if exists public.registrar_aviso_estado(uuid, text, text);
 -- Las dos firmas: la de 011 (número + teléfono) y la de 012 (solo número). Según hasta
 -- dónde se haya corrido la numeración, existe una u otra.
 drop function if exists public.buscar_pedido(text, text);

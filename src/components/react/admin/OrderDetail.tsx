@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import {
   ORDER_STATUSES,
   ORDER_STATUS_LABEL,
+  type OrderNotificationType,
   type OrderStatus,
   type OrderWithDetail,
 } from "../../../types/database";
 import * as pedidosRepo from "../../../lib/admin/orders.repo";
 import { useAccion } from "../../../lib/admin/useAdminData";
-import { comoAdminError, type AdminError } from "../../../lib/supabase/errors";
+import { AdminError, comoAdminError } from "../../../lib/supabase/errors";
 import { TRANSPORTADORA_POR_DEFECTO } from "../../../lib/tracking";
 import { correoValido, normalizarCorreo } from "../../../lib/shipping-validation.js";
 import {
@@ -32,6 +33,17 @@ interface Props {
   onEliminado: () => void;
 }
 
+const AVISO_ETIQUETA: Record<OrderNotificationType, string> = {
+  aprobado: "Pago confirmado",
+  enviado: "Enviado",
+  entregado: "Entregado",
+};
+
+/** De los siete estados, solo tres le avisan al cliente. Los demás son del taller. */
+function tipoDeAviso(estado: OrderStatus): OrderNotificationType | null {
+  return estado === "aprobado" || estado === "enviado" || estado === "entregado" ? estado : null;
+}
+
 export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) {
   const [pedido, setPedido] = useState<OrderWithDetail | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -49,6 +61,10 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
   // reenviarlo, así que vive junto a su botón y se guarda con él.
   const [correo, setCorreo] = useState("");
   const [correoEnviado, setCorreoEnviado] = useState(false);
+
+  // "Avisar al cliente por correo" al cambiar el estado. Marcada de entrada: lo normal es
+  // avisar, y desmarcarla sirve para corregir un estado mal puesto sin escribirle al cliente.
+  const [avisar, setAvisar] = useState(true);
 
   async function cargar() {
     setCargando(true);
@@ -75,14 +91,70 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pedidoId]);
 
+  // Avisar va DESPUÉS del cambio de estado y por separado: el pedido ya avanzó, y si el correo
+  // falla no hay nada que deshacer. El mensaje lo deja claro; la tarjeta "Correo al cliente"
+  // muestra el motivo y permite reintentar.
+  async function avisarCliente(tipo: OrderNotificationType) {
+    try {
+      await pedidosRepo.notificarEstado(pedidoId, tipo);
+    } catch (e) {
+      const err = comoAdminError(e);
+      throw new AdminError(`El estado cambió, pero no se pudo avisar al cliente: ${err.message}`, {
+        code: err.code,
+        status: err.status,
+        detalle: err.detalle,
+        causa: err,
+      });
+    }
+  }
+
+  const datosLogistica = () => ({
+    carrier: transportadora.trim() || null,
+    tracking_number: guia.trim() || null,
+    // Un campo de fecha vacío es null, no "": la base espera un `date` o nada.
+    estimated_date: fechaEstimada || null,
+    payment_note: notaPago.trim() || null,
+  });
+
+  // ¿Hay algo escrito en los campos de envío que todavía no está en la base?
+  const logisticaSinGuardar =
+    pedido !== null &&
+    (datosLogistica().carrier !== pedido.carrier ||
+      datosLogistica().tracking_number !== pedido.tracking_number ||
+      datosLogistica().estimated_date !== pedido.estimated_date);
+
   const confirmar = useAccion(async (nota: string) => {
     await pedidosRepo.confirmarPago(pedidoId, nota || undefined);
-    await cargar();
+    try {
+      if (avisar && pedido?.customer_email) await avisarCliente("aprobado");
+    } finally {
+      await cargar();
+    }
   });
 
   const cambiar = useAccion(async (estado: OrderStatus) => {
+    const tipo = avisar && pedido?.customer_email ? tipoDeAviso(estado) : null;
+    // El correo de "enviado" lee transportadora y guía de la BASE, no de lo que hay escrito en
+    // pantalla. Si quedaron sin guardar se guardan primero, o el correo saldría sin ellos.
+    if (tipo === "enviado" && logisticaSinGuardar) {
+      await pedidosRepo.editarLogistica(pedidoId, datosLogistica());
+    }
     await pedidosRepo.cambiarEstado(pedidoId, estado);
-    await cargar();
+    try {
+      if (tipo) await avisarCliente(tipo);
+    } finally {
+      await cargar();
+    }
+  });
+
+  // Volver a mandar un aviso que ya se mandó, o reintentar uno que falló.
+  const reavisar = useAccion(async (tipo: OrderNotificationType) => {
+    try {
+      await pedidosRepo.notificarEstado(pedidoId, tipo);
+    } finally {
+      // También si falló: el servidor anotó el motivo y la tarjeta tiene que mostrarlo.
+      await cargar();
+    }
   });
 
   const eliminar = useAccion(async () => {
@@ -91,13 +163,7 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
   });
 
   const guardarLogistica = useAccion(async () => {
-    await pedidosRepo.editarLogistica(pedidoId, {
-      carrier: transportadora.trim() || null,
-      tracking_number: guia.trim() || null,
-      // Un campo de fecha vacío es null, no "": la base espera un `date` o nada.
-      estimated_date: fechaEstimada || null,
-      payment_note: notaPago.trim() || null,
-    });
+    await pedidosRepo.editarLogistica(pedidoId, datosLogistica());
     await cargar();
     setGuardado(true);
     setTimeout(() => setGuardado(false), 2500);
@@ -158,6 +224,33 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
   const enlaceCliente = `${window.location.origin}/pedido/${pedido.public_token}`;
   const pagado = pedido.paid_at !== null;
 
+  // Qué agrega al diálogo de confirmación lo del correo: a quién se le va a escribir, si ya se
+  // le avisó antes (un segundo correo igual) y si "enviado" saldría sin guía.
+  const sufijoAviso = (tipo: OrderNotificationType | null): string => {
+    if (!tipo || !avisar) return "";
+    if (!pedido.customer_email) {
+      return "\n\nEste pedido no tiene correo: no se le podrá avisar al cliente.";
+    }
+    let texto = `\n\nSe le enviará un correo al cliente (${pedido.customer_email}).`;
+    const previo = pedido.order_notifications?.find((a) => a.tipo === tipo && a.sent_at);
+    if (previo) {
+      texto += `\nOjo: ya se le avisó el ${fecha(previo.sent_at!)}; este sería un segundo correo igual.`;
+    }
+    if (tipo === "enviado" && !guia.trim()) {
+      texto += "\nNo hay número de guía escrito: el correo saldrá sin guía.";
+    }
+    return texto;
+  };
+
+  // Los avisos que este pedido ya "alcanzó": se pueden mandar o reenviar desde la tarjeta.
+  const avisosAlcanzados = (
+    [
+      pagado ? "aprobado" : null,
+      pedido.shipped_at ? "enviado" : null,
+      pedido.status === "entregado" ? "entregado" : null,
+    ] as (OrderNotificationType | null)[]
+  ).filter((t): t is OrderNotificationType => t !== null);
+
   return (
     <div className="adm-editor">
       <div className="adm-editor-barra">
@@ -176,7 +269,11 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
           {!pagado && (
             <Boton
               onClick={() => {
-                if (window.confirm(`¿Confirmar que recibiste el pago de ${dinero(pedido.total)}?`)) {
+                if (
+                  window.confirm(
+                    `¿Confirmar que recibiste el pago de ${dinero(pedido.total)}?${sufijoAviso("aprobado")}`
+                  )
+                ) {
                   void confirmar.ejecutar(notaPago);
                 }
               }}
@@ -213,6 +310,7 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
           cambiar.error ??
           guardarLogistica.error ??
           reenviar.error ??
+          reavisar.error ??
           eliminar.error
         }
       />
@@ -301,7 +399,7 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
                   if (v === pedido.status) return;
                   if (
                     window.confirm(
-                      `¿Pasar el pedido a "${ORDER_STATUS_LABEL[v]}"? El cliente lo ve al instante en su enlace.`
+                      `¿Pasar el pedido a "${ORDER_STATUS_LABEL[v]}"? El cliente lo ve al instante en su enlace.${sufijoAviso(tipoDeAviso(v))}`
                     )
                   ) {
                     void cambiar.ejecutar(v);
@@ -311,6 +409,20 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
                 disabled={cambiar.enCurso}
               />
             </Campo>
+            <label className="adm-casilla">
+              <input
+                type="checkbox"
+                checked={avisar}
+                onChange={(e) => setAvisar(e.target.checked)}
+                disabled={cambiar.enCurso || confirmar.enCurso}
+              />
+              <span>
+                Avisar al cliente por correo
+                <span className="adm-mono adm-hint">
+                  AL CONFIRMAR EL PAGO, AL ENVIAR Y AL ENTREGAR
+                </span>
+              </span>
+            </label>
             {pedido.status === "no_confirmado" && (
               <Aviso
                 tono="borrador"
@@ -421,6 +533,47 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
                   ? "Reenviar correo"
                   : "Enviar correo"}
             </Boton>
+
+            {avisosAlcanzados.length > 0 && (
+              <div className="adm-avisos">
+                <p className="adm-mono adm-campo-label">AVISOS DE ESTADO</p>
+                {avisosAlcanzados.map((tipo) => {
+                  const a = pedido.order_notifications?.find((x) => x.tipo === tipo);
+                  return (
+                    <div className="adm-aviso-fila" key={tipo}>
+                      <span className="adm-aviso-txt">
+                        <span>{AVISO_ETIQUETA[tipo]}</span>
+                        <span className="adm-mono adm-hint">
+                          {a?.error
+                            ? `NO SE ENVIÓ · ${a.error.toUpperCase()}`
+                            : a?.sent_at
+                              ? `ENVIADO ${fecha(a.sent_at).toUpperCase()}`
+                              : "TODAVÍA SIN AVISAR"}
+                        </span>
+                      </span>
+                      <Boton
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `¿Enviar el aviso "${AVISO_ETIQUETA[tipo]}" a ${pedido.customer_email}?${
+                                tipo === "enviado" && !pedido.tracking_number
+                                  ? "\n\nNo hay número de guía guardado: el correo saldrá sin guía."
+                                  : ""
+                              }`
+                            )
+                          ) {
+                            void reavisar.ejecutar(tipo);
+                          }
+                        }}
+                        disabled={!pedido.customer_email || reavisar.enCurso}
+                      >
+                        {a?.sent_at ? "Reenviar" : "Enviar"}
+                      </Boton>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           <section className="adm-card">

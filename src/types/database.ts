@@ -342,10 +342,27 @@ export interface OrderStatusHistory {
   created_at: Timestamptz;
 }
 
-/** Pedido con sus ítems e historial embebidos, como los pide el panel en un solo select. */
+/**
+ * Los avisos por correo de cambio de estado (021_avisos_estado.sql): uno por pedido y tipo,
+ * con cómo salió el ÚLTIMO intento. Lo escribe solo el servidor, con service_role.
+ */
+export type OrderNotificationType = "aprobado" | "enviado" | "entregado";
+
+export interface OrderNotification {
+  order_id: string;
+  tipo: OrderNotificationType;
+  /** Cuándo salió el último correo que el proveedor aceptó. */
+  sent_at: Timestamptz | null;
+  /** Por qué falló el ÚLTIMO intento; `null` si salió bien. */
+  error: string | null;
+  updated_at: Timestamptz;
+}
+
+/** Pedido con sus ítems, historial y avisos embebidos, como los pide el panel en un solo select. */
 export type OrderWithDetail = Order & {
   order_items?: OrderItem[];
   order_status_history?: OrderStatusHistory[];
+  order_notifications?: Pick<OrderNotification, "tipo" | "sent_at" | "error">[];
 };
 
 // ============================================================================
@@ -564,8 +581,9 @@ export const SELECT_PEDIDO_LISTA = columnasPedidoLista.join(",");
 export const SELECT_PEDIDO_ITEM = columnasPedidoItem.join(",");
 export const SELECT_PEDIDO_HISTORIAL = columnasPedidoHistorial.join(",");
 
-/** El detalle con ítems e historial embebidos: una sola petición, no N+1. */
+/** El detalle con ítems, historial y avisos embebidos: una sola petición, no N+1. */
 export const SELECT_PEDIDO_DETALLE =
   `${columnasPedidoDetalle.join(",")},` +
   `order_items(${SELECT_PEDIDO_ITEM}),` +
-  `order_status_history(${SELECT_PEDIDO_HISTORIAL})`;
+  `order_status_history(${SELECT_PEDIDO_HISTORIAL}),` +
+  `order_notifications(tipo,sent_at,error)`;
