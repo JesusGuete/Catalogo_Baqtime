@@ -8,6 +8,8 @@ import {
   type OrderWithDetail,
 } from "../../../types/database";
 import * as pedidosRepo from "../../../lib/admin/orders.repo";
+import { copiarAlPortapapeles } from "../../../lib/admin/copiar";
+import { armarMensajeFabrica } from "../../../lib/admin/mensaje-fabrica";
 import { useAccion } from "../../../lib/admin/useAdminData";
 import { AdminError, comoAdminError } from "../../../lib/supabase/errors";
 import { TRANSPORTADORA_POR_DEFECTO } from "../../../lib/tracking";
@@ -67,6 +69,9 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
   // "Avisar al cliente por correo" al cambiar el estado. Marcada de entrada: lo normal es
   // avisar, y desmarcarla sirve para corregir un estado mal puesto sin escribirle al cliente.
   const [avisar, setAvisar] = useState(true);
+
+  // "Copiado ✓" en el botón del mensaje para la fábrica, unos segundos.
+  const [fabricaCopiada, setFabricaCopiada] = useState(false);
 
   async function cargar() {
     setCargando(true);
@@ -225,6 +230,16 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
 
   const enlaceCliente = `${window.location.origin}/pedido/${pedido.public_token}`;
   const pagado = pedido.paid_at !== null;
+
+  // El mensaje para la fábrica sale del pedido tal como está guardado, no de lo que haya escrito
+  // en pantalla: si cambias el correo o la guía sin guardar, esos datos no entran (ni los usa).
+  const mensajeFabrica = armarMensajeFabrica(pedido);
+
+  async function copiarMensajeFabrica() {
+    await copiarAlPortapapeles(mensajeFabrica);
+    setFabricaCopiada(true);
+    setTimeout(() => setFabricaCopiada(false), 2000);
+  }
 
   // Qué agrega al diálogo de confirmación lo del correo: a quién se le va a escribir, si ya se
   // le avisó antes (un segundo correo igual) y si "enviado" saldría sin guía.
@@ -484,6 +499,36 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
                 ENTREGA ESTIMADA · {fechaSola(pedido.estimated_date).toUpperCase()}
               </p>
             )}
+          </section>
+
+          <section className="adm-card">
+            <p className="adm-mono adm-regla-grupo">PARA LA FÁBRICA</p>
+            <p className="adm-nota">
+              Lo que hay que coser y a quién se le envía, listo para pegar en el chat con la
+              fábrica.
+            </p>
+            <textarea
+              className="adm-input adm-mensaje-fabrica"
+              readOnly
+              rows={mensajeFabrica.split("\n").length}
+              // Crece hasta mostrar todo el texto: en pantallas angostas una línea se parte en dos
+              // y con `rows` a secas el cuadro quedaba corto, con una barra de desplazamiento.
+              ref={(el) => {
+                if (el) {
+                  el.style.height = "auto";
+                  // + el borde: con border-box, scrollHeight solo cuenta el contenido y el cuadro
+                  // quedaba 2 px corto, con una barra de desplazamiento mínima.
+                  el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`;
+                }
+              }}
+              value={mensajeFabrica}
+              onFocus={(e) => e.currentTarget.select()}
+              aria-label="Mensaje para la fábrica"
+            />
+            <Boton onClick={() => void copiarMensajeFabrica()} variante="primario" ancho>
+              {fabricaCopiada ? "Copiado ✓" : "Copiar mensaje"}
+            </Boton>
+            <p className="adm-hint">Lleva los datos del cliente: no lo publiques ni lo reenvíes a nadie más.</p>
           </section>
 
           <section className="adm-card">
