@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { fmt, PRICE_SHIP, precioLinea, subtotalCarrito } from "../../lib/pricing.js";
+import { fmt, precioLinea, subtotalCarrito } from "../../lib/pricing.js";
+import { ENVIO_DESDE } from "../../lib/envios.js";
 import { removeFromCart } from "../../lib/cart-store.js";
 import { IconoBolsa } from "./Iconos.jsx";
 
@@ -50,11 +51,12 @@ export function CartLine({ item, products, categories = [] }) {
   );
 }
 
-// Los 3 totales (subtotal / envío / total). El envío se cobra una sola vez
-// sobre todo el carrito, y solo si hay algo dentro.
-export function CartTotals({ items, products = [], categories = [] }) {
+// Los 3 totales (subtotal / envío / total). El envío depende del municipio
+// (src/lib/envios.js): sin destino elegido —en el panel del carrito, o en el checkout
+// antes de elegir— se muestra "desde" y el total queda sin envío.
+export function CartTotals({ items, products = [], categories = [], envio = null }) {
   const subtotal = subtotalCarrito(items, products, categories);
-  const shipping = items.length ? PRICE_SHIP : 0;
+  const shipping = items.length && envio ? envio.precio : 0;
   return (
     <>
       <div className="cart-total-row">
@@ -63,10 +65,10 @@ export function CartTotals({ items, products = [], categories = [] }) {
       </div>
       <div className="cart-total-row cart-total-row-sub">
         <span>Envío</span>
-        <span className="mono">{fmt(shipping)}</span>
+        <span className="mono">{envio ? fmt(shipping) : `Desde ${fmt(ENVIO_DESDE)}`}</span>
       </div>
       <div className="cart-total-row cart-total-row-final">
-        <span>Total</span>
+        <span>{envio ? "Total" : "Total sin envío"}</span>
         <span className="mono">{fmt(subtotal + shipping)}</span>
       </div>
     </>

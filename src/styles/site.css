@@ -640,6 +640,12 @@
      .shipping-field, más abajo — así se nota la diferencia entre "esto va junto" y
      "esto es lo próximo", en vez de un mismo aire parejo para las dos cosas. */
   .shipping-fields{ display:flex; flex-direction:column; gap:16px; margin-bottom:6px; }
+  .shipping-fields select{
+    padding:11px 13px; border:1px solid var(--line); border-radius:2px;
+    font-family:'Work Sans',sans-serif; font-size:14px; background:#fff; color:var(--ink);
+  }
+  .shipping-fields select:disabled{ color:var(--ink-soft); background:var(--surface-muted); }
+  .checkout-entrega{ font-size:12px; color:var(--ink-soft); margin:6px 0 0; }
   .shipping-fields input{
     padding:11px 13px; border:1px solid var(--line); border-radius:2px;
     font-family:'Work Sans',sans-serif; font-size:14px; background:#fff;

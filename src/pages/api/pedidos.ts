@@ -25,7 +25,8 @@ import type { APIRoute } from "astro";
 // producción.
 import { env } from "cloudflare:workers";
 import type { Category } from "../../types/database";
-import { PRICE_SHIP, recargoIniciales } from "../../lib/pricing.js";
+import { recargoIniciales } from "../../lib/pricing.js";
+import { calcularEnvio, nombreDestino, textoEntrega } from "../../lib/envios.js";
 import { normalizarCorreo, validateShipping } from "../../lib/shipping-validation.js";
 import { enviarConfirmacionPedido, enviarCopiaPedidoTienda } from "../../lib/correo";
 import { POLITICA_DATOS_VERSION } from "../../lib/legal";
@@ -43,7 +44,8 @@ interface ItemPedido {
 
 interface DatosEnvio {
   name: string;
-  city: string;
+  departamento: string;
+  municipio: string;
   address: string;
   phone: string;
   email: string;
@@ -115,7 +117,8 @@ export const POST: APIRoute = async ({ request, url, locals }) => {
   // del documento obligatorio fuera de Barranquilla— no pueden discrepar entre los dos lados.
   const datos: DatosEnvio = {
     name: String(envio.name ?? ""),
-    city: String(envio.city ?? ""),
+    departamento: String(envio.departamento ?? ""),
+    municipio: String(envio.municipio ?? ""),
     address: String(envio.address ?? ""),
     phone: String(envio.phone ?? ""),
     email: String(envio.email ?? ""),
@@ -218,7 +221,14 @@ export const POST: APIRoute = async ({ request, url, locals }) => {
   }
 
   const subtotal = lineas.reduce((suma, l) => suma + l.line_total, 0);
-  const envioCosto = PRICE_SHIP;
+  // El envío depende del municipio y de cuántos bolsos van (src/lib/envios.js). Se calcula
+  // acá, con la misma función que muestra el checkout: lo que diga el navegador no cuenta.
+  const envioCalculado = calcularEnvio(datos.departamento, datos.municipio, lineas.length);
+  if (!envioCalculado) {
+    return json({ error: "Elige un departamento y un municipio válidos." }, 400);
+  }
+  const envioCosto = envioCalculado.precio;
+  const ciudad = nombreDestino(datos.departamento, datos.municipio);
   const total = subtotal + envioCosto;
 
   // --- Escritura atómica ---------------------------------------------------
@@ -238,7 +248,7 @@ export const POST: APIRoute = async ({ request, url, locals }) => {
           customer_phone: datos.phone.trim(),
           customer_email: correo,
           customer_doc: datos.doc.trim(),
-          ship_city: datos.city.trim(),
+          ship_city: ciudad,
           ship_address: datos.address.trim(),
           subtotal,
           shipping_cost: envioCosto,
@@ -283,13 +293,14 @@ export const POST: APIRoute = async ({ request, url, locals }) => {
     datos: {
       order_number: creado.order_number,
       customer_name: datos.name.trim(),
-      ship_city: datos.city.trim(),
+      ship_city: ciudad,
       ship_address: datos.address.trim(),
       subtotal,
       shipping_cost: envioCosto,
       total,
       items: lineas,
       seguimiento,
+      entrega: textoEntrega(envioCalculado),
     },
   });
 
@@ -301,7 +312,7 @@ export const POST: APIRoute = async ({ request, url, locals }) => {
     customer_phone: datos.phone.trim(),
     customer_email: correo,
     customer_doc: datos.doc.trim() || null,
-    ship_city: datos.city.trim(),
+    ship_city: ciudad,
     ship_address: datos.address.trim(),
     subtotal,
     shipping_cost: envioCosto,

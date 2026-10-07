@@ -10,8 +10,15 @@ import {
   sugerirCorreo,
 } from "../../lib/shipping-validation.js";
 import { POLITICA_DATOS_RUTA, TERMINOS_RUTA } from "../../lib/legal";
+import {
+  DEPARTAMENTOS,
+  municipiosDe,
+  calcularEnvio,
+  nombreDestino,
+  textoEntrega,
+} from "../../lib/envios.js";
 
-const EMPTY = { name: "", city: "", address: "", phone: "", email: "", doc: "" };
+const EMPTY = { name: "", departamento: "", municipio: "", address: "", phone: "", email: "", doc: "" };
 
 // Página completa de "Finalizar compra" — portada desde #checkoutOverlay en
 // index.html + sendCartWhatsapp() en cart.js. Mismo markup/clases, mismos textos
@@ -46,6 +53,11 @@ export default function Checkout({ items, products, categories = [], onClose }) 
   }
 
   const sugerencia = sugerirCorreo(form.email);
+
+  // El envío se calcula apenas hay municipio: lo ve el cliente antes de confirmar, y es el
+  // mismo cálculo que hace el servidor al guardar (src/lib/envios.js).
+  const envio = calcularEnvio(form.departamento, form.municipio, items.length);
+  const ciudad = form.municipio ? nombreDestino(form.departamento, form.municipio) : "";
 
   // El pedido se GUARDA antes de que el navegador se vaya a ningún lado.
   //
@@ -117,7 +129,12 @@ export default function Checkout({ items, products, categories = [], onClose }) 
           )}
         </div>
 
-        <CartTotals items={items} products={products} categories={categories} />
+        <CartTotals items={items} products={products} categories={categories} envio={envio} />
+        {envio && (
+          <p className="checkout-entrega">
+            Entrega en {textoEntrega(envio)} después de aprobado el pago.
+          </p>
+        )}
 
         {/* Encabeza un grupo de campos, no describe uno solo. Cada input ya lleva su
             propio <label>. */}
@@ -149,16 +166,48 @@ export default function Checkout({ items, products, categories = [], onClose }) 
               <div className="field-error">{errors.name || ""}</div>
             </div>
 
+            {/* Listas y no texto libre: el precio del envío depende del municipio exacto, y
+                "Bquilla" o "medellin" escritos a mano no se pueden cotizar. Los municipios
+                salen de la lista del DANE (src/data/municipios.json). */}
             <div className="shipping-field">
-              <label htmlFor="checkout-city">Ciudad</label>
-              <input
-                id="checkout-city"
-                type="text"
+              <label htmlFor="checkout-departamento">Departamento</label>
+              <select
+                id="checkout-departamento"
+                autoComplete="address-level1"
+                value={form.departamento}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, departamento: e.target.value, municipio: "" }))
+                }
+              >
+                <option value="">Elige el departamento</option>
+                {DEPARTAMENTOS.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+              <div className="field-error">{errors.departamento || ""}</div>
+            </div>
+
+            <div className="shipping-field">
+              <label htmlFor="checkout-municipio">Municipio</label>
+              <select
+                id="checkout-municipio"
                 autoComplete="address-level2"
-                value={form.city}
-                onChange={(e) => set("city", onlyLetters(e.target.value))}
-              />
-              <div className="field-error">{errors.city || ""}</div>
+                value={form.municipio}
+                disabled={!form.departamento}
+                onChange={(e) => set("municipio", e.target.value)}
+              >
+                <option value="">
+                  {form.departamento ? "Elige el municipio" : "Primero elige el departamento"}
+                </option>
+                {municipiosDe(form.departamento).map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <div className="field-error">{errors.municipio || ""}</div>
             </div>
 
             <div className="shipping-field">
@@ -226,7 +275,7 @@ export default function Checkout({ items, products, categories = [], onClose }) 
                 navegador adivine autocompletaría con un dato que no es este. */}
             <div className="shipping-field">
               <label htmlFor="checkout-doc">
-                {esEnvioLocal(form.city)
+                {esEnvioLocal(ciudad)
                   ? "Número de documento (opcional)"
                   : "Número de documento"}
               </label>

@@ -126,13 +126,23 @@ export function sugerirCorreo(value) {
   return mejor ? `${correo.slice(0, arroba)}@${mejor}` : null;
 }
 
-export function validateShipping({ name, city, address, phone, email = "", doc }) {
+import { calcularEnvio, nombreDestino } from "./envios.js";
+
+/**
+ * El destino ya no es texto libre: departamento + municipio de la lista del DANE. `city`
+ * se arma de ahí ("Medellín, Antioquia") y es lo que se guarda y lo que mira la regla del
+ * documento.
+ */
+export function validateShipping({ name, departamento = "", municipio = "", address, phone, email = "", doc }) {
+  const city = municipio ? nombreDestino(departamento, municipio) : "";
   const errors = {};
   if (!name.trim() || !NAME_CITY_REGEX.test(name.trim())) {
     errors.name = "Por favor ingresa un nombre válido (solo letras y espacios).";
   }
-  if (!city.trim() || !NAME_CITY_REGEX.test(city.trim())) {
-    errors.city = "Por favor ingresa una ciudad válida (solo letras y espacios).";
+  if (!departamento) {
+    errors.departamento = "Elige el departamento de entrega.";
+  } else if (!calcularEnvio(departamento, municipio)) {
+    errors.municipio = "Elige el municipio de entrega.";
   }
   if (!/^[0-9]{10}$/.test(phone.trim())) {
     errors.phone = "Por favor, ingresa un número de teléfono válido de 10 dígitos.";

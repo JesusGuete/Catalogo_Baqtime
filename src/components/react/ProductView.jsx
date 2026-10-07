@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { initialsColorsFor } from "../../lib/initials.js";
-import { PRICE_SHIP, fmt, recargoIniciales } from "../../lib/pricing.js";
+import { fmt, recargoIniciales } from "../../lib/pricing.js";
+import { ENVIO_DESDE } from "../../lib/envios.js";
 import { addToCart } from "../../lib/cart-store.js";
 import { useCart } from "../../lib/useCart.js";
 import { rutaProducto } from "../../lib/product-url.ts";
@@ -156,7 +157,8 @@ export default function ProductView({
   // importante— lo mismo que recalcula el servidor al guardar el pedido. Ver
   // recargoIniciales() en pricing.js.
   const extra = recargoIniciales(categoria, count);
-  const total = product.price + extra + PRICE_SHIP;
+  // El envío depende del destino, que acá todavía no se conoce: se muestra "desde".
+  const total = product.price + extra;
   const sub = product.category === "tote" ? ` – ${product.variant}` : "";
 
   function handleInitialsChange(e) {
@@ -400,10 +402,10 @@ export default function ProductView({
               )}
               <div className="price-row">
                 <span>Envío</span>
-                <span>{fmt(PRICE_SHIP)}</span>
+                <span>Desde {fmt(ENVIO_DESDE)}</span>
               </div>
               <div className="price-row total">
-                <span>Total</span>
+                <span>Total sin envío</span>
                 <span>{fmt(total)}</span>
               </div>
             </div>
