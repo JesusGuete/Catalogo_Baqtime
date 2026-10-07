@@ -45,8 +45,8 @@ export const C = {
   ink: "#111111",
   /** Texto secundario. */
   inkSoft: "#666666",
-  /** Fondo detrás de la tarjeta. */
-  cream: "#F4F4F4",
+  /** El fondo de la página de la tienda (--cream de tokens.css): detrás de la tarjeta y en el bloque del número. */
+  cream: "#F2F2F2",
   /** Líneas finas y bordes. */
   line: "#E6E6E6",
   /** Fondo de las tarjetas de producto, de datos y del total. */
@@ -56,8 +56,6 @@ export const C = {
   apagadoBorde: "#D6D6D6",
   /** Fondo de las "pastillas" con las iniciales bordadas. */
   pastilla: "#ECECEC",
-  /** Texto pequeño sobre el bloque negro. */
-  sobreNegro: "#BDBDBD",
   blanco: "#FFFFFF",
 };
 
@@ -171,8 +169,9 @@ export function detalleItem(it: OrderPublicItem): string {
 
 /**
  * EL NÚMERO DE PEDIDO, EN GRANDE. Es lo único que el cliente necesita recordar para consultar
- * su pedido, y en el diseño anterior se perdía dentro de una caja pequeña. Va en un bloque negro
- * con el número en blanco, que es lo más fuerte del correo.
+ * su pedido, y en el diseño anterior se perdía dentro de una caja pequeña. Va en un bloque del
+ * color de fondo de la tienda, con el número en negro y en letra grande. Se probó en negro sólido
+ * y se veía como un parche pegado sobre la tarjeta blanca.
  *
  * @param pista Una línea pequeña debajo del número, solo en el correo donde el cliente lo recibe
  *   por primera vez.
@@ -183,14 +182,14 @@ export function bloqueNumeroPedido(
 ): string {
   const { etiqueta = "TU NÚMERO DE PEDIDO", pista } = opciones;
   return `
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;background:${C.ink};border-radius:14px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;background:${C.cream};border-radius:14px;">
                 <tr>
                   <td align="center" style="padding:20px 16px;">
-                    <div style="font-family:${MONO};font-size:11px;letter-spacing:3px;color:${C.sobreNegro};">${esc(etiqueta)}</div>
-                    <div style="font-family:${MONO};font-size:34px;font-weight:bold;letter-spacing:3px;line-height:1.15;color:${C.blanco};margin-top:8px;">${esc(numero)}</div>${
+                    <div style="font-family:${MONO};font-size:11px;letter-spacing:3px;color:${C.inkSoft};">${esc(etiqueta)}</div>
+                    <div style="font-family:${MONO};font-size:34px;font-weight:bold;letter-spacing:3px;line-height:1.15;color:${C.ink};margin-top:8px;">${esc(numero)}</div>${
                       pista
                         ? `
-                    <div style="font-family:${SANS};font-size:12px;line-height:1.45;color:${C.sobreNegro};margin-top:10px;">${esc(pista)}</div>`
+                    <div style="font-family:${SANS};font-size:12px;line-height:1.45;color:${C.inkSoft};margin-top:10px;">${esc(pista)}</div>`
                         : ""
                     }
                   </td>
