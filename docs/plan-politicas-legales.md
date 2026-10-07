@@ -191,13 +191,20 @@ contacto ya está en el footer, la política y los términos.
 
 ---
 
-## Paso 6 — Conservación y supresión de datos
+## Paso 6 — Conservación y supresión de datos ✅
 
-**Entregables:**
-1. Definir plazo de conservación (el contador decide; por soporte contable suele ser varios años).
-2. Usar el borrado existente (`supabase/sql/013_eliminar_pedido.sql`) para atender solicitudes de supresión.
-3. (Opcional) Función que **anonimice** pedidos viejos: borra nombre, teléfono, correo, documento
-   y dirección, pero conserva totales y productos para la contabilidad.
+**Decisión de Jesús (2026-10-07):** guardar los datos **un mes**. Todavía no lleva contabilidad.
+Si empieza a llevarla o a facturar, hay que revisar el plazo.
+
+**Hecho:**
+- `supabase/sql/025_conservacion_datos.sql`: `anonimizar_pedidos_vencidos()` reemplaza los datos
+  personales y conserva productos, valores y fechas. Vence:
+  - un pedido entregado, un mes después de la entrega (cuando termina la garantía);
+  - un pedido enviado y nunca marcado entregado, un mes y medio después del despacho;
+  - un pedido sin pagar, un mes después de creado.
+- `src/lib/conservacion.ts` + `src/worker.ts`: la tarea programada la llama cada 30 minutos.
+- Política, sección 10: dice el plazo nuevo. La versión sube a `2026-10-07.2`.
+- `docs/procedimiento-datos.md`: anonimización automática y limpieza mensual de Gmail y WhatsApp.
 
 ---
 
@@ -220,7 +227,7 @@ contacto ya está en el footer, la política y los términos.
 | 3 | Términos + identificación | 0 | ✅ |
 | 4 | Cookies | 1 | ✅ como sección de la política; página aparte opcional |
 | 5 | Canal PQR + procedimiento | 0 | ✅ |
-| 6 | Conservación y supresión | 1 | ⬜ |
+| 6 | Conservación y supresión | 1 | ✅ (falta correr 025) |
 | 7 | Opcionales | — | ⬜ |
 
-Siguiente: Paso 6 (conservación y supresión: plazo con el contador y, opcional, botón de anonimizar en el panel).
+Siguiente: Paso 7 (opcionales).

@@ -299,6 +299,11 @@ export interface Order {
   data_policy_version: string | null;
   /** Autorización aparte y opcional para recibir promociones. */
   marketing_consent: boolean;
+  /**
+   * Cuándo se borraron los datos personales del pedido (025_conservacion_datos.sql): un mes
+   * después de la entrega, o de creado si no se pagó. `null` = todavía los tiene.
+   */
+  anonymized_at: Timestamptz | null;
   created_at: Timestamptz;
   updated_at: Timestamptz;
 }

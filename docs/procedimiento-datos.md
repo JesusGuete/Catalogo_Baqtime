@@ -90,13 +90,17 @@ Bórralo además de cualquier lista de difusión de WhatsApp o de correo donde e
 
 ### 4.4 Borrar los datos (supresión o revocación)
 
+**Esto ya pasa solo.** La tienda borra los datos personales de cada pedido **un mes después de
+la entrega**, o un mes después de creado si no se pagó (`025_conservacion_datos.sql`, cada 30
+minutos). En el panel esos pedidos aparecen como "Titular suprimido". Lo de abajo es para cuando
+un cliente pide que se borren antes.
+
 Primero revisa el estado del pedido:
 
 - **Pedido sin pagar o "No confirmado":** no hay venta que soportar. **Elimínalo desde el
   panel** (botón eliminar en el detalle del pedido).
-- **Pedido pagado:** es el soporte de una venta y hay que conservarlo por obligaciones contables
-  y tributarias. **No lo borres: anonimízalo.** Se borran los datos personales y se conservan
-  los productos y los valores.
+- **Pedido pagado:** **no lo borres: anonimízalo.** Se borran los datos personales y se
+  conservan los productos, los valores y las fechas: así queda el historial de ventas.
 
 ```sql
 update public.orders
@@ -105,7 +109,11 @@ update public.orders
        customer_email    = null,
        customer_doc      = 'SUPRIMIDO',
        ship_address      = 'Suprimida',
-       marketing_consent = false
+       payment_note      = null,
+       tracking_number   = null,
+       email_error       = null,
+       marketing_consent = false,
+       anonymized_at     = now()
  where order_number = 'BQ-XXXXX';
 ```
 
@@ -133,9 +141,8 @@ Asunto sugerido: `Tu solicitud de datos personales — Baqtime`. Firma siempre: 
 > Hola, [nombre]. Ya actualizamos tu [dato] en nuestros registros. Si ves algo más por corregir, escríbenos.
 
 ### 5.4 Supresión hecha
-> Hola, [nombre]. Eliminamos tus datos personales de nuestros registros. [Si aplica:] Conservamos los
-> productos y los valores de tu compra del [fecha], sin tu nombre ni tus datos de contacto, porque la ley
-> nos obliga a guardar el soporte de las ventas.
+> Hola, [nombre]. Eliminamos tus datos personales de nuestros registros. [Si aplica:] De tu compra del
+> [fecha] solo conservamos los productos y los valores, sin tu nombre ni tus datos de contacto.
 
 ### 5.5 Baja de promociones
 > Hola, [nombre]. Listo: no te enviaremos más promociones. Seguirás recibiendo solo los mensajes de tus
@@ -183,9 +190,15 @@ pierdes el celular con WhatsApp sin bloqueo.
 4. **Avisa a los clientes afectados** si corren algún riesgo (por ejemplo, de suplantación).
 5. **Anota todo** en la hoja: qué pasó, cuándo te enteraste, qué hiciste y cuándo reportaste.
 
-## 8. Revisión anual
+## 8. Tareas periódicas
 
-Cada año, o antes si cambia algo de fondo:
+**Cada mes:** la tienda borra sola los datos de la base, pero no los de tu correo ni los de tu
+WhatsApp.
+- En Gmail, busca `subject:"Nuevo pedido" older_than:1m` y borra esos correos: son las copias de
+  los pedidos.
+- En WhatsApp, borra los chats de pedidos entregados hace más de un mes que ya no necesites.
+
+**Cada año**, o antes si cambia algo de fondo:
 - **Política y términos:** revisa que sigan siendo ciertos (proveedores, plazos, medios de pago).
 - **Si cambia la política de datos:** sube `POLITICA_DATOS_VERSION` en `src/lib/legal.ts`.
 - **Si empiezas a usar píxeles o analítica:** antes hay que poner un banner de cookies (ver `docs/plan-politicas-legales.md`).

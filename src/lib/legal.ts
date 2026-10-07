@@ -20,8 +20,11 @@ export const RESPONSABLE = {
  * Se guarda en cada pedido junto con la hora de la autorización (024_autorizacion_datos.sql):
  * es la prueba de QUÉ texto aceptó el cliente, que el Decreto 1377 de 2013 (art. 8) obliga a
  * conservar. Por eso, cualquier cambio de fondo en /politica-de-datos sube esta fecha.
+ *
+ * Historial: 2026-10-07 (primera versión) · 2026-10-07.2 (conservación: un mes después de la
+ * entrega, en vez de "lo que exijan las normas contables").
  */
-export const POLITICA_DATOS_VERSION = "2026-10-07";
+export const POLITICA_DATOS_VERSION = "2026-10-07.2";
 export const POLITICA_DATOS_VIGENCIA = "7 de octubre de 2026";
 export const POLITICA_DATOS_RUTA = "/politica-de-datos";
 
