@@ -8,7 +8,6 @@
 // dirección al cliente para que la revise; repetirla en cada aviso solo agrega superficie
 // si el correo estaba mal escrito y el mensaje le llega a otra persona.
 
-import { urlRastreo } from "./tracking";
 import { whatsappUrl } from "./whatsapp.js";
 import {
   C,
@@ -147,10 +146,17 @@ function contenidoDe(tipo: TipoAviso, p: DatosCorreoEstado): Contenido {
     const fecha = p.estimated_date ? fechaLarga(p.estimated_date) : null;
     if (fecha) filas.push({ etiqueta: "ENTREGA ESTIMADA", valor: fecha });
 
-    const rastreo = urlRastreo(p.carrier, p.tracking_number);
-    const lista: Contenido["botones"] = [];
-    if (rastreo) lista.push({ href: rastreo, texto: "Rastrear mi envío", principal: true });
-    lista.push({ ...verEstado, principal: !rastreo });
+    // El botón NO lleva directo al rastreador de la transportadora: su página no permite abrirla
+    // con la guía puesta (se probaron las formas de enlace y ninguna carga), así que el cliente
+    // caería en un campo vacío. Lleva a la página del pedido, que muestra la guía y la copia al
+    // pulsar "Copiar guía y rastrear envío" (ver PedidoVista.astro).
+    const lista: Contenido["botones"] = [
+      {
+        href: p.seguimiento,
+        texto: p.tracking_number ? "Rastrear mi envío" : "Ver el estado de mi pedido",
+        principal: true,
+      },
+    ];
 
     return {
       asunto: `Tu pedido ${p.order_number} va en camino`,
@@ -164,8 +170,8 @@ function contenidoDe(tipo: TipoAviso, p: DatosCorreoEstado): Contenido {
       ],
       caja: filas,
       botones: lista,
-      nota: rastreo
-        ? "El rastreador de la transportadora se abre sin la guía escrita: copia el número de arriba y pégalo ahí."
+      nota: p.tracking_number
+        ? "En esa página copias tu guía con un toque y abres el rastreador de la transportadora."
         : null,
     };
   }
