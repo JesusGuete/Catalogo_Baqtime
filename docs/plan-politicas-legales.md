@@ -39,25 +39,32 @@ mayores a 100.000 UVT. Baqtime casi seguro **no está obligada**. Confirmar con 
 
 ---
 
-## Paso 0 — Insumos que Jesús debe entregar
+## Paso 0 — Insumos ✅ (entregados el 2026-10-07)
 
-Sin esto no se puede redactar nada:
+Viven en `src/lib/legal.ts` (único lugar; lo leen la política, el footer, el checkout y el endpoint).
 
-1. **Responsable del tratamiento:** ¿persona natural o empresa? Nombre completo o razón social.
-2. **NIT o cédula** del responsable.
-3. **Dirección física** de notificación (Barranquilla).
-4. **Correo para temas de datos y PQR** (recomendado: uno propio, p. ej. `datos@baqtime.store` o `contacto@baqtime.store`).
-5. **Teléfono** de contacto (ya existe el WhatsApp +57 313 4954478).
-6. **Fecha de entrada en vigencia** de la política.
-7. **Tiempo de producción y de envío** que se promete al cliente.
-8. **Política actual de cambios y garantía** (qué cubren, por cuánto tiempo, quién paga el envío).
-9. **Medios de pago** que se aceptan (transferencia, Nequi, etc.).
-10. ¿Se planea usar **Meta Pixel, Google Analytics o TikTok Pixel**? (define si se necesita banner).
-11. ¿Se van a enviar **correos o WhatsApp de promociones**? (requiere una finalidad y autorización aparte).
+| Dato | Valor |
+|---|---|
+| Responsable | Persona natural, nombre comercial **Baqtime** |
+| Documento | **No se publica** (decisión de Jesús) |
+| Dirección de notificación | Diagonal 32 #88-699, Cartagena, Bolívar (sin punto de atención al público; opera en Barranquilla) |
+| Correo de datos y PQR | baqtime.store@gmail.com |
+| Teléfono / WhatsApp | +57 313 4954478 |
+| Entrega | 2 a 4 días hábiles **desde que se aprueba el pago** (incluye producción y envío) |
+| Garantía | 1 mes, con pruebas del defecto (fotos/video) |
+| Medios de pago | Todos: transferencia, Nequi, tarjeta de crédito, etc. |
+| Píxeles / analítica | No, por ahora → sin banner de cookies |
+| Promociones | Tal vez → se pide autorización aparte y opcional desde ya |
+
+> Jesús eligió publicar solo "Baqtime", sin nombre completo ni cédula. Para comercio
+> electrónico la Ley 1480 (art. 50) pide nombre y NIT (en persona natural, el NIT sale de la
+> cédula); conviene que un abogado confirme si basta con lo publicado.
 
 ---
 
-## Paso 1 — Política de Tratamiento de Datos Personales
+## Paso 1 — Política de Tratamiento de Datos Personales ✅
+
+**Hecho:** `src/pages/politica-de-datos.astro` (estática: abre aunque Supabase esté caído), enlace en el footer ("Ayuda y contacto"), estilos `.legal` en `site.css`. Incluye además la sección de cookies.
 
 **Entregable:** página `src/pages/politica-de-datos.astro` → `baqtime.store/politica-de-datos`.
 
@@ -85,7 +92,15 @@ Contenido mínimo (Decreto 1377, art. 13):
 
 ---
 
-## Paso 2 — Autorización en el checkout (lo más importante)
+## Paso 2 — Autorización en el checkout ✅
+
+**Hecho:** dos casillas sin marcar en `Checkout.jsx` (datos: obligatoria; promociones: opcional),
+el endpoint rechaza el pedido sin autorización (400) y `create_order()` guarda
+`data_consent_at`, `data_policy_version` y `marketing_consent`.
+
+**⚠️ Para publicar:** correr `supabase/sql/024_autorizacion_datos.sql` en Supabase **antes** de
+publicar el código. Si se publica primero, los pedidos se crean igual pero sin guardar la prueba.
+
 
 **Entregables:**
 1. **Casilla obligatoria, sin marcar por defecto**, antes de "Confirmar pedido":
@@ -103,6 +118,19 @@ Contenido mínimo (Decreto 1377, art. 13):
 ## Paso 3 — Términos y condiciones + identificación del vendedor
 
 **Entregable:** página `src/pages/terminos.astro` → `baqtime.store/terminos`.
+
+**Referencia:** los términos de Vélez (velez.com.co), que Jesús compartió. Se toma la
+estructura, no el texto. Secciones que aplican a Baqtime: propiedad intelectual, precios,
+variación de color en pantalla, errores de precio, política de producto personalizado (lo
+aprobado por el cliente no tiene cambio ni devolución salvo garantía), reporte de daños con
+fotos en un plazo fijo y cancelación del pedido. No aplican (son de una S.A.S. grande): origen
+de fondos, línea de transparencia, reportes a Supersociedades.
+
+**Decisiones pendientes de Jesús:**
+- Plazo para reportar un producto que llegó dañado o equivocado (Vélez usa 5 días hábiles).
+- ¿Se puede cancelar un pedido? ¿Hasta cuándo? (p. ej., antes de empezar a producirlo).
+- En una garantía aceptada: ¿reparación, cambio o devolución del dinero? ¿Quién paga el envío?
+- Tiempo de devolución del dinero cuando aplique (Ley 2439: máximo 15 días calendario en retracto).
 
 Contenido:
 1. Identificación del vendedor (Ley 1480, art. 50).
@@ -175,13 +203,13 @@ actualiza esta página.
 
 | # | Paso | Depende de | Estado |
 |---|---|---|---|
-| 0 | Insumos | — | ⏳ Pendiente (Jesús) |
-| 1 | Política de datos | 0 | ⬜ |
-| 2 | Autorización en checkout | 1 | ⬜ |
+| 0 | Insumos | — | ✅ |
+| 1 | Política de datos | 0 | ✅ |
+| 2 | Autorización en checkout | 1 | ✅ (falta correr 024) |
 | 3 | Términos + identificación | 0 | ⬜ |
-| 4 | Cookies | 1 | ⬜ |
+| 4 | Cookies | 1 | ✅ como sección de la política; página aparte opcional |
 | 5 | Canal PQR + procedimiento | 0 | ⬜ |
 | 6 | Conservación y supresión | 1 | ⬜ |
 | 7 | Opcionales | — | ⬜ |
 
-Pasos 1 + 2 son la prioridad: es donde hoy hay incumplimiento directo.
+Siguiente: Paso 3 (términos), en cuanto Jesús defina las decisiones pendientes.

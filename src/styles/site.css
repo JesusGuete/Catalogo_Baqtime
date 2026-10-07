@@ -663,6 +663,17 @@
   }
   .field-sug u{ font-weight:600; }
 
+  /* Autorizaciones del checkout (Ley 1581). Texto chico pero legible: es lo que el cliente
+     acepta, así que no puede quedar como letra menuda imposible de leer. */
+  .consent-fields{ margin-top:18px; display:flex; flex-direction:column; gap:4px; }
+  .consent-check{
+    display:flex; align-items:flex-start; gap:10px; cursor:pointer;
+    font-size:13px; line-height:1.5; color:var(--ink);
+  }
+  .consent-check input{ margin:3px 0 0; width:16px; height:16px; flex-shrink:0; accent-color:var(--ink); cursor:pointer; }
+  .consent-check a{ color:var(--ink); text-decoration:underline; text-underline-offset:2px; }
+  .consent-fields .field-error{ margin:2px 0 6px 26px; }
+
   .whatsapp-btn{
     margin-top:20px;
     width:100%;
@@ -823,6 +834,30 @@
   }
   .not-found h1{ font-size:30px; margin:0 0 14px; }
   .not-found p{ font-size:14px; color:var(--ink-soft); line-height:1.6; margin:0 0 28px; }
+
+  /* ===== PÁGINAS LEGALES ===== */
+  /* Una columna angosta de texto corrido: es para leerse, no para escanearse, así que el
+     ancho se limita a una medida de lectura cómoda (~70 caracteres). */
+  .legal{
+    max-width:720px; margin:0 auto; padding:56px 20px 40px;
+    font-size:15px; line-height:1.7; color:var(--ink);
+  }
+  .legal-eyebrow{ font-size:11px; letter-spacing:0.08em; color:var(--mocha); margin:0 0 10px; }
+  .legal h1{ font-size:32px; line-height:1.2; margin:0 0 10px; }
+  .legal-meta{ font-size:11px; color:var(--ink-soft); margin:0 0 32px; }
+  .legal h2{ font-size:21px; margin:40px 0 12px; }
+  .legal p{ margin:0 0 14px; }
+  .legal ul{ margin:0 0 14px; padding-left:20px; }
+  .legal li{ margin-bottom:6px; }
+  .legal a{ color:var(--ink); text-decoration:underline; text-underline-offset:2px; }
+  .legal a:hover{ color:var(--mocha); }
+  .legal code{ font-family:'JetBrains Mono', monospace; font-size:13px; background:var(--panel); padding:1px 5px; }
+  .legal-datos{ list-style:none; padding-left:0 !important; }
+  @media (max-width:600px){
+    .legal{ padding-top:36px; font-size:14px; }
+    .legal h1{ font-size:26px; }
+    .legal h2{ font-size:19px; }
+  }
 
   /* ===== AJUSTES MÓVIL ===== */
   @media (max-width:600px){

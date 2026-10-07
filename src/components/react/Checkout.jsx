@@ -9,6 +9,7 @@ import {
   filtrarCorreo,
   sugerirCorreo,
 } from "../../lib/shipping-validation.js";
+import { POLITICA_DATOS_RUTA } from "../../lib/legal";
 
 const EMPTY = { name: "", city: "", address: "", phone: "", email: "", doc: "" };
 
@@ -20,6 +21,11 @@ export default function Checkout({ items, products, categories = [], onClose }) 
   const [errors, setErrors] = useState({});
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState("");
+  // Dos autorizaciones separadas a propósito (Ley 1581): la de datos es condición para
+  // poder hacer el pedido; la de promociones es opcional y no puede venir atada a la otra.
+  // Ninguna arranca marcada: una casilla premarcada no es una autorización.
+  const [aceptaDatos, setAceptaDatos] = useState(false);
+  const [aceptaPromos, setAceptaPromos] = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -54,6 +60,7 @@ export default function Checkout({ items, products, categories = [], onClose }) 
   async function handleSend() {
     if (!items.length || enviando) return;
     const found = validateShipping(form);
+    if (!aceptaDatos) found.datos = "Para hacer el pedido debes aceptar la política de datos.";
     setErrors(found);
     if (Object.keys(found).length > 0) return;
 
@@ -70,6 +77,7 @@ export default function Checkout({ items, products, categories = [], onClose }) 
             initialsColorName: i.initialsColorName,
           })),
           shipping: form,
+          consent: { datos: aceptaDatos, promociones: aceptaPromos },
         }),
       });
       const datos = await res.json().catch(() => ({}));
@@ -235,6 +243,42 @@ export default function Checkout({ items, products, categories = [], onClose }) 
               <div className="field-error">{errors.doc || ""}</div>
             </div>
           </div>
+        </div>
+
+        {/* La política se abre en otra pestaña: el checkout es un modal y sus datos viven
+            solo en memoria, así que navegar fuera para leerla haría perder lo escrito. */}
+        <div className="consent-fields">
+          <label className="consent-check">
+            <input
+              type="checkbox"
+              checked={aceptaDatos}
+              onChange={(e) => {
+                setAceptaDatos(e.target.checked);
+                if (e.target.checked) setErrors((er) => ({ ...er, datos: undefined }));
+              }}
+              aria-describedby="checkout-datos-error"
+            />
+            <span>
+              Autorizo a Baqtime a tratar mis datos personales para gestionar y entregar mi
+              pedido, según la{" "}
+              <a href={POLITICA_DATOS_RUTA} target="_blank" rel="noopener">
+                Política de Tratamiento de Datos
+              </a>
+              .
+            </span>
+          </label>
+          <div className="field-error" id="checkout-datos-error">
+            {errors.datos || ""}
+          </div>
+
+          <label className="consent-check">
+            <input
+              type="checkbox"
+              checked={aceptaPromos}
+              onChange={(e) => setAceptaPromos(e.target.checked)}
+            />
+            <span>Quiero recibir novedades y promociones de Baqtime (opcional).</span>
+          </label>
         </div>
 
         {errorEnvio && (

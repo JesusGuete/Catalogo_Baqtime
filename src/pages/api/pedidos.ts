@@ -28,6 +28,7 @@ import type { Category } from "../../types/database";
 import { PRICE_SHIP, recargoIniciales } from "../../lib/pricing.js";
 import { normalizarCorreo, validateShipping } from "../../lib/shipping-validation.js";
 import { enviarConfirmacionPedido, enviarCopiaPedidoTienda } from "../../lib/correo";
+import { POLITICA_DATOS_VERSION } from "../../lib/legal";
 
 export const prerender = false;
 
@@ -96,7 +97,7 @@ export const POST: APIRoute = async ({ request, url, locals }) => {
     return json({ error: "El sistema de pedidos no está disponible en este momento." }, 503);
   }
 
-  let cuerpo: { items?: unknown; shipping?: unknown };
+  let cuerpo: { items?: unknown; shipping?: unknown; consent?: unknown };
   try {
     cuerpo = (await request.json()) as typeof cuerpo;
   } catch {
@@ -123,6 +124,17 @@ export const POST: APIRoute = async ({ request, url, locals }) => {
   const errores = validateShipping(datos);
   if (Object.keys(errores).length) {
     return json({ error: "Datos de envío incompletos.", errores }, 400);
+  }
+
+  // Sin autorización no hay pedido (Ley 1581 de 2012): los datos de arriba son
+  // indispensables para producirlo y entregarlo. Se exige `=== true` y no algo "truthy":
+  // un "false" en texto o un 1 no son una casilla marcada.
+  const consentimiento = (cuerpo.consent ?? {}) as { datos?: unknown; promociones?: unknown };
+  if (consentimiento.datos !== true) {
+    return json(
+      { error: "Debes autorizar el tratamiento de tus datos para hacer el pedido." },
+      400
+    );
   }
 
   // --- Catálogo real -------------------------------------------------------
@@ -231,6 +243,11 @@ export const POST: APIRoute = async ({ request, url, locals }) => {
           subtotal,
           shipping_cost: envioCosto,
           total,
+          // La versión la pone el servidor, no el navegador: es la política que está
+          // publicada AHORA, que es la que enlazaba la casilla que se acaba de marcar.
+          acepta_datos: true,
+          politica_version: POLITICA_DATOS_VERSION,
+          acepta_promociones: consentimiento.promociones === true,
         },
         p_items: lineas,
       }),
