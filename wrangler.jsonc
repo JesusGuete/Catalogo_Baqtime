@@ -10,5 +10,18 @@
   // del runtime de Workers.
   "name": "catalogo-baqtime",
   "compatibility_date": "2025-07-01",
-  "compatibility_flags": ["nodejs_compat"]
+  "compatibility_flags": ["nodejs_compat"],
+
+  // CONSERVAR LAS VARIABLES QUE SE PONEN EN EL PANEL DE CLOUDFLARE.
+  //
+  // Por defecto este archivo manda: en cada deploy, wrangler BORRA las variables de texto que
+  // alguien agregó a mano en Cloudflare (Settings → Variables and Secrets) y que no estén
+  // declaradas acá. Los secretos no se tocan. Con las variables de texto de los correos
+  // (CORREO_RESPONDER_A, CORREO_REMITENTE) pasó: se agregaron en el panel, el siguiente deploy
+  // las borró, y los correos salieron sin "Responder a" — la respuesta de un cliente rebotaba
+  // contra pedidos@baqtime.store, una dirección sin buzón.
+  //
+  // Con esto, lo que se configura en el panel sobrevive a los deploys. Las claves siguen yendo
+  // como Secret (RESEND_API_KEY, SUPABASE_SERVICE_ROLE_KEY).
+  "keep_vars": true
 }
