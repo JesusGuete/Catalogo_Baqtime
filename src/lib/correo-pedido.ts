@@ -49,6 +49,15 @@ export const C = {
   blanco: "#FFFFFF",
 };
 
+/**
+ * El logo de la tienda, en su dirección pública. Tiene que ser ABSOLUTA: el correo se abre en
+ * el programa de correo del cliente, lejos de baqtime.store, y una ruta relativa no resuelve.
+ * Es el mismo archivo que usa el encabezado de la tienda (998x297, PNG con fondo transparente).
+ * Si el programa de correo bloquea las imágenes, se ve el texto del `alt` ("BAQTIME").
+ */
+export const LOGO_URL = "https://baqtime.store/assets/img/logo.png";
+const LOGO_ANCHO = 200;
+
 export const SERIF = "Georgia, 'Times New Roman', serif";
 export const SANS = "Helvetica, Arial, sans-serif";
 export const MONO = "'Courier New', Courier, monospace";
@@ -98,8 +107,11 @@ export function envolverCorreo(o: {
       <td align="center" style="padding:24px 12px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:${C.blanco};border:1px solid ${C.line};">
           <tr>
-            <td align="center" style="background:${C.ink};padding:22px 24px;font-family:${MONO};font-size:15px;letter-spacing:8px;color:${C.blanco};">
-              BAQTIME
+            <td style="height:4px;background:${C.ink};font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+          <tr>
+            <td align="center" style="background:${C.blanco};padding:26px 24px 22px;border-bottom:1px solid ${C.line};font-family:${MONO};font-size:15px;letter-spacing:8px;color:${C.ink};">
+              <img src="${LOGO_URL}" alt="BAQTIME" width="${LOGO_ANCHO}" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none;width:${LOGO_ANCHO}px;max-width:100%;height:auto;font-family:${MONO};font-size:15px;letter-spacing:8px;color:${C.ink};">
             </td>
           </tr>
           <tr>
