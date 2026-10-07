@@ -83,16 +83,44 @@ const estaEnviado = pedido.status === "enviado" || pedido.status === "entregado"
       <span class="seg-guia-label mono">GUÍA · {pedido.carrier ?? "TRANSPORTADORA"}</span>
       <span class="seg-guia-num mono">{pedido.tracking_number}</span>
       {enlaceRastreo && (
-        <a class="seg-guia-btn" href={enlaceRastreo} target="_blank" rel="noopener noreferrer">
-          Rastrear envío
+        <a
+          class="seg-guia-btn"
+          href={enlaceRastreo}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-copiar-guia={pedido.tracking_number}
+        >
+          Copiar guía y rastrear envío
         </a>
       )}
-      {/* El rastreador oficial se abre sin la guía precargada, así que hay que pegarla.
-          Decirlo es mejor que dejar al cliente buscando dónde va. */}
-      <p class="seg-guia-nota">Copia el número y pégalo en el rastreador.</p>
+      {/* El rastreador oficial se abre sin la guía precargada: se probaron las formas de enlace
+          y ninguna la carga, y su buscador tiene protección anti-robots, así que tampoco se puede
+          traer su información acá. Lo más cerca que se llega: copiarla al pulsar, para que el
+          cliente solo tenga que pegarla. Sin JavaScript el botón igual abre el rastreador y la
+          nota de abajo le pide copiarla a mano. */}
+      <p class="seg-guia-nota" data-nota-guia>Copia el número y pégalo en el rastreador.</p>
     </section>
   )
 }
+
+<script>
+  // Al pulsar "Copiar guía y rastrear envío": se copia la guía y el enlace sigue su camino
+  // normal (se abre el rastreador en otra pestaña). No se llama a preventDefault().
+  document.querySelectorAll<HTMLAnchorElement>("[data-copiar-guia]").forEach((boton) => {
+    boton.addEventListener("click", () => {
+      const guia = boton.dataset.copiarGuia ?? "";
+      const nota = boton.parentElement?.querySelector("[data-nota-guia]");
+      if (!guia || !nota || !navigator.clipboard) return;
+      navigator.clipboard
+        .writeText(guia)
+        .then(() => {
+          nota.textContent = `Guía ${guia} copiada. En el rastreador, pégala en el campo (mantén presionado y elige Pegar, o Ctrl+V).`;
+        })
+        // Si el navegador no deja copiar, la nota original sigue pidiéndolo a mano.
+        .catch(() => {});
+    });
+  });
+</script>
 
 <section class="seg-bloque">
   <h2 class="seg-h2">Seguimiento</h2>
