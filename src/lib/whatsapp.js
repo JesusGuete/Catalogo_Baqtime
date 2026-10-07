@@ -28,7 +28,7 @@ export const WHATSAPP_NUMBER = "573134954478";
  *
  * @param {import("../types/database").OrderPublicItem} it
  */
-function describirItem(it) {
+export function describirItem(it) {
   let linea = it.product_name;
   if (it.variant) linea += ` - ${it.variant}`;
   if (it.initials) {

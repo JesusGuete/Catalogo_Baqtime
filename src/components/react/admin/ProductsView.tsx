@@ -6,6 +6,7 @@ import { calcularDiff, type TipoCambio } from "../../../lib/admin/diff";
 import { useOrdenOptimista } from "../../../lib/admin/useAdminData";
 import { useArrastreOrden } from "../../../lib/admin/useArrastreOrden";
 import * as productosRepo from "../../../lib/admin/products.repo";
+import { copiarAlPortapapeles } from "../../../lib/admin/copiar";
 import { rutaProducto } from "../../../lib/product-url";
 import { buildProductInviteMessage } from "../../../lib/whatsapp.js";
 import { publicImageUrl, PLACEHOLDER_IMAGE } from "../../../lib/supabase/config";
@@ -113,21 +114,7 @@ export default function ProductsView({
   async function copiarEnlace(p: Product) {
     const url = `${SITIO.replace(/\/$/, "")}${rutaProducto(p)}`;
     const mensaje = buildProductInviteMessage(p, url);
-    try {
-      await navigator.clipboard.writeText(mensaje);
-    } catch {
-      // `navigator.clipboard` no existe fuera de HTTPS ni en navegadores viejos. Quedarse
-      // sin forma de copiar sería justamente el problema que esta opción vino a resolver.
-      const caja = document.createElement("textarea");
-      caja.value = mensaje;
-      caja.setAttribute("readonly", "");
-      caja.style.position = "fixed";
-      caja.style.opacity = "0";
-      document.body.appendChild(caja);
-      caja.select();
-      document.execCommand("copy");
-      caja.remove();
-    }
+    await copiarAlPortapapeles(mensaje);
     setCopiado(p.id);
     // Se compara el id antes de limpiar: si mientras tanto se copió OTRO producto, este
     // temporizador no debe apagarle la confirmación al segundo.

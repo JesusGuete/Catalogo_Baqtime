@@ -844,6 +844,12 @@ input.adm-input { display: block; }
 .adm-aviso-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; font-size: 13px; }
 .adm-aviso-txt .adm-hint { overflow-wrap: anywhere; }
 
+/* El mensaje para la fábrica: texto plano de varias líneas que se lee y se copia. */
+.adm-mensaje-fabrica {
+  display: block; min-height: 0; height: auto; padding: 12px 14px;
+  font-size: 13px; line-height: 1.55; white-space: pre-wrap; resize: none; overflow: hidden;
+}
+
 @media (max-width: 1100px) {
   .adm-publicar { flex-direction: column; }
   .adm-publicar-accion {
