@@ -343,10 +343,18 @@ export interface OrderStatusHistory {
 }
 
 /**
- * Los avisos por correo de cambio de estado (021_avisos_estado.sql): uno por pedido y tipo,
- * con cómo salió el ÚLTIMO intento. Lo escribe solo el servidor, con service_role.
+ * Los tres avisos por correo que el panel puede mandar al cambiar el estado de un pedido
+ * (021_avisos_estado.sql).
  */
-export type OrderNotificationType = "aprobado" | "enviado" | "entregado";
+export type OrderStatusNotice = "aprobado" | "enviado" | "entregado";
+
+/**
+ * Todo lo que deja rastro en order_notifications: los tres avisos de estado y el recordatorio
+ * de pago (023_recordatorio_pago.sql), que NO lo manda el panel sino una tarea programada.
+ * Una fila por pedido y tipo, con cómo salió el ÚLTIMO intento. Lo escribe solo el servidor,
+ * con service_role.
+ */
+export type OrderNotificationType = OrderStatusNotice | "recordatorio";
 
 export interface OrderNotification {
   order_id: string;

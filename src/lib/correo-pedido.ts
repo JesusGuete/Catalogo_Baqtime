@@ -130,7 +130,7 @@ export function primerNombre(nombre: string): string {
  * la variante (que no está en el nombre) y las iniciales bordadas, que son lo que se
  * produce a mano y lo que más conviene que el cliente revise.
  */
-function detalleItem(it: OrderPublicItem): string {
+export function detalleItem(it: OrderPublicItem): string {
   const partes: string[] = [];
   if (it.variant) partes.push(it.variant);
   if (it.initials) {
