@@ -1,8 +1,8 @@
 // Los correos de cambio de estado: pago confirmado, enviado y entregado.
 //
-// Funciones puras, sin red ni secretos, igual que correo-pedido.ts, y con el mismo marco
-// (envolverCorreo) para que los cuatro correos se vean como de la misma casa. Quién los manda
-// y cómo se anotan vive en src/lib/correo.ts.
+// Funciones puras, sin red ni secretos, igual que correo-pedido.ts, y con el mismo marco y las
+// mismas piezas (número de pedido, progreso, botones) para que los correos se vean como de la
+// misma casa. Quién los manda y cómo se anotan vive en src/lib/correo.ts.
 //
 // QUÉ NO LLEVAN: ni el documento ni la dirección. El correo de confirmación ya le mostró la
 // dirección al cliente para que la revise; repetirla en cada aviso solo agrega superficie
@@ -14,11 +14,15 @@ import {
   C,
   MONO,
   SANS,
-  SERIF,
+  bloqueNumeroPedido,
+  botonesCorreo,
+  cajaDatos,
   envolverCorreo,
   esc,
   primerNombre,
+  progresoPedido,
   type CorreoArmado,
+  type PasoPedido,
 } from "./correo-pedido";
 
 /** Los tres avisos de cambio de estado. Es el mismo texto que guarda order_notifications.tipo. */
@@ -64,50 +68,6 @@ export function fechaLarga(iso: string): string | null {
   return `${Number(m[3])} de ${mes} de ${m[1]}`;
 }
 
-function cajaDatos(filas: { etiqueta: string; valor: string; mono?: boolean }[]): string {
-  const celdas = filas
-    .map(
-      (f, i) => `
-                    <div style="font-family:${MONO};font-size:10px;letter-spacing:2px;color:${C.draftText};${i ? "margin-top:14px;" : ""}">${esc(f.etiqueta)}</div>
-                    <div style="font-family:${f.mono ? MONO : SANS};font-size:${f.mono ? "22px" : "15px"};${f.mono ? "letter-spacing:2px;" : ""}color:${C.ink};margin-top:6px;">${esc(f.valor)}</div>`
-    )
-    .join("");
-  return `
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.draftBg};border:1px solid ${C.draftBorder};">
-                <tr>
-                  <td style="padding:16px 20px;">${celdas}
-                  </td>
-                </tr>
-              </table>`;
-}
-
-function boton(href: string, texto: string, principal: boolean): string {
-  return principal
-    ? `
-                <tr>
-                  <td align="center" style="background:${C.ink};">
-                    <a href="${esc(href)}" style="display:block;padding:15px;font-family:${SANS};font-size:14px;letter-spacing:0.5px;color:${C.cream};text-decoration:none;">${esc(texto)}</a>
-                  </td>
-                </tr>`
-    : `
-                <tr>
-                  <td align="center" style="border:1px solid ${C.ink};">
-                    <a href="${esc(href)}" style="display:block;padding:14px;font-family:${SANS};font-size:14px;letter-spacing:0.5px;color:${C.ink};text-decoration:none;">${esc(texto)}</a>
-                  </td>
-                </tr>`;
-}
-
-/** Los botones van en filas separadas por un espacio: Outlook ignora el margin entre tablas. */
-function botones(lista: { href: string; texto: string; principal: boolean }[]): string {
-  const filas = lista
-    .map((b) => boton(b.href, b.texto, b.principal))
-    .join(`
-                <tr><td style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>`);
-  return `
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px;">${filas}
-              </table>`;
-}
-
 export interface Contenido {
   asunto: string;
   bandeja: string;
@@ -116,7 +76,11 @@ export interface Contenido {
   titulo: string;
   /** Párrafos de texto plano; el HTML y el texto salen de la misma lista. */
   parrafos: string[];
-  /** Filas de la caja destacada. */
+  /** El número de pedido: va en el bloque grande, no entre los demás datos. */
+  numero: string;
+  /** Dónde va el pedido, para la barra de progreso. */
+  paso: PasoPedido;
+  /** Datos sueltos de la tarjeta (transportadora, guía…). Puede estar vacía. */
   caja: { etiqueta: string; valor: string; mono?: boolean }[];
   botones: { href: string; texto: string; principal: boolean }[];
   /** Nota pequeña bajo los botones, o null. */
@@ -136,16 +100,16 @@ function contenidoDe(tipo: TipoAviso, p: DatosCorreoEstado): Contenido {
       parrafos: [
         "Recibimos tu pago. Tu pedido entró a producción y te avisaremos por este medio cuando salga el envío.",
       ],
-      caja: [{ etiqueta: "TU NÚMERO DE PEDIDO", valor: p.order_number, mono: true }],
+      numero: p.order_number,
+      paso: 3,
+      caja: [],
       botones: [{ ...verEstado, principal: true }],
       nota: null,
     };
   }
 
   if (tipo === "enviado") {
-    const filas: Contenido["caja"] = [
-      { etiqueta: "TU NÚMERO DE PEDIDO", valor: p.order_number, mono: true },
-    ];
+    const filas: Contenido["caja"] = [];
     if (p.carrier) filas.push({ etiqueta: "TRANSPORTADORA", valor: p.carrier });
     if (p.tracking_number) {
       filas.push({ etiqueta: "NÚMERO DE GUÍA", valor: p.tracking_number, mono: true });
@@ -168,6 +132,8 @@ function contenidoDe(tipo: TipoAviso, p: DatosCorreoEstado): Contenido {
           ? "Tu pedido ya salió. Con el número de guía puedes seguir el envío."
           : "Tu pedido ya salió. Puedes ver cómo va desde el enlace de abajo.",
       ],
+      numero: p.order_number,
+      paso: 4,
       caja: filas,
       botones: lista,
       nota: rastreo
@@ -185,7 +151,9 @@ function contenidoDe(tipo: TipoAviso, p: DatosCorreoEstado): Contenido {
       "Marcamos tu pedido como entregado. Gracias por comprar en Baqtime.",
       "Si algo no llegó como esperabas, escríbenos y lo resolvemos.",
     ],
-    caja: [{ etiqueta: "TU NÚMERO DE PEDIDO", valor: p.order_number, mono: true }],
+    numero: p.order_number,
+    paso: 5,
+    caja: [],
     botones: [
       {
         href: whatsappUrl(`Hola, tengo una consulta sobre mi pedido ${p.order_number}`),
@@ -222,17 +190,19 @@ export function armarDesdeContenido(c: Contenido, puedeResponder: boolean): Corr
   const parrafos = c.parrafos
     .map(
       (t, i) => `
-              <p style="margin:0 0 ${i === c.parrafos.length - 1 ? "24" : "12"}px;font-family:${SANS};font-size:14px;line-height:1.6;color:${C.inkSoft};">
+              <p style="margin:${i === 0 ? "0" : "10px"} 0 0;font-family:${SANS};font-size:14px;line-height:1.6;color:${C.inkSoft};">
                 ${esc(t)}
               </p>`
     )
     .join("");
 
-  const contenido = `              <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;letter-spacing:2px;color:#B68234;">${esc(c.etiqueta)}</p>
-              <h1 style="margin:0 0 8px;font-family:${SERIF};font-size:28px;line-height:1.15;font-weight:bold;color:${C.ink};">${esc(c.titulo)}</h1>${parrafos}
+  const contenido = `              <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;letter-spacing:2px;color:${C.mocha};">${esc(c.etiqueta)}</p>
+              <h1 style="margin:0 0 8px;font-family:${SANS};font-size:26px;line-height:1.2;font-weight:bold;color:${C.ink};">${esc(c.titulo)}</h1>${parrafos}
+${bloqueNumeroPedido(c.numero)}
+${progresoPedido(c.paso)}
 ${cajaDatos(c.caja)}
-${botones(c.botones)}
-              <p style="margin:20px 0 28px;font-family:${SANS};font-size:12px;line-height:1.55;color:${C.inkSoft};">
+${botonesCorreo(c.botones)}
+              <p style="margin:20px 0 28px;font-family:${SANS};font-size:12px;line-height:1.55;color:${C.inkSoft};text-align:center;">
                 ${c.nota ? esc(c.nota) : "&nbsp;"}
               </p>`;
 
@@ -247,6 +217,7 @@ ${botones(c.botones)}
     c.titulo,
     ``,
     ...c.parrafos.flatMap((t) => [t, ``]),
+    `TU NÚMERO DE PEDIDO: ${c.numero}`,
     ...c.caja.map((f) => `${f.etiqueta}: ${f.valor}`),
     ``,
     ...c.botones.map((b) => `${b.texto}: ${b.href}`),

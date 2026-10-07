@@ -1,4 +1,5 @@
-// El correo "Recibimos tu pedido": asunto, HTML y texto plano.
+// El correo "Recibimos tu pedido": asunto, HTML y texto plano. Y las piezas de diseño que
+// comparten TODOS los correos de la tienda (marco, número de pedido, progreso, botones).
 //
 // Funciones puras, sin red ni secretos: arman el mensaje y nada más. Quién lo manda y
 // cómo vive en src/lib/correo.ts. Separarlos permite mirar la plantilla sin un proveedor
@@ -7,7 +8,8 @@
 // POR QUÉ TABLAS Y ESTILOS EN LÍNEA: es lo único que Gmail, Outlook y el correo del iPhone
 // muestran igual. Nada de <style>, flex ni variables CSS — Outlook las ignora. Los colores
 // son los de tokens.css copiados a mano por esa misma razón; si la paleta cambia, hay que
-// cambiarlos también acá.
+// cambiarlos también acá. Las esquinas redondeadas (border-radius) las respetan Gmail y el
+// correo del iPhone; Outlook de escritorio las ignora y muestra esquinas rectas, sin romper nada.
 //
 // LO QUE EL CORREO NO LLEVA, A PROPÓSITO: el número de documento. Si el cliente escribió
 // mal su correo, el mensaje le llega a un desconocido — mejor que no lleve el dato más
@@ -47,6 +49,17 @@ export const C = {
   draftBorder: "#E8D9BC",
   draftText: "#8a6420",
   blanco: "#FFFFFF",
+  /** --vino: el color del encabezado de la tienda. */
+  vino: "#6E1F2A",
+  /** --mocha: el dorado de las etiquetas. */
+  mocha: "#B68234",
+  /** Fondo de las tarjetas de cada producto. */
+  tarjeta: "#FAF7F2",
+  /** Texto y borde de lo que todavía no pasó (pasos pendientes). */
+  apagado: "#A39B90",
+  apagadoBorde: "#D8D3CB",
+  /** Fondo de las "pastillas" con las iniciales bordadas. */
+  pastilla: "#F3E8D2",
 };
 
 /**
@@ -56,7 +69,7 @@ export const C = {
  * Si el programa de correo bloquea las imágenes, se ve el texto del `alt` ("BAQTIME").
  */
 export const LOGO_URL = "https://baqtime.store/assets/img/logo.png";
-const LOGO_ANCHO = 200;
+const LOGO_ANCHO = 150;
 
 export const SERIF = "Georgia, 'Times New Roman', serif";
 export const SANS = "Helvetica, Arial, sans-serif";
@@ -77,7 +90,7 @@ export function esc(texto: string | null | undefined): string {
 }
 
 /**
- * El marco común de todos los correos de Baqtime: cabecera, caja blanca y pie.
+ * El marco común de todos los correos de Baqtime: logo, tarjeta blanca redondeada y pie.
  *
  * `contenido` y `pie` son HTML ya armado y se insertan tal cual: quien llama escapa lo que
  * escribió el cliente (ver esc()). `titulo` y `bandeja` son texto plano y se escapan acá.
@@ -105,22 +118,19 @@ export function envolverCorreo(o: {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.cream};">
     <tr>
       <td align="center" style="padding:24px 12px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:${C.blanco};border:1px solid ${C.line};">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:${C.blanco};border:1px solid ${C.line};border-radius:18px;overflow:hidden;">
           <tr>
-            <td style="height:4px;background:${C.ink};font-size:0;line-height:0;">&nbsp;</td>
-          </tr>
-          <tr>
-            <td align="center" style="background:${C.blanco};padding:26px 24px 22px;border-bottom:1px solid ${C.line};font-family:${MONO};font-size:15px;letter-spacing:8px;color:${C.ink};">
+            <td align="center" style="padding:30px 24px 4px;font-family:${MONO};font-size:15px;letter-spacing:8px;color:${C.ink};">
               <img src="${LOGO_URL}" alt="BAQTIME" width="${LOGO_ANCHO}" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none;width:${LOGO_ANCHO}px;max-width:100%;height:auto;font-family:${MONO};font-size:15px;letter-spacing:8px;color:${C.ink};">
             </td>
           </tr>
           <tr>
-            <td style="padding:32px 28px 8px;">
+            <td style="padding:20px 28px 8px;">
 ${o.contenido}
             </td>
           </tr>
           <tr>
-            <td style="padding:18px 28px 24px;border-top:1px solid ${C.line};font-family:${SANS};font-size:11px;line-height:1.55;color:${C.inkSoft};">
+            <td align="center" style="padding:18px 28px 26px;border-top:1px solid ${C.line};font-family:${SANS};font-size:11px;line-height:1.55;color:${C.inkSoft};">
               ${o.pie}
             </td>
           </tr>
@@ -156,6 +166,119 @@ export function detalleItem(it: OrderPublicItem): string {
   return partes.join(" · ");
 }
 
+// ============================================================================
+// Piezas de diseño compartidas
+// ============================================================================
+
+/**
+ * EL NÚMERO DE PEDIDO, EN GRANDE. Es lo único que el cliente necesita recordar para consultar
+ * su pedido, y en el diseño anterior se perdía dentro de una caja pequeña. Va en un bloque vino
+ * (el color del encabezado de la tienda) con el número en blanco, que es lo más fuerte del correo.
+ *
+ * @param pista Una línea pequeña debajo del número, solo en el correo donde el cliente lo recibe
+ *   por primera vez.
+ */
+export function bloqueNumeroPedido(
+  numero: string,
+  opciones: { etiqueta?: string; pista?: string } = {}
+): string {
+  const { etiqueta = "TU NÚMERO DE PEDIDO", pista } = opciones;
+  return `
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;background:${C.vino};border-radius:14px;">
+                <tr>
+                  <td align="center" style="padding:20px 16px;">
+                    <div style="font-family:${MONO};font-size:11px;letter-spacing:3px;color:#E3C79B;">${esc(etiqueta)}</div>
+                    <div style="font-family:${MONO};font-size:34px;font-weight:bold;letter-spacing:3px;line-height:1.15;color:${C.blanco};margin-top:8px;">${esc(numero)}</div>${
+                      pista
+                        ? `
+                    <div style="font-family:${SANS};font-size:12px;line-height:1.45;color:#EBD6D6;margin-top:10px;">${esc(pista)}</div>`
+                        : ""
+                    }
+                  </td>
+                </tr>
+              </table>`;
+}
+
+/**
+ * Dónde va el pedido: 1 recibido, 2 pago, 3 producción, 4 envío; 5 = entregado (los cuatro pasos
+ * hechos). El paso "actual" va con aro dorado, los anteriores con una marca, los siguientes apagados.
+ */
+export type PasoPedido = 1 | 2 | 3 | 4 | 5;
+
+const PASOS = ["Pedido recibido", "Pago", "Producción", "Envío"];
+
+export function progresoPedido(paso: PasoPedido): string {
+  const celdas = PASOS.map((nombre, i) => {
+    const n = i + 1;
+    const hecho = n < paso;
+    const actual = n === paso;
+    const fondo = hecho ? C.ink : C.blanco;
+    const borde = hecho ? C.ink : actual ? C.mocha : C.apagadoBorde;
+    const color = hecho ? C.blanco : actual ? C.draftText : C.apagado;
+    const etiqueta = paso === 5 && n === 4 ? "Entregado" : nombre;
+    return `
+                  <td align="center" width="25%" style="vertical-align:top;padding:0 2px;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td align="center" style="width:30px;height:30px;background:${fondo};border:2px solid ${borde};border-radius:16px;font-family:${SANS};font-size:13px;font-weight:bold;color:${color};">${hecho ? "&#10003;" : n}</td></tr></table>
+                    <div style="margin-top:7px;font-family:${SANS};font-size:11px;line-height:1.3;color:${hecho || actual ? C.ink : C.apagado};${actual ? "font-weight:bold;" : ""}">${esc(etiqueta)}</div>
+                  </td>`;
+  }).join("");
+  return `
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;">
+                <tr>${celdas}
+                </tr>
+              </table>`;
+}
+
+/** Tarjeta con datos sueltos (transportadora, guía, total…). Sin filas no dibuja nada. */
+export function cajaDatos(filas: { etiqueta: string; valor: string; mono?: boolean }[]): string {
+  if (!filas.length) return "";
+  const celdas = filas
+    .map(
+      (f, i) => `
+                    <div style="font-family:${MONO};font-size:10px;letter-spacing:2px;color:${C.draftText};${i ? "margin-top:14px;" : ""}">${esc(f.etiqueta)}</div>
+                    <div style="font-family:${f.mono ? MONO : SANS};font-size:${f.mono ? "22px" : "15px"};${f.mono ? "letter-spacing:2px;" : ""}color:${C.ink};margin-top:6px;">${esc(f.valor)}</div>`
+    )
+    .join("");
+  return `
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;background:${C.draftBg};border:1px solid ${C.draftBorder};border-radius:12px;">
+                <tr>
+                  <td style="padding:16px 20px;">${celdas}
+                  </td>
+                </tr>
+              </table>`;
+}
+
+function boton(href: string, texto: string, principal: boolean): string {
+  return principal
+    ? `
+                <tr>
+                  <td align="center" style="background:${C.ink};border-radius:30px;">
+                    <a href="${esc(href)}" style="display:block;padding:16px;font-family:${SANS};font-size:15px;font-weight:bold;letter-spacing:0.3px;color:${C.blanco};text-decoration:none;">${esc(texto)}</a>
+                  </td>
+                </tr>`
+    : `
+                <tr>
+                  <td align="center" style="border:1px solid ${C.ink};border-radius:30px;">
+                    <a href="${esc(href)}" style="display:block;padding:15px;font-family:${SANS};font-size:14px;letter-spacing:0.3px;color:${C.ink};text-decoration:none;">${esc(texto)}</a>
+                  </td>
+                </tr>`;
+}
+
+/** Los botones van en filas separadas por un espacio: Outlook ignora el margin entre tablas. */
+export function botonesCorreo(lista: { href: string; texto: string; principal: boolean }[]): string {
+  const filas = lista
+    .map((b) => boton(b.href, b.texto, b.principal))
+    .join(`
+                <tr><td style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>`);
+  return `
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px;">${filas}
+              </table>`;
+}
+
+// ============================================================================
+// El correo de confirmación
+// ============================================================================
+
 /**
  * @param puedeResponder Si hay una dirección de respuesta configurada. Sin ella, decirle
  *   al cliente "responde a este correo" lo mandaría a escribirle a un buzón que nadie lee.
@@ -170,70 +293,69 @@ export function armarCorreoPedido(p: DatosCorreoPedido, puedeResponder: boolean)
   const aviso24h =
     "Recuerda confirmar el pago en las próximas 24 horas. Pasado ese tiempo, el pedido queda como no confirmado.";
 
-  const filasItems = p.items
+  // Una tarjeta por producto; las iniciales bordadas van en una pastilla dorada porque son lo que
+  // se produce a mano y lo que más conviene que el cliente revise.
+  const tarjetasItems = p.items
     .map((it) => {
       const detalle = detalleItem(it);
       return `
-        <tr>
-          <td style="padding:10px 0;border-bottom:1px solid ${C.line};font-family:${SANS};font-size:14px;color:${C.ink};">
-            ${esc(it.product_name)}
-            ${detalle ? `<div style="font-size:12px;color:${C.inkSoft};margin-top:3px;">${esc(detalle)}</div>` : ""}
-          </td>
-          <td align="right" style="padding:10px 0 10px 12px;border-bottom:1px solid ${C.line};font-family:${SANS};font-size:14px;color:${C.ink};white-space:nowrap;vertical-align:top;">
-            ${esc(fmt(it.line_total))}
-          </td>
-        </tr>`;
+                <tr>
+                  <td style="padding:5px 0;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.tarjeta};border-radius:12px;">
+                      <tr>
+                        <td style="padding:13px 14px;font-family:${SANS};font-size:14px;font-weight:bold;color:${C.ink};">
+                          ${esc(it.product_name)}${
+                            detalle
+                              ? `
+                          <div style="margin-top:5px;"><span style="display:inline-block;background:${C.pastilla};color:${C.draftText};font-size:11px;font-weight:normal;padding:3px 9px;border-radius:10px;">${esc(detalle)}</span></div>`
+                              : ""
+                          }
+                        </td>
+                        <td align="right" style="padding:13px 14px;font-family:${SANS};font-size:14px;color:${C.ink};white-space:nowrap;vertical-align:top;">${esc(fmt(it.line_total))}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>`;
     })
     .join("");
 
-  const filaTotal = (etiqueta: string, valor: number, final = false) => `
-        <tr>
-          <td style="padding:${final ? "12px" : "8px"} 0 0;font-family:${SANS};font-size:${final ? "15px" : "13px"};color:${final ? C.ink : C.inkSoft};${final ? "font-weight:bold;" : ""}">${etiqueta}</td>
-          <td align="right" style="padding:${final ? "12px" : "8px"} 0 0 12px;font-family:${SANS};font-size:${final ? "15px" : "13px"};color:${final ? C.ink : C.inkSoft};white-space:nowrap;${final ? "font-weight:bold;" : ""}">${esc(fmt(valor))}</td>
-        </tr>`;
-
-  const contenido = `              <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;letter-spacing:2px;color:#B68234;">PEDIDO REGISTRADO</p>
-              <h1 style="margin:0 0 8px;font-family:${SERIF};font-size:28px;line-height:1.15;font-weight:bold;color:${C.ink};">¡Gracias, ${esc(nombre)}!</h1>
-              <p style="margin:0 0 24px;font-family:${SANS};font-size:14px;line-height:1.6;color:${C.inkSoft};">
+  const contenido = `              <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;letter-spacing:2px;color:${C.mocha};">PEDIDO REGISTRADO</p>
+              <h1 style="margin:0 0 8px;font-family:${SANS};font-size:26px;line-height:1.2;font-weight:bold;color:${C.ink};">¡Gracias, ${esc(nombre)}!</h1>
+              <p style="margin:0;font-family:${SANS};font-size:14px;line-height:1.6;color:${C.inkSoft};">
                 Tu pedido quedó guardado. El siguiente paso es coordinar el pago por WhatsApp.
               </p>
+${bloqueNumeroPedido(p.order_number, { pista: "Guárdalo: con este número consultas el estado de tu pedido." })}
+${progresoPedido(2)}
 
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.draftBg};border:1px solid ${C.draftBorder};">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">${tarjetasItems}
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;">
                 <tr>
-                  <td style="padding:16px 20px;">
-                    <div style="font-family:${MONO};font-size:10px;letter-spacing:2px;color:${C.draftText};">TU NÚMERO DE PEDIDO</div>
-                    <div style="font-family:${MONO};font-size:28px;letter-spacing:2px;color:${C.ink};margin-top:6px;">${esc(p.order_number)}</div>
-                  </td>
+                  <td style="padding:4px 2px;font-family:${SANS};font-size:13px;color:${C.inkSoft};">Subtotal</td>
+                  <td align="right" style="padding:4px 2px;font-family:${SANS};font-size:13px;color:${C.inkSoft};white-space:nowrap;">${esc(fmt(p.subtotal))}</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 2px;font-family:${SANS};font-size:13px;color:${C.inkSoft};">Envío</td>
+                  <td align="right" style="padding:4px 2px;font-family:${SANS};font-size:13px;color:${C.inkSoft};white-space:nowrap;">${esc(fmt(p.shipping_cost))}</td>
                 </tr>
               </table>
 
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px;">
-                ${filasItems}
-                ${filaTotal("Subtotal", p.subtotal)}
-                ${filaTotal("Envío", p.shipping_cost)}
-                <tr><td colspan="2" style="padding-top:12px;border-bottom:1px solid ${C.ink};font-size:0;line-height:0;">&nbsp;</td></tr>
-                ${filaTotal("Total a pagar", p.total, true)}
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;background:${C.draftBg};border:1px solid ${C.draftBorder};border-radius:12px;">
+                <tr>
+                  <td style="padding:16px;font-family:${SANS};font-size:13px;color:${C.draftText};">Total a pagar</td>
+                  <td align="right" style="padding:16px;font-family:${SANS};font-size:24px;font-weight:bold;color:${C.ink};white-space:nowrap;">${esc(fmt(p.total))}</td>
+                </tr>
               </table>
 
-              <p style="margin:20px 0 0;font-family:${SANS};font-size:13px;line-height:1.55;color:${C.inkSoft};">
+              <p style="margin:18px 0 0;font-family:${SANS};font-size:13px;line-height:1.55;color:${C.inkSoft};">
                 <strong style="color:${C.ink};">Se envía a:</strong> ${esc(p.ship_city)} · ${esc(p.ship_address)}
               </p>
-
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px;">
-                <tr>
-                  <td align="center" style="background:${C.ink};">
-                    <a href="${esc(enlaceWhatsapp)}" style="display:block;padding:15px;font-family:${SANS};font-size:14px;letter-spacing:0.5px;color:${C.cream};text-decoration:none;">Confirmar pago por WhatsApp</a>
-                  </td>
-                </tr>
-                <tr><td style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>
-                <tr>
-                  <td align="center" style="border:1px solid ${C.ink};">
-                    <a href="${esc(p.seguimiento)}" style="display:block;padding:14px;font-family:${SANS};font-size:14px;letter-spacing:0.5px;color:${C.ink};text-decoration:none;">Ver el estado de mi pedido</a>
-                  </td>
-                </tr>
-              </table>
-
-              <p style="margin:20px 0 28px;font-family:${SANS};font-size:12px;line-height:1.55;color:${C.inkSoft};">
+${botonesCorreo([
+    { href: enlaceWhatsapp, texto: "Confirmar pago por WhatsApp", principal: true },
+    { href: p.seguimiento, texto: "Ver el estado de mi pedido", principal: false },
+  ])}
+              <p style="margin:20px 0 28px;font-family:${SANS};font-size:12px;line-height:1.55;color:${C.inkSoft};text-align:center;">
                 ${aviso24h}
               </p>`;
 
