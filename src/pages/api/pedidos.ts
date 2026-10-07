@@ -27,7 +27,7 @@ import { env } from "cloudflare:workers";
 import type { Category } from "../../types/database";
 import { PRICE_SHIP, recargoIniciales } from "../../lib/pricing.js";
 import { normalizarCorreo, validateShipping } from "../../lib/shipping-validation.js";
-import { enviarConfirmacionPedido } from "../../lib/correo";
+import { enviarConfirmacionPedido, enviarCopiaPedidoTienda } from "../../lib/correo";
 
 export const prerender = false;
 
@@ -275,8 +275,27 @@ export const POST: APIRoute = async ({ request, url, locals }) => {
       seguimiento,
     },
   });
-  if (locals.cfContext) locals.cfContext.waitUntil(envioCorreo);
-  else await envioCorreo;
+
+  // La copia para la tienda sale aparte y también en segundo plano. Se manda DESPUÉS de guardar,
+  // igual que el correo del cliente, y si falla no toca al pedido ni a ese otro correo.
+  const copiaTienda = enviarCopiaPedidoTienda({
+    order_number: creado.order_number,
+    customer_name: datos.name.trim(),
+    customer_phone: datos.phone.trim(),
+    customer_email: correo,
+    customer_doc: datos.doc.trim() || null,
+    ship_city: datos.city.trim(),
+    ship_address: datos.address.trim(),
+    subtotal,
+    shipping_cost: envioCosto,
+    total,
+    items: lineas,
+    panel: new URL("/admin/", url.origin).href,
+  });
+
+  const envios = Promise.allSettled([envioCorreo, copiaTienda]);
+  if (locals.cfContext) locals.cfContext.waitUntil(envios);
+  else await envios;
 
   return json(
     {

@@ -19,7 +19,7 @@ import {
   SELECT_PEDIDO_LISTA,
   SELECT_PEDIDO_DETALLE,
   type Order,
-  type OrderNotificationType,
+  type OrderStatusNotice,
   type OrderStatus,
   type OrderUpdate,
   type OrderWithDetail,
@@ -144,7 +144,7 @@ export async function reenviarCorreo(id: string): Promise<void> {
  * además se lanza el error para que el panel lo muestre en el momento. El cambio de estado
  * en sí NO se deshace: el pedido ya avanzó, y avisarle al cliente es un paso aparte.
  */
-export async function notificarEstado(id: string, tipo: OrderNotificationType): Promise<void> {
+export async function notificarEstado(id: string, tipo: OrderStatusNotice): Promise<void> {
   const token = getAccessToken();
   if (!token) {
     throw new AdminError("Tu sesión expiró. Vuelve a iniciar sesión.", {

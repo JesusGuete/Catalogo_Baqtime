@@ -20,9 +20,15 @@ import {
   type CorreoArmado,
 } from "./correo-pedido";
 
-/** Los tres avisos que existen. Es el mismo texto que guarda order_notifications.tipo. */
+/** Los tres avisos de cambio de estado. Es el mismo texto que guarda order_notifications.tipo. */
 export const TIPOS_AVISO = ["aprobado", "enviado", "entregado"] as const;
 export type TipoAviso = (typeof TIPOS_AVISO)[number];
+
+/**
+ * Lo que se guarda en order_notifications.tipo: los tres avisos de estado más el recordatorio
+ * de pago, que NO es un aviso de estado (no lo manda el panel, lo manda la tarea programada).
+ */
+export type TipoRegistro = TipoAviso | "recordatorio";
 
 export function esTipoAviso(valor: unknown): valor is TipoAviso {
   return typeof valor === "string" && (TIPOS_AVISO as readonly string[]).includes(valor);
@@ -101,7 +107,7 @@ function botones(lista: { href: string; texto: string; principal: boolean }[]): 
               </table>`;
 }
 
-interface Contenido {
+export interface Contenido {
   asunto: string;
   bandeja: string;
   /** La etiqueta pequeña sobre el título, en mayúsculas. */
@@ -207,7 +213,14 @@ export function armarCorreoEstado(
   p: DatosCorreoEstado,
   puedeResponder: boolean
 ): CorreoArmado {
-  const c = contenidoDe(tipo, p);
+  return armarDesdeContenido(contenidoDe(tipo, p), puedeResponder);
+}
+
+/**
+ * Del contenido ya decidido al correo: HTML, texto plano y asunto. Lo comparten los avisos de
+ * estado y el recordatorio de pago, para que se vean exactamente como de la misma casa.
+ */
+export function armarDesdeContenido(c: Contenido, puedeResponder: boolean): CorreoArmado {
   const ayuda = puedeResponder
     ? "Si tienes dudas, responde a este correo o escríbenos por WhatsApp."
     : "Si tienes dudas, escríbenos por WhatsApp.";

@@ -18,10 +18,19 @@
 //                       tiene que estar verificado en Resend o el envío se rechaza.
 //   CORREO_RESPONDER_A  opcional. A dónde llegan las respuestas de los clientes. Sin ella,
 //                       el correo no los invita a responder (nadie lee pedidos@).
+//   CORREO_AVISO_PEDIDOS opcional. A dónde llega la copia de cada pedido nuevo para la tienda.
+//                       Si falta, se usa CORREO_RESPONDER_A; si tampoco hay, no se manda copia.
 
 import { env } from "cloudflare:workers";
 import { armarCorreoPedido, type DatosCorreoPedido } from "./correo-pedido";
-import { armarCorreoEstado, type DatosCorreoEstado, type TipoAviso } from "./correo-estado";
+import {
+  armarCorreoEstado,
+  type DatosCorreoEstado,
+  type TipoAviso,
+  type TipoRegistro,
+} from "./correo-estado";
+import { armarCorreoRecordatorio, type DatosCorreoRecordatorio } from "./correo-recordatorio";
+import { armarCorreoTienda, type DatosCorreoTienda } from "./correo-tienda";
 
 const RESEND_URL = "https://api.resend.com/emails";
 const REMITENTE_POR_DEFECTO = "Baqtime <pedidos@baqtime.store>";
@@ -46,6 +55,12 @@ interface Mensaje {
    * reenvío desde el panel NO la usa, porque ahí sí se quiere un correo nuevo.
    */
   idempotencia?: string;
+  /**
+   * "Responder a" propio de ESTE correo. Sin él se usa CORREO_RESPONDER_A, que es lo que
+   * quieren los correos al cliente. La copia para la tienda lo fija en el correo del cliente:
+   * así, "Responder" le escribe directo a quien hizo el pedido.
+   */
+  responderA?: string;
 }
 
 /** Un envío. No lanza: cualquier problema vuelve como `{ ok: false, error }` en castellano. */
@@ -54,7 +69,7 @@ export async function enviarCorreo(m: Mensaje): Promise<ResultadoEnvio> {
   if (!clave) {
     return { ok: false, error: "El envío de correos no está configurado (falta RESEND_API_KEY)." };
   }
-  const responderA = leer("CORREO_RESPONDER_A");
+  const responderA = m.responderA ?? leer("CORREO_RESPONDER_A");
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${clave}`,
@@ -174,7 +189,7 @@ async function registrarAviso(
   supabaseUrl: string,
   serviceKey: string,
   orderId: string,
-  tipo: TipoAviso,
+  tipo: TipoRegistro,
   error: string | null
 ): Promise<void> {
   try {
@@ -217,4 +232,76 @@ export async function enviarAvisoEstado(o: OpcionesAvisoEstado): Promise<Resulta
   }
   await registrarAviso(o.supabaseUrl, o.serviceKey, o.orderId, o.tipo, resultado.ok ? null : resultado.error);
   return resultado;
+}
+
+export interface OpcionesRecordatorio {
+  supabaseUrl: string;
+  serviceKey: string;
+  orderId: string;
+  para: string;
+  datos: DatosCorreoRecordatorio;
+}
+
+/**
+ * Arma, envía y anota el recordatorio de pago. La usa la tarea programada
+ * (src/lib/recordatorios.ts). No lanza nunca.
+ *
+ * CON clave de idempotencia (a diferencia de los avisos de estado): aquí no hay una persona que
+ * quiera repetir el envío a propósito, y la tarea sí puede reintentar sola. Si una corrida muere
+ * entre enviar y anotar, el reintento no le duplica el correo al cliente.
+ */
+export async function enviarRecordatorioPago(o: OpcionesRecordatorio): Promise<ResultadoEnvio> {
+  let resultado: ResultadoEnvio;
+  try {
+    const correo = armarCorreoRecordatorio(o.datos, Boolean(leer("CORREO_RESPONDER_A")));
+    resultado = await enviarCorreo({
+      para: o.para,
+      asunto: correo.asunto,
+      html: correo.html,
+      texto: correo.texto,
+      idempotencia: `recordatorio-${o.orderId}`,
+    });
+  } catch (e) {
+    console.error("[correo] No se pudo armar el recordatorio:", e);
+    resultado = { ok: false, error: "No se pudo armar el recordatorio de pago." };
+  }
+  await registrarAviso(o.supabaseUrl, o.serviceKey, o.orderId, "recordatorio", resultado.ok ? null : resultado.error);
+  return resultado;
+}
+
+/**
+ * A dónde llega la copia de cada pedido nuevo. Es configuración de la tienda y NUNCA una dirección
+ * que haya escrito un cliente: si lo fuera, cualquiera podría usar el checkout para que la tienda
+ * le mande correos con datos de otros a una dirección a elección.
+ */
+export function destinoCopiaPedidos(): string | undefined {
+  return leer("CORREO_AVISO_PEDIDOS") ?? leer("CORREO_RESPONDER_A");
+}
+
+/**
+ * La copia del pedido nuevo para la tienda. La usa /api/pedidos después de guardar el pedido.
+ * No lanza nunca, y un fallo acá no afecta al pedido ni al correo del cliente.
+ */
+export async function enviarCopiaPedidoTienda(datos: DatosCorreoTienda): Promise<ResultadoEnvio> {
+  const para = destinoCopiaPedidos();
+  if (!para) {
+    return {
+      ok: false,
+      error: "No hay dirección para la copia de pedidos (falta CORREO_AVISO_PEDIDOS o CORREO_RESPONDER_A).",
+    };
+  }
+  try {
+    const correo = armarCorreoTienda(datos);
+    return await enviarCorreo({
+      para,
+      asunto: correo.asunto,
+      html: correo.html,
+      texto: correo.texto,
+      responderA: datos.customer_email,
+      idempotencia: `copia-${datos.order_number}`,
+    });
+  } catch (e) {
+    console.error("[correo] No se pudo armar la copia para la tienda:", e);
+    return { ok: false, error: "No se pudo armar la copia del pedido para la tienda." };
+  }
 }

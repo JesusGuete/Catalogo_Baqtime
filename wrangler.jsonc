@@ -9,6 +9,17 @@
   // `nodejs_compat` lo pide el adaptador para las APIs de Node que usa Astro dentro
   // del runtime de Workers.
   "name": "catalogo-baqtime",
+  // El punto de entrada propio (src/worker.ts): atiende las páginas igual que el del adaptador de
+  // Astro y suma la tarea programada de abajo. Sin esta línea la tienda funciona igual, pero el
+  // recordatorio de pago no corre.
+  "main": "./src/worker.ts",
+
+  // Cada 30 minutos corre scheduled() de src/worker.ts: manda el recordatorio de pago a los
+  // pedidos que cumplieron 12 horas sin pago (entre 8 a.m. y 10 p.m. hora de Colombia). Es el
+  // mismo ritmo del barrido que marca como "no confirmados" los pedidos de más de 24 horas.
+  // Se ve en Cloudflare: Workers → catalogo-baqtime → Settings → Trigger Events.
+  "triggers": { "crons": ["*/30 * * * *"] },
+
   "compatibility_date": "2025-07-01",
   "compatibility_flags": ["nodejs_compat"],
 

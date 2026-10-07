@@ -4,6 +4,7 @@ import {
   ORDER_STATUS_LABEL,
   type OrderNotificationType,
   type OrderStatus,
+  type OrderStatusNotice,
   type OrderWithDetail,
 } from "../../../types/database";
 import * as pedidosRepo from "../../../lib/admin/orders.repo";
@@ -37,10 +38,11 @@ const AVISO_ETIQUETA: Record<OrderNotificationType, string> = {
   aprobado: "Pago confirmado",
   enviado: "Enviado",
   entregado: "Entregado",
+  recordatorio: "Recordatorio de pago",
 };
 
 /** De los siete estados, solo tres le avisan al cliente. Los demás son del taller. */
-function tipoDeAviso(estado: OrderStatus): OrderNotificationType | null {
+function tipoDeAviso(estado: OrderStatus): OrderStatusNotice | null {
   return estado === "aprobado" || estado === "enviado" || estado === "entregado" ? estado : null;
 }
 
@@ -94,7 +96,7 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
   // Avisar va DESPUÉS del cambio de estado y por separado: el pedido ya avanzó, y si el correo
   // falla no hay nada que deshacer. El mensaje lo deja claro; la tarjeta "Correo al cliente"
   // muestra el motivo y permite reintentar.
-  async function avisarCliente(tipo: OrderNotificationType) {
+  async function avisarCliente(tipo: OrderStatusNotice) {
     try {
       await pedidosRepo.notificarEstado(pedidoId, tipo);
     } catch (e) {
@@ -148,7 +150,7 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
   });
 
   // Volver a mandar un aviso que ya se mandó, o reintentar uno que falló.
-  const reavisar = useAccion(async (tipo: OrderNotificationType) => {
+  const reavisar = useAccion(async (tipo: OrderStatusNotice) => {
     try {
       await pedidosRepo.notificarEstado(pedidoId, tipo);
     } finally {
@@ -226,7 +228,7 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
 
   // Qué agrega al diálogo de confirmación lo del correo: a quién se le va a escribir, si ya se
   // le avisó antes (un segundo correo igual) y si "enviado" saldría sin guía.
-  const sufijoAviso = (tipo: OrderNotificationType | null): string => {
+  const sufijoAviso = (tipo: OrderStatusNotice | null): string => {
     if (!tipo || !avisar) return "";
     if (!pedido.customer_email) {
       return "\n\nEste pedido no tiene correo: no se le podrá avisar al cliente.";
@@ -248,8 +250,17 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
       pagado ? "aprobado" : null,
       pedido.shipped_at ? "enviado" : null,
       pedido.status === "entregado" ? "entregado" : null,
-    ] as (OrderNotificationType | null)[]
-  ).filter((t): t is OrderNotificationType => t !== null);
+    ] as (OrderStatusNotice | null)[]
+  ).filter((t): t is OrderStatusNotice => t !== null);
+
+  // El recordatorio de pago lo manda una tarea programada, no el panel: aparece en la lista solo
+  // si ya hubo un intento (enviado o fallido), y sin botón para mandarlo a mano.
+  const filasAvisos: OrderNotificationType[] = [
+    ...(pedido.order_notifications?.some((a) => a.tipo === "recordatorio")
+      ? (["recordatorio"] as const)
+      : []),
+    ...avisosAlcanzados,
+  ];
 
   return (
     <div className="adm-editor">
@@ -534,10 +545,10 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
                   : "Enviar correo"}
             </Boton>
 
-            {avisosAlcanzados.length > 0 && (
+            {filasAvisos.length > 0 && (
               <div className="adm-avisos">
                 <p className="adm-mono adm-campo-label">AVISOS DE ESTADO</p>
-                {avisosAlcanzados.map((tipo) => {
+                {filasAvisos.map((tipo) => {
                   const a = pedido.order_notifications?.find((x) => x.tipo === tipo);
                   return (
                     <div className="adm-aviso-fila" key={tipo}>
@@ -551,6 +562,7 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
                               : "TODAVÍA SIN AVISAR"}
                         </span>
                       </span>
+                      {tipo !== "recordatorio" && (
                       <Boton
                         onClick={() => {
                           if (
@@ -569,6 +581,7 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
                       >
                         {a?.sent_at ? "Reenviar" : "Enviar"}
                       </Boton>
+                      )}
                     </div>
                   );
                 })}
