@@ -224,7 +224,7 @@ export const POST: APIRoute = async ({ request, url, locals }) => {
   // El envío depende del municipio y de cuántos bolsos van (src/lib/envios.js). Se calcula
   // acá, con la misma función que muestra el checkout: lo que diga el navegador no cuenta.
   const envioCalculado = calcularEnvio(datos.departamento, datos.municipio, lineas.length);
-  if (!envioCalculado) {
+  if (!envioCalculado || envioCalculado.sinCobertura) {
     return json({ error: "Elige un departamento y un municipio válidos." }, 400);
   }
   const envioCosto = envioCalculado.precio;

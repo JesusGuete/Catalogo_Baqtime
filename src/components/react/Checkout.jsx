@@ -56,7 +56,9 @@ export default function Checkout({ items, products, categories = [], onClose }) 
 
   // El envío se calcula apenas hay municipio: lo ve el cliente antes de confirmar, y es el
   // mismo cálculo que hace el servidor al guardar (src/lib/envios.js).
-  const envio = calcularEnvio(form.departamento, form.municipio, items.length);
+  const calculado = calcularEnvio(form.departamento, form.municipio, items.length);
+  const sinCobertura = Boolean(calculado?.sinCobertura);
+  const envio = calculado && !sinCobertura ? calculado : null;
   const ciudad = form.municipio ? nombreDestino(form.departamento, form.municipio) : "";
 
   // El pedido se GUARDA antes de que el navegador se vaya a ningún lado.
@@ -207,7 +209,11 @@ export default function Checkout({ items, products, categories = [], onClose }) 
                   </option>
                 ))}
               </select>
-              <div className="field-error">{errors.municipio || ""}</div>
+              <div className="field-error">
+                {sinCobertura
+                  ? "La transportadora no tiene cobertura en este municipio. Escríbenos por WhatsApp para coordinar tu envío."
+                  : errors.municipio || ""}
+              </div>
             </div>
 
             <div className="shipping-field">

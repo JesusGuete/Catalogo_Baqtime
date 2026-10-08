@@ -141,8 +141,12 @@ export function validateShipping({ name, departamento = "", municipio = "", addr
   }
   if (!departamento) {
     errors.departamento = "Elige el departamento de entrega.";
-  } else if (!calcularEnvio(departamento, municipio)) {
-    errors.municipio = "Elige el municipio de entrega.";
+  } else {
+    const envio = calcularEnvio(departamento, municipio);
+    if (!envio) errors.municipio = "Elige el municipio de entrega.";
+    else if (envio.sinCobertura)
+      errors.municipio =
+        "La transportadora no tiene cobertura en este municipio. Escríbenos por WhatsApp para coordinar tu envío.";
   }
   if (!/^[0-9]{10}$/.test(phone.trim())) {
     errors.phone = "Por favor, ingresa un número de teléfono válido de 10 dígitos.";
