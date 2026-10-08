@@ -109,12 +109,9 @@ export default function Checkout({ items, products, categories = [], onClose }) 
   }
 
   return (
-    <div
-      className="modal-overlay open"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    // Sin cerrar al tocar afuera: el formulario de envío se pierde con un clic de más en el
+    // margen, y el cliente tenía que volver a escribir todo. Se cierra solo con la ✕ o Escape.
+    <div className="modal-overlay open">
       <div className="checkout-page" role="dialog" aria-modal="true" aria-label="Finalizar compra">
         <button className="modal-close" onClick={onClose} aria-label="Cerrar">
           ✕
