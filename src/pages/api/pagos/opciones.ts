@@ -1,6 +1,6 @@
 // GET /api/pagos/opciones — lo que necesita la página para mostrar los medios de pago.
 //
-// - La llave PÚBLICA y el ambiente: el navegador cifra la tarjeta y la tokeniza directo con
+// - La llave PÚBLICA y el ambiente: el navegador manda la tarjeta y la tokeniza directo con
 //   Wompi (src/lib/tarjeta-wompi.ts). No es un secreto: igual viaja en cada pago.
 // - Los enlaces a los dos contratos de Wompi (reglamento y autorización de datos), que el
 //   cliente tiene que aceptar con casillas antes de pagar.

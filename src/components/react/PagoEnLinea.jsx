@@ -15,7 +15,7 @@ import {
 // (CheckoutApp.jsx) y la página para pagar un pedido ya guardado (/pedido/pagar/<token>).
 //
 // EL NAVEGADOR NO DECIDE NADA DEL COBRO:
-//   - La tarjeta se cifra acá y va directo a Wompi, que la cambia por un token
+//   - La tarjeta va de acá directo a Wompi (HTTPS), que la cambia por un token
 //     (src/lib/tarjeta-wompi.ts). Al servidor de la tienda solo llega ese token.
 //   - El monto lo pone el servidor desde la base (/api/pagos/crear → crearPagoDirecto).
 //   - Que el pago se aprobó lo dice Wompi al servidor (/api/pagos/estado y el webhook), nunca
@@ -451,7 +451,7 @@ export default function PagoEnLinea({
                   </select>
                 </Campo>
                 <p className="ck-nota pl-seguro">
-                  Los datos de tu tarjeta viajan cifrados directo a Wompi (Bancolombia). Baqtime no
+                  Los datos de tu tarjeta viajan seguros directo a Wompi (Bancolombia). Baqtime no
                   los ve ni los guarda.
                 </p>
               </div>
