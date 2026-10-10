@@ -148,19 +148,100 @@
     font-weight:600; font-size:16px; color:var(--ink);
     padding-top:10px; border-top:1px solid var(--ink); margin-top:4px;
   }
-  .cart-shipping-field{ margin-top:20px; }
 
-  /* ===== PÁGINA "FINALIZAR COMPRA" (dentro de .modal-overlay, mismo formato de
-     página completa que un producto — una sola columna, no la grilla de 2 columnas) ===== */
-  .checkout-page{
-    position:relative;
-    max-width:700px; width:100%; margin:0 auto;
-    min-height:100vh;
-    padding:70px 30px 40px;
+  /* ===== PÁGINA DE COMPRA (/checkout, CheckoutApp.jsx) =====
+     Dos pasos en la misma página: el carrito (tabla + resumen) y los datos (tres secciones
+     que se cierran al completarse + resumen). En escritorio, el resumen va a la derecha y
+     acompaña el desplazamiento; en celular queda debajo. */
+  .ck-wrap{ max-width:1120px; margin:0 auto; padding:28px 20px 72px; }
+  .ck-cargando{ color:var(--ink-soft); font-size:14px; padding:40px 0; }
+  .ck-volver{ display:inline-block; font-size:13px; color:var(--ink-soft); text-decoration:none; margin-bottom:10px; }
+  .ck-volver:hover{ color:var(--ink); }
+  .ck-titulo{ font-family:'Unna',serif; font-size:30px; font-weight:400; margin:0 0 24px; color:var(--ink); }
+  .ck-grid{ display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:40px; align-items:start; }
+  .ck-principal{ min-width:0; }
+  .ck-nota{ font-size:12px; line-height:1.5; color:var(--ink-soft); margin:10px 0 0; }
+  .ck-nota-centro{ text-align:center; margin-top:0; }
+
+  /* La tabla del carrito: producto | precio | quitar. */
+  .ck-tabla{ border-top:1px solid var(--line); }
+  .ck-tabla-cab, .ck-tabla-fila{ display:grid; grid-template-columns:minmax(0,1fr) 120px 40px; gap:16px; align-items:center; }
+  .ck-tabla-cab{ font-size:11px; letter-spacing:.06em; color:var(--ink-soft); padding:12px 0; border-bottom:1px solid var(--line); }
+  .ck-tabla-fila{ padding:16px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .ck-num{ text-align:right; }
+  .ck-prod{ display:flex; gap:14px; align-items:flex-start; min-width:0; }
+  .ck-prod-img{ width:84px; height:84px; object-fit:cover; border-radius:3px; background:var(--panel); flex-shrink:0; }
+  .ck-prod-nombre{ display:block; font-size:15px; font-weight:500; margin:0 0 4px; color:var(--ink); }
+  .ck-prod-detalle{ display:block; font-size:12px; color:var(--ink-soft); margin:0 0 3px; }
+  .ck-quitar{ background:none; border:none; color:var(--ink-soft); cursor:pointer; padding:6px; border-radius:2px; line-height:0; }
+  .ck-quitar:hover{ color:var(--vino); background:var(--panel); }
+
+  /* El resumen de compra, a la derecha. */
+  .ck-resumen{ position:sticky; top:96px; background:var(--white-card); border:1px solid var(--line); border-radius:2px; padding:22px 22px 24px; }
+  .ck-resumen-cab{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .ck-resumen-titulo{ font-size:11px; letter-spacing:.08em; color:var(--ink-soft); margin:0 0 6px; }
+  .ck-resumen-items{ list-style:none; margin:10px 0 6px; padding:0; display:flex; flex-direction:column; gap:12px; }
+  .ck-resumen-items li{ display:grid; grid-template-columns:48px minmax(0,1fr) auto; gap:10px; align-items:start; font-size:13px; }
+  .ck-resumen-items img{ width:48px; height:48px; object-fit:cover; border-radius:3px; background:var(--panel); }
+  .ck-resumen-items .ck-prod-nombre{ font-size:13px; }
+
+  /* Las tres secciones del paso de datos. */
+  /* scroll-margin: al llevar una sección a la vista, que no quede tapada por el encabezado fijo. */
+  .ck-seccion{ border-top:1px solid var(--line); padding:18px 0; scroll-margin-top:90px; }
+  .ck-seccion:last-child{ border-bottom:1px solid var(--line); }
+  .ck-seccion-cab{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .ck-seccion-titulo{ font-family:'JetBrains Mono', monospace; font-size:12px; letter-spacing:.08em; font-weight:500; margin:0; color:var(--ink-soft); }
+  .ck-seccion.is-abierta .ck-seccion-titulo{ color:var(--ink); }
+  .ck-seccion-cuerpo{ display:flex; flex-direction:column; gap:16px; margin-top:18px; }
+  .ck-seccion-resumen{ font-size:14px; line-height:1.6; color:var(--ink); margin:10px 0 0; }
+  .ck-cambiar{ background:none; border:none; padding:0; font-size:12px; color:var(--ink); text-decoration:underline; text-underline-offset:2px; cursor:pointer; font-family:'Work Sans',sans-serif; }
+  .ck-subtitulo{ font-size:11px; letter-spacing:.08em; color:var(--ink-soft); margin:6px 0 -6px; }
+  .ck-seccion .whatsapp-btn{ margin-top:4px; }
+  .ck-seccion .consent-fields{ margin-top:0; }
+
+  /* Campos: rótulo visible arriba, error debajo. */
+  .ck-campo{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .ck-campo label{ font-size:12px; color:var(--ink-soft); margin:0; }
+  .ck-campo input, .ck-campo select{
+    width:100%; padding:12px 13px; border:1px solid var(--line); border-radius:2px;
+    font-family:'Work Sans',sans-serif; font-size:14px; background:#fff; color:var(--ink);
   }
-  .checkout-page h2{ font-family:'Unna',serif; font-size:26px; margin:0 0 24px; }
-  .checkout-page .cart-items{ margin-bottom:8px; }
-  .checkout-page .cart-line-img{ width:64px; height:64px; }
+  .ck-campo select:disabled{ color:var(--ink-soft); background:var(--surface-muted); }
+  .ck-campo .field-error{ margin:0; }
+  .ck-fila2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  /* Tipo de vía | número | # | – */
+  .ck-dir{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:10px; }
+  .ck-dir-resumen{
+    display:flex; flex-wrap:wrap; gap:6px 12px; align-items:baseline; margin:0;
+    padding:12px 14px; background:var(--surface-muted); border-radius:2px; font-size:14px; color:var(--ink);
+  }
+  .ck-dir-resumen .mono{ font-size:10px; letter-spacing:.08em; color:var(--ink-soft); }
+  .ck-dir-ejemplo{ color:var(--ink-soft); }
+  .ck-dir-falta{ margin-top:-8px; color:var(--draft-text); }
+  .ck-metodo{ display:flex; align-items:center; gap:12px; padding:14px 16px; border:1px solid var(--ink); border-radius:2px; font-size:14px; }
+  .ck-metodo-radio{ width:16px; height:16px; border-radius:50%; border:5px solid var(--ink); flex-shrink:0; }
+  .ck-metodo-txt{ flex:1; }
+  .ck-metodo-precio{ padding-left:12px; border-left:1px solid var(--line); }
+  .ck-total-pago{ display:flex; justify-content:space-between; font-size:18px; font-weight:600; color:var(--ink); }
+
+  .ck-vacio{ text-align:center; padding:48px 0; }
+  .ck-vacio p{ color:var(--ink-soft); }
+  .ck-btn-corto{ display:inline-flex; width:auto; padding:14px 28px; text-decoration:none; margin-top:16px; }
+
+  @media (max-width:900px){
+    .ck-grid{ grid-template-columns:1fr; gap:28px; }
+    .ck-resumen{ position:static; }
+  }
+  @media (max-width:560px){
+    .ck-wrap{ padding:20px 16px 56px; }
+    .ck-titulo{ font-size:26px; }
+    .ck-fila2{ grid-template-columns:1fr; }
+    .ck-dir{ grid-template-columns:1fr 1fr 1fr; }
+    .ck-dir > .ck-campo:first-child{ grid-column:1 / -1; }
+    .ck-tabla-cab{ display:none; }
+    .ck-tabla-fila{ grid-template-columns:minmax(0,1fr) auto 36px; gap:10px; }
+    .ck-prod-img{ width:64px; height:64px; }
+  }
 
   /* ===== HERO =====
      Fondo a sangre completa: una foto real en duotono vino (el color de marca), sin la
@@ -635,28 +716,6 @@
     .related-arrow{ display:none; }
   }
 
-  /* Espacio GRANDE entre un campo y el siguiente (cada .shipping-field es un grupo
-     rótulo+input+error). El espacio CHICO entre el rótulo y su propio input va en
-     .shipping-field, más abajo — así se nota la diferencia entre "esto va junto" y
-     "esto es lo próximo", en vez de un mismo aire parejo para las dos cosas. */
-  .shipping-fields{ display:flex; flex-direction:column; gap:16px; margin-bottom:6px; }
-  .shipping-fields select{
-    padding:11px 13px; border:1px solid var(--line); border-radius:2px;
-    font-family:'Work Sans',sans-serif; font-size:14px; background:#fff; color:var(--ink);
-  }
-  .shipping-fields select:disabled{ color:var(--ink-soft); background:var(--surface-muted); }
-  .checkout-entrega{ font-size:12px; color:var(--ink-soft); margin:6px 0 0; }
-  .shipping-fields input{
-    padding:11px 13px; border:1px solid var(--line); border-radius:2px;
-    font-family:'Work Sans',sans-serif; font-size:14px; background:#fff;
-  }
-  /* .field label y .field-error traen su propio margen porque en el resto del sitio
-     aparecen solos (p. ej. "INICIALES" en ProductView), fuera de un grupo con su propio
-     gap. Acá adentro esos márgenes se SUMABAN al gap de .shipping-field en vez de
-     reemplazarlo. Se anulan para que el gap sea la única fuente de espaciado. */
-  .shipping-field{ display:flex; flex-direction:column; gap:6px; }
-  .shipping-fields label{ margin-bottom:0; }
-  .shipping-fields .field-error{ margin-top:0; margin-bottom:0; }
 
   /* Para qué se pide el correo (Ley 1581: hay que decirlo al pedir el dato). Gris y
      chico: es información, no una instrucción que haya que cumplir. */
@@ -680,10 +739,6 @@
   .consent-check input{ margin:3px 0 0; width:16px; height:16px; flex-shrink:0; accent-color:var(--ink); cursor:pointer; }
   .consent-check a{ color:var(--ink); text-decoration:underline; text-underline-offset:2px; }
   .consent-fields .field-error{ margin:2px 0 6px 26px; }
-  /* Aviso de términos junto al botón: no es una casilla, es lo que el cliente acepta al
-     confirmar. Lo de los personalizados va acá porque la ley pide decirlo ANTES de comprar. */
-  .checkout-terminos{ font-size:12px; line-height:1.5; color:var(--ink-soft); margin:14px 0 0; }
-  .checkout-terminos a{ color:var(--ink); text-decoration:underline; text-underline-offset:2px; }
 
   .whatsapp-btn{
     margin-top:20px;

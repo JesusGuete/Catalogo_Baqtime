@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { fmt, precioLinea, subtotalCarrito } from "../../lib/pricing.js";
-import { ENVIO_DESDE } from "../../lib/envios.js";
 import { removeFromCart } from "../../lib/cart-store.js";
 import { IconoBolsa } from "./Iconos.jsx";
 
@@ -13,13 +12,13 @@ export function lineDetail(item) {
   return parts.join(" · ");
 }
 
-function lineImage(item, products) {
+export function lineImage(item, products) {
   const product = products.find((p) => p.id === item.productId);
   return product ? product.img : "/assets/img/placeholder.svg";
 }
 
-// Una línea del carrito. Se usa igual en el panel lateral y en el checkout,
-// tal como hacía buildCartLineElement() en la versión vanilla.
+// Una línea del carrito, en el panel lateral. La página de compra (CheckoutApp.jsx) arma su
+// propia tabla con lineDetail() y lineImage().
 export function CartLine({ item, products, categories = [] }) {
   // El precio NO sale de item.price: ese quedó congelado en localStorage cuando se agregó
   // el producto y puede tener días. Se recalcula contra el catálogo de ahora, que es lo
@@ -51,9 +50,10 @@ export function CartLine({ item, products, categories = [] }) {
   );
 }
 
-// Los 3 totales (subtotal / envío / total). El envío depende del municipio
-// (src/lib/envios.js): sin destino elegido —en el panel del carrito, o en el checkout
-// antes de elegir— se muestra "desde" y el total queda sin envío.
+// Subtotal, envío y total. El envío depende del municipio (src/lib/envios.js), así que la
+// fila aparece recién cuando el cliente lo elige en los datos de entrega y desde ahí entra en
+// el total. Antes de eso, el total es lo que suman los productos: sin un "desde $10.000" que
+// casi nunca era el envío real.
 export function CartTotals({ items, products = [], categories = [], envio = null }) {
   const subtotal = subtotalCarrito(items, products, categories);
   const shipping = items.length && envio ? envio.precio : 0;
@@ -63,19 +63,22 @@ export function CartTotals({ items, products = [], categories = [], envio = null
         <span>Subtotal</span>
         <span className="mono">{fmt(subtotal)}</span>
       </div>
-      <div className="cart-total-row cart-total-row-sub">
-        <span>Envío</span>
-        <span className="mono">{envio ? fmt(shipping) : `Desde ${fmt(ENVIO_DESDE)}`}</span>
-      </div>
+      {envio && (
+        <div className="cart-total-row cart-total-row-sub">
+          <span>Envío</span>
+          <span className="mono">{fmt(shipping)}</span>
+        </div>
+      )}
       <div className="cart-total-row cart-total-row-final">
-        <span>{envio ? "Total" : "Total sin envío"}</span>
+        <span>Total</span>
         <span className="mono">{fmt(subtotal + shipping)}</span>
       </div>
     </>
   );
 }
 
-// Panel lateral: vistazo rápido (lista + totales + "Finalizar compra").
+// Panel lateral: vistazo rápido (lista + totales + "Finalizar compra", que lleva a la página
+// de compra, /checkout).
 //
 // Mismo patrón que el panel del menú (MenuBadge.jsx): un velo de fondo que bloquea el
 // scroll y cierra al Escape o al tocarlo, con el panel flotando encima. Antes el

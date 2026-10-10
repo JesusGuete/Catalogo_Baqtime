@@ -34,6 +34,10 @@ export default defineConfig({
   // vez alguna se pre-construye.
   integrations: [
     react(),
-    sitemap({ filter: (page) => !page.includes("/admin") && !page.includes("/pedido") }),
+    // /checkout tampoco: es la página de compra, sin nada que buscar en Google.
+    sitemap({
+      filter: (page) =>
+        !page.includes("/admin") && !page.includes("/pedido") && !page.includes("/checkout"),
+    }),
   ]
 });
