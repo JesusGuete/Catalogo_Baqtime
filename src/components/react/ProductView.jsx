@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { initialsColorsFor } from "../../lib/initials.js";
 import { fmt, recargoIniciales } from "../../lib/pricing.js";
-import { ENVIO_DESDE } from "../../lib/envios.js";
 import { addToCart } from "../../lib/cart-store.js";
 import { useCart } from "../../lib/useCart.js";
 import { rutaProducto } from "../../lib/product-url.ts";
@@ -189,7 +188,8 @@ export default function ProductView({
   }
 
   /**
-   * "Finalizar compra" desde la ficha del producto: lo suma al carrito y abre el checkout.
+   * "Finalizar compra" desde la ficha del producto: lo suma al carrito y lleva a la página de
+   * compra (/checkout).
    *
    * El carrito permite líneas repetidas a propósito (dos totes iguales con iniciales
    * distintas, cart-store.js), así que "Agregar al carrito" nunca deduplica. Acá SÍ, y
@@ -400,12 +400,10 @@ export default function ProductView({
                   <span>{fmt(extra)}</span>
                 </div>
               )}
-              <div className="price-row">
-                <span>Envío</span>
-                <span>Desde {fmt(ENVIO_DESDE)}</span>
-              </div>
+              {/* Sin fila de envío: depende del municipio y se suma en la compra, cuando el
+                  cliente lo elige. Un "desde $10.000" acá casi nunca era el envío real. */}
               <div className="price-row total">
-                <span>Total sin envío</span>
+                <span>Total</span>
                 <span>{fmt(total)}</span>
               </div>
             </div>
