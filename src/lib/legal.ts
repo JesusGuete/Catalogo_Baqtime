@@ -23,10 +23,11 @@ export const RESPONSABLE = {
  *
  * Historial: 2026-10-07 (primera versión) · 2026-10-07.2 (conservación: un mes después de la
  * entrega, en vez de "lo que exijan las normas contables") · 2026-10-07.3 (las fuentes dejan
- * de venir de Google Fonts).
+ * de venir de Google Fonts) · 2026-10-10 (el pago se procesa en línea con Wompi, que recibe los
+ * datos del pago).
  */
-export const POLITICA_DATOS_VERSION = "2026-10-07.3";
-export const POLITICA_DATOS_VIGENCIA = "7 de octubre de 2026";
+export const POLITICA_DATOS_VERSION = "2026-10-10";
+export const POLITICA_DATOS_VIGENCIA = "10 de octubre de 2026";
 export const POLITICA_DATOS_RUTA = "/politica-de-datos";
 
 /**
