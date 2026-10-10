@@ -51,15 +51,43 @@ const CAMPOS_COMPARABLES = [
 
 const dinero = (n: number): string => "$ " + n.toLocaleString("es-CO");
 
-function fotosDe(p: ProductWithPhotos): string[] {
+/**
+ * Las cajas de recorte de cada foto (018, 026). Cambiar solo el recorte deja la misma
+ * ruta en el mismo lugar, pero la tienda muestra otra porción de la foto — es un cambio
+ * tan visible como reordenarlas. Antes no se comparaban: un recorte guardado nunca
+ * contaba como cambio, el panel no ofrecía publicarlo y la tienda no lo veía jamás.
+ */
+const CAMPOS_RECORTE = [
+  "crop_square_x",
+  "crop_square_y",
+  "crop_square_w",
+  "crop_square_h",
+  "crop_editorial_x",
+  "crop_editorial_y",
+  "crop_editorial_w",
+  "crop_editorial_h",
+] as const satisfies readonly (keyof PhotoRef)[];
+
+function fotosDe(p: ProductWithPhotos): PhotoRef[] {
   const fotos: PhotoRef[] = p.product_photos_draft ?? p.product_photos ?? [];
-  return [...fotos].sort((a, b) => a.position - b.position).map((f) => f.storage_path);
+  return [...fotos].sort((a, b) => a.position - b.position);
 }
 
-function mismasFotos(a: string[], b: string[]): boolean {
+function mismasRutas(a: PhotoRef[], b: PhotoRef[]): boolean {
   // El orden importa: mover la foto principal a la segunda posición es un cambio
   // visible en la tarjeta del catálogo, aunque el conjunto sea idéntico.
-  return a.length === b.length && a.every((path, i) => path === b[i]);
+  return a.length === b.length && a.every((f, i) => f.storage_path === b[i]?.storage_path);
+}
+
+/** Solo tiene sentido después de `mismasRutas`: compara foto con foto, por posición. */
+function mismosRecortes(a: PhotoRef[], b: PhotoRef[]): boolean {
+  // `===` alcanza: los dos lados vienen de columnas numeric(6,3) leídas por PostgREST
+  // (números JSON ya redondeados por la base), y publicar los copia tal cual.
+  return a.every((f, i) => CAMPOS_RECORTE.every((c) => f[c] === b[i]?.[c]));
+}
+
+function mismasFotos(a: PhotoRef[], b: PhotoRef[]): boolean {
+  return mismasRutas(a, b) && mismosRecortes(a, b);
 }
 
 /**
@@ -92,12 +120,14 @@ function describirCambios(borrador: ProductWithPhotos, publicado: ProductWithPho
 
   const fotosB = fotosDe(borrador);
   const fotosP = fotosDe(publicado);
-  if (!mismasFotos(fotosB, fotosP)) {
+  if (!mismasRutas(fotosB, fotosP)) {
     partes.push(
       fotosB.length === fotosP.length
         ? "fotos reordenadas"
         : `${fotosP.length} fotos → ${fotosB.length} fotos`
     );
+  } else if (!mismosRecortes(fotosB, fotosP)) {
+    partes.push("recorte de fotos");
   }
 
   if (!mismaPaleta(borrador.initials_palette ?? [], publicado.initials_palette ?? [])) {
