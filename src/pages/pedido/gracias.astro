@@ -48,7 +48,7 @@ const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
 // ofrece pagar en línea aunque el interruptor esté encendido.
 const pagado = pedido.pago === "pagado";
 const pagarEnLinea =
-  pagosEnLineaActivos() &&
+  pagosEnLineaActivos(Astro.url.hostname) &&
   pedido.status === "pendiente_pago" &&
   (pedido.pago === "pendiente" || pedido.pago === "en_proceso");
 ---

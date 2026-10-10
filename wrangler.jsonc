@@ -34,25 +34,5 @@
   //
   // Con esto, lo que se configura en el panel sobrevive a los deploys. Las claves siguen yendo
   // como Secret (RESEND_API_KEY, SUPABASE_SERVICE_ROLE_KEY).
-  "keep_vars": true,
-
-  // LAS VISTAS PREVIAS (cada rama con PR) PAGAN CON WOMPI EN MODO DE PRUEBAS.
-  //
-  // Las variables de TEXTO de una vista previa salen de este bloque, no del panel de Cloudflare:
-  // cargadas solo en el panel (entorno Previews), la vista previa construida desde GitHub no las
-  // veía y los pagos en línea seguían apagados. Los SECRETOS de prueba (WOMPI_PRIVATE_KEY,
-  // WOMPI_INTEGRITY_SECRET, WOMPI_EVENTS_SECRET) sí van en el panel, como Secret del entorno
-  // Previews, y nunca en este archivo.
-  //
-  // La llave pública no es un secreto: viaja al navegador en cada checkout. Es la de PRUEBAS
-  // (pub_test_…), así que una vista previa nunca puede cobrar dinero real.
-  //
-  // Producción NO lee este bloque: allá las variables se cargan en el panel (entorno Production)
-  // con las llaves de producción, el día de salida (docs/plan-pagos-en-linea.md, fase 6).
-  "previews": {
-    "vars": {
-      "PAGOS_EN_LINEA": "1",
-      "WOMPI_PUBLIC_KEY": "pub_test_TfHQW9d17XGuIS8UOZc04uy3ATVSkJ7W"
-    }
-  }
+  "keep_vars": true
 }

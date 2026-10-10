@@ -244,11 +244,11 @@ página. Con el interruptor apagado dicen exactamente lo de antes (comprobado te
 
 **Sandbox** (PR JesusGuete/Catalogo_Baqtime#97, en borrador):
 
-- Llaves de prueba: los tres secretos (`WOMPI_PRIVATE_KEY`, `WOMPI_INTEGRITY_SECRET`,
-  `WOMPI_EVENTS_SECRET`) como Secret del entorno **Previews** en Cloudflare; `PAGOS_EN_LINEA` y la
-  llave pública de prueba, en el bloque `previews.vars` de `wrangler.jsonc`, porque las vistas
-  previas construidas desde GitHub toman de ahí las variables de texto. Nada de esto llega a
-  producción. (En local, todo en `.env`.)
+- Llaves de prueba cargadas en Cloudflare en el entorno **Production**, no en Previews: el Worker
+  se conectó a Builds antes de "Worker Previews", así que las vistas previas de cada rama usan
+  las variables y secretos de producción (cambiar al modelo nuevo no se puede deshacer). Es
+  seguro: el código publicado no las lee hasta el merge, y aun después, `pagosEnLineaActivos()`
+  apaga los pagos en línea si encuentra llaves de prueba en `baqtime.store`. (En local, `.env`.)
 - El webhook necesita una URL pública. La más simple es la vista previa de la rama que crea
   Cloudflare para el PR + `/api/pagos/wompi`, pegada como URL de eventos de sandbox en Wompi.
   En local: `cloudflared tunnel --url http://localhost:4321`.

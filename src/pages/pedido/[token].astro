@@ -53,7 +53,7 @@ const pedido = resultado.pedido;
   <body>
     <Header />
     <main class="seg-wrap">
-      <PedidoVista pedido={pedido} token={token} pagosActivos={pagosEnLineaActivos()} />
+      <PedidoVista pedido={pedido} token={token} pagosActivos={pagosEnLineaActivos(Astro.url.hostname)} />
     </main>
     <Footer />
     <WhatsappWidget client:load />

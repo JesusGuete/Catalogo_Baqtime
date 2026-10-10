@@ -77,7 +77,7 @@ function json(cuerpo: unknown, status: number): Response {
 
 export const POST: APIRoute = async ({ request, url }) => {
   // El interruptor: apagado, este endpoint no existe para la tienda.
-  if (!pagosEnLineaActivos()) {
+  if (!pagosEnLineaActivos(url.hostname)) {
     return json({ error: "Los pagos en línea no están disponibles en este momento." }, 503);
   }
   const config = configWompi();

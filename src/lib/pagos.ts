@@ -77,6 +77,9 @@ export function configWompi(): ConfigWompi | null {
   return { ambiente, llavePublica, llavePrivada, secretoIntegridad, secretoEventos };
 }
 
+/** El dominio de la tienda real. */
+const DOMINIOS_REALES = ["baqtime.store", "www.baqtime.store"];
+
 /**
  * El interruptor de la tienda. Apagado, o sin llaves válidas, el cliente ve el flujo de siempre
  * (WhatsApp). Sirve para volver atrás en un minuto desde Cloudflare, sin deploy.
@@ -84,9 +87,25 @@ export function configWompi(): ConfigWompi | null {
  * OJO: apaga el BOTÓN, no el procesamiento. El webhook y la conciliación siguen funcionando con
  * el interruptor apagado, porque un cliente que empezó a pagar justo antes de apagarlo tiene
  * que ver su pago registrado igual.
+ *
+ * LLAVES DE PRUEBA EN LA TIENDA REAL: NUNCA. Las vistas previas de cada rama usan las mismas
+ * variables que producción (el Worker está en el modelo de previews anterior a "Worker
+ * Previews"), así que para probar en sandbox las llaves `pub_test_…` se cargan en Production.
+ * Si alguien hiciera merge sin cambiarlas por las de producción, la tienda real aceptaría pagos
+ * de prueba y aprobaría pedidos sin que entre plata. Este control lo impide: con llaves de
+ * prueba, en baqtime.store los pagos en línea quedan apagados y el cliente ve WhatsApp.
+ *
+ * @param host El dominio desde el que se atiende (Astro.url.hostname, o el del sitio).
  */
-export function pagosEnLineaActivos(): boolean {
-  return leer("PAGOS_EN_LINEA") === "1" && configWompi() !== null;
+export function pagosEnLineaActivos(host: string): boolean {
+  if (leer("PAGOS_EN_LINEA") !== "1") return false;
+  const config = configWompi();
+  if (!config) return false;
+  if (config.ambiente === "test" && DOMINIOS_REALES.includes(host.toLowerCase())) {
+    console.error("[pagos] Llaves de PRUEBA en la tienda real: los pagos en línea quedan apagados.");
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -97,9 +116,8 @@ export function pagosEnLineaActivos(): boolean {
  * Quien llama decide si el pedido todavía espera el pago; esto solo mira el interruptor.
  */
 export function enlacePagar(token: string, sitio: string): string | undefined {
-  return pagosEnLineaActivos()
-    ? new URL(`/pedido/gracias?p=${encodeURIComponent(token)}`, sitio).href
-    : undefined;
+  const destino = new URL(`/pedido/gracias?p=${encodeURIComponent(token)}`, sitio);
+  return pagosEnLineaActivos(destino.hostname) ? destino.href : undefined;
 }
 
 interface Supabase {

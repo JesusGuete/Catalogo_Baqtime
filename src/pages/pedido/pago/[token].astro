@@ -93,7 +93,7 @@ const urlRecarga = `${Astro.url.pathname}?${new URLSearchParams({
   n: String(vuelta + 1),
 }).toString()}`;
 
-const puedePagar = pagosEnLineaActivos() && pedido.status === "pendiente_pago";
+const puedePagar = pagosEnLineaActivos(Astro.url.hostname) && pedido.status === "pendiente_pago";
 const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
 const nombre = pedido.customer_name.split(" ")[0];
 ---
