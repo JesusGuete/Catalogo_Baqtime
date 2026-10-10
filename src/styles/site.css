@@ -249,7 +249,8 @@
   .pl-espera, .pl-3ds{ display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; padding:22px 16px; border:1px solid var(--line); border-radius:2px; background:#fff; }
   .pl-espera-titulo{ margin:0; font-size:16px; font-weight:600; color:var(--ink); }
   .pl-espera-txt{ margin:0; max-width:440px; font-size:13px; line-height:1.6; color:var(--ink-soft); }
-  .pl-3ds-marca{ margin:0; font-size:10px; letter-spacing:.1em; color:var(--ink-soft); }
+  .pl-3ds-marca{ display:flex; align-items:center; gap:8px; margin:0; font-size:11px; letter-spacing:.1em; color:var(--ink); }
+  .pl-3ds-marca img{ width:52px; height:auto; }
   /* Wompi pide el reto completo a la vista: alto de 500px y todo el ancho, también en celular. */
   .pl-3ds-marco{ width:100%; height:500px; border:1px solid var(--line); border-radius:2px; background:#fff; }
   .pl-3ds-oculto{ position:absolute; width:1px; height:1px; border:0; opacity:0; pointer-events:none; }
