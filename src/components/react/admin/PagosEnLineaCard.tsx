@@ -68,11 +68,20 @@ export default function PagosEnLineaCard({ pagos, fecha }: Props) {
                     {metodo ? ` · ${metodo}` : ""}
                     {p.anomaly ? " · REVISAR" : ""}
                   </span>
+                  {/* La referencia y el id de la transacción no se parten entre renglones: son lo
+                      que se copia para buscar el pago en el dashboard de Wompi, y partidos en el
+                      guion ("REF BQ-" / "467995-…") no se leen ni se copian bien. Si no caben,
+                      bajan enteros al renglón siguiente. */}
                   <span className="adm-mono adm-historial-meta">
                     {fecha(p.updated_at).toUpperCase()} · {dinero(p.amount_in_cents / 100)}
-                    {" · REF "}
-                    {p.reference}
-                    {p.provider_tx_id ? ` · TX ${p.provider_tx_id}` : ""}
+                    {" · "}
+                    <span className="adm-sin-partir">REF {p.reference}</span>
+                    {p.provider_tx_id && (
+                      <>
+                        {" · "}
+                        <span className="adm-sin-partir">TX {p.provider_tx_id}</span>
+                      </>
+                    )}
                   </span>
                 </span>
               </li>
