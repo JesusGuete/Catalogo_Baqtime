@@ -381,6 +381,51 @@ export interface OrderNotification {
   updated_at: Timestamptz;
 }
 
+/** Estado de un intento de pago (027_pagos_en_linea.sql). CREATED + los cinco de Wompi. */
+export type OrderPaymentStatus =
+  | "CREATED"
+  | "PENDING"
+  | "APPROVED"
+  | "DECLINED"
+  | "VOIDED"
+  | "ERROR";
+
+/**
+ * Un intento de pago en línea (027_pagos_en_linea.sql). Una fila por cada vez que el cliente
+ * pulsó "Pagar ahora", porque Wompi exige una referencia nueva por transacción. Lo escribe solo
+ * el servidor, con service_role; el panel solo lo lee.
+ *
+ * Sin datos personales a propósito: ni correo, ni nombre, ni documento.
+ */
+export interface OrderPayment {
+  id: string;
+  order_id: string;
+  provider: string;
+  /** `BQ-483920-3f9a1c2b`: el número de pedido + un sufijo. Es lo que se ve en el dashboard de Wompi. */
+  reference: string;
+  amount_in_cents: number;
+  currency: string;
+  /** `null` mientras el cliente no haya empezado a pagar. */
+  provider_tx_id: string | null;
+  status: OrderPaymentStatus;
+  /** CARD, NEQUI, DAVIPLATA… tal como lo dice Wompi. */
+  payment_method_type: string | null;
+  /** Algo para revisar a mano: otro monto, o un pago de más que hay que devolver. */
+  anomaly: "monto_distinto" | "pago_duplicado" | null;
+  created_at: Timestamptz;
+  updated_at: Timestamptz;
+}
+
+/** Cómo se lee el estado de un intento de pago en el panel. */
+export const ORDER_PAYMENT_STATUS_LABEL: Record<OrderPaymentStatus, string> = {
+  CREATED: "Abrió el pago y no pagó",
+  PENDING: "En proceso",
+  APPROVED: "Aprobado",
+  DECLINED: "Rechazado",
+  VOIDED: "Anulado",
+  ERROR: "Error",
+};
+
 /** Pedido con sus ítems, historial y avisos embebidos, como los pide el panel en un solo select. */
 export type OrderWithDetail = Order & {
   order_items?: OrderItem[];
@@ -450,6 +495,12 @@ export interface OrderPublic {
   subtotal: number;
   shipping_cost: number;
   total: number;
+  /**
+   * Qué botón muestra la página del pedido (027_pagos_en_linea.sql): `pendiente` → "Pagar
+   * ahora", `en_proceso` → un aviso, `pagado` → nada. Opcional porque no llega hasta que 027
+   * esté corrido.
+   */
+  pago?: "pendiente" | "en_proceso" | "pagado";
   items: OrderPublicItem[];
   history: OrderPublicHistory[];
 }
@@ -589,6 +640,21 @@ const columnasPedidoItem = [
   "line_total",
 ] as const satisfies readonly (keyof OrderItem)[];
 
+// Fuera de SELECT_PEDIDO_DETALLE a propósito: el panel los pide aparte (orders.repo.ts,
+// pagosEnLinea), para que el pedido se siga viendo aunque 027 no esté corrida.
+const columnasPago = [
+  "id",
+  "reference",
+  "amount_in_cents",
+  "currency",
+  "provider_tx_id",
+  "status",
+  "payment_method_type",
+  "anomaly",
+  "created_at",
+  "updated_at",
+] as const satisfies readonly (keyof OrderPayment)[];
+
 const columnasPedidoHistorial = [
   "id",
   "status",
@@ -603,6 +669,7 @@ export const SELECT_PUBLICACION = columnasPublicacion.join(",");
 export const SELECT_PEDIDO_LISTA = columnasPedidoLista.join(",");
 export const SELECT_PEDIDO_ITEM = columnasPedidoItem.join(",");
 export const SELECT_PEDIDO_HISTORIAL = columnasPedidoHistorial.join(",");
+export const SELECT_PAGO = columnasPago.join(",");
 
 /** El detalle con ítems, historial y avisos embebidos: una sola petición, no N+1. */
 export const SELECT_PEDIDO_DETALLE =

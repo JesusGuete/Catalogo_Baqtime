@@ -16,6 +16,7 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import type { OrderPublicItem } from "../../../types/database";
 import { enviarConfirmacionPedido } from "../../../lib/correo";
+import { enlacePagar } from "../../../lib/pagos";
 
 export const prerender = false;
 
@@ -28,6 +29,8 @@ interface FilaPedido {
   public_token: string;
   customer_name: string;
   customer_email: string | null;
+  status: string;
+  paid_at: string | null;
   ship_city: string;
   ship_address: string;
   subtotal: number;
@@ -37,7 +40,7 @@ interface FilaPedido {
 }
 
 const SELECT =
-  "id,order_number,public_token,customer_name,customer_email,ship_city,ship_address," +
+  "id,order_number,public_token,customer_name,customer_email,status,paid_at,ship_city,ship_address," +
   "subtotal,shipping_cost,total," +
   "order_items(product_name,category_label,color,variant,initials,initials_color,quantity,line_total)";
 
@@ -111,6 +114,12 @@ export const POST: APIRoute = async ({ request, url }) => {
       total: pedido.total,
       items: pedido.order_items ?? [],
       seguimiento: new URL(`/pedido/${pedido.public_token}`, url.origin).href,
+      // Se puede reenviar la confirmación de un pedido ya pagado o vencido: a ese no se le
+      // ofrece pagar.
+      pagar:
+        pedido.status === "pendiente_pago" && !pedido.paid_at
+          ? enlacePagar(pedido.public_token, url.origin)
+          : undefined,
     },
   });
 

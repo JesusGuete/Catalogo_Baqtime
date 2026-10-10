@@ -8,13 +8,21 @@
 // El enlace directo sigue existiendo como botón —ahorra escribir dos datos a quien está
 // acá y ahora— pero ya no se muestra la URL en crudo: es larga, y el cliente no la
 // necesita si tiene su número.
+//
+// EL PAGO: con los pagos en línea encendidos (PAGOS_EN_LINEA, src/lib/pagos.ts), el botón
+// principal es "Pagar ahora" y lleva a /pedido/pagar/<token>, con los medios de pago de Wompi en
+// la misma tienda. WhatsApp queda como opción secundaria, para quien prefiere transferir. Con el
+// interruptor apagado, la página es la de siempre: el pago se coordina por WhatsApp.
 import PedidoHead from "../../components/astro/PedidoHead.astro";
 import Header from "../../components/astro/Header.astro";
 import Footer from "../../components/astro/Footer.astro";
 import WhatsappWidget from "../../components/react/WhatsappWidget.jsx";
+import BotonPagar from "../../components/astro/BotonPagar.astro";
+import NumeroPedido from "../../components/astro/NumeroPedido.astro";
+import ResumenPedido from "../../components/astro/ResumenPedido.astro";
 import { obtenerPedido, cabecerasPrivadas } from "../../lib/pedido";
+import { pagosEnLineaActivos } from "../../lib/pagos";
 import { buildOrderMessage, whatsappUrl } from "../../lib/whatsapp.js";
-import { fmt } from "../../lib/pricing.js";
 import "../../styles/site.css";
 
 export const prerender = false;
@@ -36,6 +44,14 @@ if (resultado.estado === "no-existe") {
 const pedido = resultado.pedido;
 
 const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
+
+// `pago` llega desde 027_pagos_en_linea.sql. Sin él (la migración no se ha corrido), no se
+// ofrece pagar en línea aunque el interruptor esté encendido.
+const pagado = pedido.pago === "pagado";
+const pagarEnLinea =
+  pagosEnLineaActivos(Astro.url.hostname) &&
+  pedido.status === "pendiente_pago" &&
+  (pedido.pago === "pendiente" || pedido.pago === "en_proceso");
 ---
 
 <html lang="es-CO">
@@ -50,23 +66,41 @@ const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
         <p class="ped-eyebrow mono">PEDIDO REGISTRADO</p>
         <h1 class="ped-titulo">¡Gracias, {pedido.customer_name.split(" ")[0]}!</h1>
         <p class="ped-bajada">
-          Tu pedido quedó guardado. El siguiente paso es coordinar el pago por WhatsApp.
+          {
+            pagado
+              ? "Tu pedido quedó guardado y ya recibimos el pago."
+              : pagarEnLinea
+                ? "Tu pedido quedó guardado. El siguiente paso es pagarlo."
+                : "Tu pedido quedó guardado. El siguiente paso es coordinar el pago por WhatsApp."
+          }
         </p>
 
-        <div class="ped-numero-caja">
-          <span class="ped-numero-label mono">TU NÚMERO DE PEDIDO</span>
-          <strong id="numero" class="ped-numero mono">{pedido.order_number}</strong>
-          <button id="copiar" class="ped-numero-btn mono" type="button">COPIAR</button>
-        </div>
+        <NumeroPedido numero={pedido.order_number} />
+        <ResumenPedido pedido={pedido} etiquetaTotal={pagado ? "Total pagado" : "Total a pagar"} />
 
-        <div class="ped-resumen">
-          <div class="ped-dato">
-            <span class="ped-dato-label mono">TOTAL A PAGAR</span>
-            <span class="ped-dato-valor">{fmt(pedido.total)}</span>
-          </div>
-        </div>
-
-        <a class="ped-btn-wa" href={enlaceWhatsapp}>Confirmar pago por WhatsApp</a>
+        {
+          pagarEnLinea ? (
+            pedido.pago === "en_proceso" ? (
+              <p class="ped-proceso">
+                Tu pago se está procesando. Te avisaremos por correo apenas se confirme; no hace
+                falta que vuelvas a pagar.
+              </p>
+            ) : (
+              <>
+                <BotonPagar token={token} />
+                <a class="ped-alterno" href={enlaceWhatsapp}>
+                  Prefiero pagar por transferencia (WhatsApp)
+                </a>
+              </>
+            )
+          ) : (
+            !pagado && (
+              <a class="ped-btn-wa" href={enlaceWhatsapp}>
+                Confirmar pago por WhatsApp
+              </a>
+            )
+          )
+        }
 
         {/* Sin mostrar la dirección: esta página no la conoce (pedido_publico no devuelve
             el correo, a propósito). Lo de Spam va porque los primeros correos de un
@@ -86,33 +120,6 @@ const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
     <Footer />
     <WhatsappWidget client:load />
 
-    <script is:inline>
-      // Sin dependencias y con respaldo: clipboard.writeText no existe fuera de HTTPS ni
-      // en navegadores viejos, y quedarse sin forma de copiar el número sería justamente
-      // el problema que esta página vino a resolver.
-      document.getElementById("copiar")?.addEventListener("click", function () {
-        var numero = document.getElementById("numero").textContent.trim();
-        var boton = this;
-        function ok() {
-          boton.textContent = "COPIADO ✓";
-          setTimeout(function () {
-            boton.textContent = "COPIAR";
-          }, 2000);
-        }
-        if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard.writeText(numero).then(ok);
-        } else {
-          // Sin API de portapapeles: se selecciona el número para que el cliente lo copie
-          // con el gesto de siempre.
-          var rango = document.createRange();
-          rango.selectNodeContents(document.getElementById("numero"));
-          var sel = window.getSelection();
-          sel.removeAllRanges();
-          sel.addRange(rango);
-          ok();
-        }
-      });
-    </script>
 
     <style>
       .ped-wrap {
@@ -145,31 +152,6 @@ const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
         color: var(--ink-soft);
         margin: 0 0 24px;
       }
-      .ped-resumen {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-bottom: 24px;
-      }
-      .ped-dato {
-        flex: 1 1 180px;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        padding: 14px 16px;
-        background: var(--cream);
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
-      }
-      .ped-dato-label {
-        font-size: 9px;
-        letter-spacing: 0.1em;
-        color: var(--ink-soft);
-      }
-      .ped-dato-valor {
-        font-size: 20px;
-        color: var(--ink);
-      }
       .ped-btn-wa {
         display: block;
         width: 100%;
@@ -185,48 +167,29 @@ const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
       .ped-btn-wa:hover {
         background: var(--mocha);
       }
+      .ped-alterno {
+        display: block;
+        margin-top: 14px;
+        font-size: 13px;
+        color: var(--ink-soft);
+        text-align: center;
+      }
+      .ped-proceso {
+        margin: 0;
+        padding: 14px 16px;
+        font-size: 14px;
+        line-height: 1.55;
+        color: var(--ink);
+        background: var(--live-bg);
+        border: 1px solid var(--live-border);
+        border-radius: var(--radius);
+      }
       .ped-correo {
         margin: 12px 0 0;
         font-size: 12px;
         line-height: 1.55;
         color: var(--ink-soft);
         text-align: center;
-      }
-      /* El número es lo único que el cliente necesita recordar, así que se lleva el
-         tamaño y el acento de la marca. */
-      .ped-numero-caja {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 6px 14px;
-        padding: 18px 20px;
-        margin-bottom: 16px;
-        background: var(--draft-bg);
-        border: 1px solid var(--draft-border);
-        border-radius: var(--radius);
-      }
-      .ped-numero-label {
-        flex: 1 0 100%;
-        font-size: 9px;
-        letter-spacing: 0.1em;
-        color: var(--draft-text);
-      }
-      .ped-numero {
-        font-size: 30px;
-        letter-spacing: 0.06em;
-        color: var(--ink);
-        font-weight: 400;
-      }
-      .ped-numero-btn {
-        margin-left: auto;
-        padding: 8px 14px;
-        font-size: 11px;
-        letter-spacing: 0.08em;
-        background: var(--white-card);
-        border: 1px solid var(--ink);
-        border-radius: var(--radius);
-        color: var(--ink);
-        cursor: pointer;
       }
       .ped-nota {
         margin-top: 22px;

@@ -15,6 +15,7 @@
 
 import { env } from "cloudflare:workers";
 import { enviarRecordatorioPago } from "./correo";
+import { enlacePagar } from "./pagos";
 import {
   HORAS_PARA_RECORDAR,
   esHorarioDeEnvio,
@@ -98,6 +99,8 @@ export async function enviarRecordatoriosDePago(ahora: Date = new Date()): Promi
         items: p.items,
         seguimiento: new URL(`/pedido/${p.public_token}`, sitio).href,
         horas_restantes: horasRestantes(new Date(p.created_at), ahora),
+        // pedidos_por_recordar() solo devuelve pedidos que esperan el pago y sin uno en proceso.
+        pagar: enlacePagar(p.public_token, sitio),
       },
     });
     if (resultado.ok) enviados++;

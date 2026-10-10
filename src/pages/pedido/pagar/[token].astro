@@ -1,0 +1,171 @@
+---
+// Pagar en línea un pedido que ya está guardado: /pedido/pagar/<token>.
+//
+// Llegan acá el "Pagar ahora" de los correos (confirmación y recordatorio), el de la página de
+// gracias y el del seguimiento, y el "Intentar de nuevo" de un pago rechazado. Muestra el resumen
+// de lo que se paga y los medios de Wompi en la misma página (PagoEnLinea.jsx): tarjeta, PSE,
+// Nequi y Botón Bancolombia, sin la ventana de Wompi.
+//
+// Si el pedido no se puede pagar en línea, no se muestra un formulario que va a fallar:
+//   - ya pagado o en otro estado → al seguimiento;
+//   - pagos en línea apagados → a la página de gracias, que ofrece WhatsApp;
+//   - con un pago en proceso → un aviso para que no pague dos veces.
+//
+// Mismas reglas que las demás páginas del pedido: `private, no-store`, noindex, 404 sin token.
+import PedidoHead from "../../../components/astro/PedidoHead.astro";
+import Header from "../../../components/astro/Header.astro";
+import Footer from "../../../components/astro/Footer.astro";
+import WhatsappWidget from "../../../components/react/WhatsappWidget.jsx";
+import PagoEnLinea from "../../../components/react/PagoEnLinea.jsx";
+import NumeroPedido from "../../../components/astro/NumeroPedido.astro";
+import ResumenPedido from "../../../components/astro/ResumenPedido.astro";
+import { obtenerPedido, cabecerasPrivadas } from "../../../lib/pedido";
+import { pagosEnLineaActivos } from "../../../lib/pagos";
+import { buildOrderMessage, whatsappUrl } from "../../../lib/whatsapp.js";
+import "../../../styles/site.css";
+
+export const prerender = false;
+
+cabecerasPrivadas(Astro.response.headers);
+
+const token = Astro.params.token ?? "";
+const resultado = await obtenerPedido(token);
+if (resultado.estado === "error") {
+  return new Response(
+    "No pudimos consultar tu pedido en este momento. Vuelve a intentar en unos minutos.",
+    { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
+  );
+}
+if (resultado.estado === "no-existe") {
+  return new Response(null, { status: 404, statusText: "Pedido no encontrado" });
+}
+const pedido = resultado.pedido;
+
+if (pedido.status !== "pendiente_pago" || pedido.pago === "pagado") {
+  return Astro.redirect(`/pedido/${encodeURIComponent(token)}`, 302);
+}
+// Sin `pago` (027 sin correr) tampoco se ofrece: crear_intento_pago no existiría.
+if (!pagosEnLineaActivos(Astro.url.hostname) || !pedido.pago) {
+  return Astro.redirect(`/pedido/gracias?p=${encodeURIComponent(token)}`, 302);
+}
+
+const enProceso = pedido.pago === "en_proceso";
+const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
+const nombre = pedido.customer_name.split(" ")[0];
+---
+
+<html lang="es-CO">
+  <head>
+    <PedidoHead title={`Pagar el pedido ${pedido.order_number} — Baqtime`} />
+  </head>
+  <body>
+    <Header />
+
+    <main class="pp-wrap">
+      <section class="pp-card">
+        <p class="pp-eyebrow mono">PAGO DEL PEDIDO</p>
+        <h1 class="pp-titulo">{enProceso ? "Tu pago se está procesando" : `${nombre}, paga tu pedido`}</h1>
+        <p class="pp-bajada">
+          {
+            enProceso
+              ? "Ya hay un pago en curso para este pedido. Te avisaremos por correo apenas se confirme; no hace falta que vuelvas a pagar."
+              : "Elige el medio de pago. Todo se hace aquí mismo, en una conexión segura con Wompi (Bancolombia)."
+          }
+        </p>
+
+        <NumeroPedido numero={pedido.order_number} />
+        <ResumenPedido pedido={pedido} etiquetaTotal="Total a pagar" />
+
+        {
+          !enProceso && (
+            <div class="pp-pago">
+              <p class="pp-subtitulo mono">MEDIO DE PAGO</p>
+              <PagoEnLinea client:load total={pedido.total} token={token} />
+              <a class="pp-alterno" href={enlaceWhatsapp}>
+                Prefiero pagar por transferencia (WhatsApp)
+              </a>
+            </div>
+          )
+        }
+
+        <a class="pp-seguimiento" href={`/pedido/${encodeURIComponent(token)}`}>
+          Ver el estado de mi pedido
+        </a>
+      </section>
+    </main>
+
+    <Footer />
+    <WhatsappWidget client:load />
+
+    <style>
+      .pp-wrap {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 48px 20px 72px;
+      }
+      .pp-card {
+        background: var(--white-card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 32px 28px;
+      }
+      .pp-eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        color: var(--mocha);
+        margin: 0 0 10px;
+      }
+      .pp-titulo {
+        font-family: "Unna", serif;
+        font-size: 30px;
+        line-height: 1.15;
+        margin: 0 0 8px;
+        color: var(--ink);
+      }
+      .pp-bajada {
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--ink-soft);
+        margin: 0 0 24px;
+      }
+      .pp-pago {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin: 8px 0 20px;
+      }
+      .pp-subtitulo {
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        color: var(--ink-soft);
+        margin: 0;
+      }
+      .pp-alterno {
+        font-size: 13px;
+        color: var(--ink-soft);
+        text-align: center;
+      }
+      .pp-seguimiento {
+        display: block;
+        padding: 13px;
+        text-align: center;
+        text-decoration: none;
+        border: 1px solid var(--ink);
+        border-radius: var(--radius);
+        color: var(--ink);
+        font-size: 14px;
+      }
+      @media (max-width: 520px) {
+        .pp-wrap {
+          padding: 28px 16px 56px;
+        }
+        .pp-card {
+          padding: 24px 18px;
+        }
+        .pp-titulo {
+          font-size: 25px;
+        }
+      }
+    </style>
+  </body>
+</html>

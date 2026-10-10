@@ -8,8 +8,11 @@
 // que al cliente le quedan unas 12 horas para reaccionar — por eso el correo dice cuántas.
 //
 // EL TONO: es un correo que se puede sentir insistente, así que dice una vez qué pasa y qué
-// hacer, ofrece el botón de WhatsApp (que es como se coordina el pago) y le da salida a quien ya
-// pagó: "ignora este mensaje".
+// hacer, ofrece el botón para pagar y le da salida a quien ya pagó: "ignora este mensaje".
+//
+// EL BOTÓN: con los pagos en línea encendidos es "Pagar ahora" (/pedido/pagar/<token>, con los
+// medios de pago en la tienda) y WhatsApp queda para quien prefiere transferir. Sin ellos, el de siempre:
+// WhatsApp, que es como se coordina el pago.
 
 import type { OrderPublicItem } from "../types/database";
 import { fmt } from "./pricing.js";
@@ -27,6 +30,11 @@ export interface DatosCorreoRecordatorio {
   seguimiento: string;
   /** Horas que faltan para que el pedido se marque como no confirmado (mínimo 1). */
   horas_restantes: number;
+  /**
+   * Enlace absoluto a la página donde se paga en línea (/pedido/gracias?p=<token>). Solo con los
+   * pagos en línea encendidos. Ver DatosCorreoPedido.pagar en correo-pedido.ts.
+   */
+  pagar?: string;
 }
 
 /** "unas 11 horas", o "menos de una hora" cuando ya casi vence. */
@@ -40,34 +48,41 @@ export function armarCorreoRecordatorio(
   puedeResponder: boolean
 ): CorreoArmado {
   const nombre = primerNombre(p.customer_name);
+  // El mismo mensaje que la página de gracias: nombra lo que se compró y el número.
+  const enlaceWhatsapp = whatsappUrl(
+    buildOrderMessage({
+      order_number: p.order_number,
+      total: p.total,
+      items: p.items as OrderPublicItem[],
+    })
+  );
+  const plazo = plazoEnPalabras(p.horas_restantes);
 
   const contenido: Contenido = {
     asunto: `Tu pedido ${p.order_number} sigue esperando el pago`,
-    bandeja: `Pedido ${p.order_number}: confirma tu pago para que entre a producción.`,
+    bandeja: p.pagar
+      ? `Pedido ${p.order_number}: págalo para que entre a producción.`
+      : `Pedido ${p.order_number}: confirma tu pago para que entre a producción.`,
     etiqueta: "RECORDATORIO DE PAGO",
     titulo: `${nombre}, tu pedido te está esperando`,
     parrafos: [
       "Guardamos tu pedido, pero todavía no hemos recibido el pago.",
-      `Si no lo confirmamos ${plazoEnPalabras(p.horas_restantes)}, se marcará como no confirmado. Escríbenos por WhatsApp y te compartimos los medios de pago.`,
+      p.pagar
+        ? `Si no lo recibimos ${plazo}, se marcará como no confirmado. Puedes pagarlo ahora mismo desde la página, con tarjeta, PSE, Nequi o Botón Bancolombia.`
+        : `Si no lo confirmamos ${plazo}, se marcará como no confirmado. Escríbenos por WhatsApp y te compartimos los medios de pago.`,
     ],
     numero: p.order_number,
     paso: 2, // sigue esperando el pago
     caja: [{ etiqueta: "TOTAL A PAGAR", valor: fmt(p.total) }],
-    botones: [
-      {
-        // El mismo mensaje que la página de gracias: nombra lo que se compró y el número.
-        href: whatsappUrl(
-          buildOrderMessage({
-            order_number: p.order_number,
-            total: p.total,
-            items: p.items as OrderPublicItem[],
-          })
-        ),
-        texto: "Confirmar pago por WhatsApp",
-        principal: true,
-      },
-      { href: p.seguimiento, texto: "Ver el estado de mi pedido", principal: false },
-    ],
+    botones: p.pagar
+      ? [
+          { href: p.pagar, texto: "Pagar ahora", principal: true },
+          { href: enlaceWhatsapp, texto: "Prefiero pagar por transferencia (WhatsApp)", principal: false },
+        ]
+      : [
+          { href: enlaceWhatsapp, texto: "Confirmar pago por WhatsApp", principal: true },
+          { href: p.seguimiento, texto: "Ver el estado de mi pedido", principal: false },
+        ],
     nota: "Si ya pagaste, ignora este mensaje: lo confirmamos en cuanto veamos el pago.",
   };
 

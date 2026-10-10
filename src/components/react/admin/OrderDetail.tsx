@@ -3,6 +3,7 @@ import {
   ORDER_STATUSES,
   ORDER_STATUS_LABEL,
   type OrderNotificationType,
+  type OrderPayment,
   type OrderStatus,
   type OrderStatusNotice,
   type OrderWithDetail,
@@ -10,6 +11,7 @@ import {
 import * as pedidosRepo from "../../../lib/admin/orders.repo";
 import { copiarAlPortapapeles } from "../../../lib/admin/copiar";
 import { armarMensajeFabrica } from "../../../lib/admin/mensaje-fabrica";
+import PagosEnLineaCard from "./PagosEnLineaCard";
 import { useAccion } from "../../../lib/admin/useAdminData";
 import { AdminError, comoAdminError } from "../../../lib/supabase/errors";
 import { TRANSPORTADORA_POR_DEFECTO } from "../../../lib/tracking";
@@ -50,6 +52,9 @@ function tipoDeAviso(estado: OrderStatus): OrderStatusNotice | null {
 
 export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) {
   const [pedido, setPedido] = useState<OrderWithDetail | null>(null);
+  // Los intentos de pago en línea (Wompi). Vacío si no hubo ninguno, o si la tabla todavía no
+  // existe: pedidosRepo.pagosEnLinea() no falla nunca.
+  const [pagos, setPagos] = useState<OrderPayment[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<AdminError | null>(null);
 
@@ -77,8 +82,12 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
     setCargando(true);
     setError(null);
     try {
-      const p = await pedidosRepo.obtener(pedidoId);
+      const [p, intentos] = await Promise.all([
+        pedidosRepo.obtener(pedidoId),
+        pedidosRepo.pagosEnLinea(pedidoId),
+      ]);
       setPedido(p);
+      setPagos(intentos);
       if (p) {
         setTransportadora(p.carrier ?? "");
         setGuia(p.tracking_number ?? "");
@@ -231,6 +240,11 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
   const enlaceCliente = `${window.location.origin}/pedido/${pedido.public_token}`;
   const pagado = pedido.paid_at !== null;
 
+  // Pagos en línea (Wompi): para el encabezado y para advertir antes de confirmar a mano. El
+  // detalle de cada intento está en PagosEnLineaCard.
+  const pagadoEnLinea = pagos.some((p) => p.status === "APPROVED" && !p.anomaly);
+  const pagoEnProceso = pagos.some((p) => p.status === "PENDING");
+
   // El mensaje para la fábrica sale del pedido tal como está guardado, no de lo que haya escrito
   // en pantalla: si cambias el correo o la guía sin guardar, esos datos no entran (ni los usa).
   const mensajeFabrica = armarMensajeFabrica(pedido);
@@ -288,7 +302,11 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
           <h2 className="adm-h2 adm-mono">{pedido.order_number}</h2>
           <p className="adm-mono adm-editor-sub">
             {ORDER_STATUS_LABEL[pedido.status].toUpperCase()} ·{" "}
-            {pagado ? `PAGADO ${fecha(pedido.paid_at!)}` : "SIN PAGO CONFIRMADO"}
+            {pagado
+              ? `${pagadoEnLinea ? "PAGADO EN LÍNEA" : "PAGADO"} ${fecha(pedido.paid_at!)}`
+              : pagoEnProceso
+                ? "PAGO EN LÍNEA EN PROCESO"
+                : "SIN PAGO CONFIRMADO"}
           </p>
         </div>
         <div className="adm-editor-acciones">
@@ -297,7 +315,11 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
               onClick={() => {
                 if (
                   window.confirm(
-                    `¿Confirmar que recibiste el pago de ${dinero(pedido.total)}?${sufijoAviso("aprobado")}`
+                    `¿Confirmar que recibiste el pago de ${dinero(pedido.total)}?${
+                      pagoEnProceso
+                        ? "\n\nOjo: el cliente tiene un pago en línea en proceso. Si confirmas a mano y ese pago se aprueba, quedará como cobro de más y habrá que devolverlo desde Wompi."
+                        : ""
+                    }${sufijoAviso("aprobado")}`
                   )
                 ) {
                   void confirmar.ejecutar(notaPago);
@@ -462,6 +484,8 @@ export default function OrderDetail({ pedidoId, onCerrar, onEliminado }: Props) 
               </Aviso>
             )}
           </section>
+
+          {pagos.length > 0 && <PagosEnLineaCard pagos={pagos} fecha={fecha} />}
 
           <section className="adm-card">
             <p className="adm-mono adm-regla-grupo">ENVÍO</p>

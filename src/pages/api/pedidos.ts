@@ -30,6 +30,7 @@ import { calcularEnvio, nombreDestino, textoEntrega } from "../../lib/envios.js"
 import { normalizarCorreo, validateShipping } from "../../lib/shipping-validation.js";
 import { enviarConfirmacionPedido, enviarCopiaPedidoTienda } from "../../lib/correo";
 import { POLITICA_DATOS_VERSION } from "../../lib/legal";
+import { enlacePagar } from "../../lib/pagos";
 
 export const prerender = false;
 
@@ -301,6 +302,8 @@ export const POST: APIRoute = async ({ request, url, locals }) => {
       items: lineas,
       seguimiento,
       entrega: textoEntrega(envioCalculado),
+      // Un pedido recién creado siempre espera el pago.
+      pagar: enlacePagar(creado.public_token, url.origin),
     },
   });
 

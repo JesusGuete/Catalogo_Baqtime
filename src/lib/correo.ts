@@ -30,7 +30,12 @@ import {
   type TipoRegistro,
 } from "./correo-estado";
 import { armarCorreoRecordatorio, type DatosCorreoRecordatorio } from "./correo-recordatorio";
-import { armarCorreoTienda, type DatosCorreoTienda } from "./correo-tienda";
+import {
+  armarCorreoPagoTienda,
+  armarCorreoTienda,
+  type DatosCorreoTienda,
+  type DatosPagoTienda,
+} from "./correo-tienda";
 
 const RESEND_URL = "https://api.resend.com/emails";
 const REMITENTE_POR_DEFECTO = "Baqtime <pedidos@baqtime.store>";
@@ -303,5 +308,36 @@ export async function enviarCopiaPedidoTienda(datos: DatosCorreoTienda): Promise
   } catch (e) {
     console.error("[correo] No se pudo armar la copia para la tienda:", e);
     return { ok: false, error: "No se pudo armar la copia del pedido para la tienda." };
+  }
+}
+
+/**
+ * El aviso a la tienda de que un pedido se pagó en línea. Lo usa src/lib/pagos.ts cuando Wompi
+ * aprueba un pago. No lanza nunca, y un fallo acá no afecta al pago ni al correo del cliente.
+ *
+ * CON clave de idempotencia: el mismo pago lo pueden procesar el webhook, la página de regreso
+ * y la conciliación. registrar_transaccion_pago() ya evita que dos de ellos manden el aviso,
+ * y la clave cubre el reintento de una corrida que murió a mitad del envío.
+ */
+export async function enviarAvisoPagoTienda(datos: DatosPagoTienda): Promise<ResultadoEnvio> {
+  const para = destinoCopiaPedidos();
+  if (!para) {
+    return {
+      ok: false,
+      error: "No hay dirección para los avisos de la tienda (falta CORREO_AVISO_PEDIDOS o CORREO_RESPONDER_A).",
+    };
+  }
+  try {
+    const correo = armarCorreoPagoTienda(datos);
+    return await enviarCorreo({
+      para,
+      asunto: correo.asunto,
+      html: correo.html,
+      texto: correo.texto,
+      idempotencia: `pago-${datos.order_number}`,
+    });
+  } catch (e) {
+    console.error("[correo] No se pudo armar el aviso de pago para la tienda:", e);
+    return { ok: false, error: "No se pudo armar el aviso de pago para la tienda." };
   }
 }

@@ -825,6 +825,8 @@ input.adm-input { display: block; }
 .adm-historial-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .adm-historial-fecha { font-size: 12px; }
 .adm-historial-meta { font-size: 9px; color: var(--ink-soft); letter-spacing: 0.04em; }
+/* Un código que no se debe partir (referencia o transacción de Wompi): baja entero de renglón. */
+.adm-sin-partir { white-space: nowrap; }
 .adm-historial-vivo { font-size: 9px; color: var(--olive); letter-spacing: 0.06em; }
 
 /* "Avisar al cliente por correo" bajo el selector de estado. */

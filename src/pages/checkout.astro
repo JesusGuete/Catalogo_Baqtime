@@ -6,14 +6,16 @@
 // navegador funciona entre los pasos, y hay espacio para el resumen al lado del formulario.
 //
 // El carrito NO viene en el HTML: vive en el localStorage del navegador. Lo que sí viene es el
-// catálogo, para mostrar las fotos y los precios de hoy. Por eso la página se puede cachear en
-// el borde igual que el catálogo: no lleva nada de ningún cliente.
+// catálogo, para mostrar las fotos y los precios de hoy, y si los pagos en línea están
+// encendidos. Por eso la página se puede cachear en el borde igual que el catálogo: no lleva
+// nada de ningún cliente. (Encender o apagar el interruptor tarda lo que dure ese caché.)
 import Header from "../components/astro/Header.astro";
 import Footer from "../components/astro/Footer.astro";
 import WhatsappWidget from "../components/react/WhatsappWidget.jsx";
 import SiteHead from "../components/astro/SiteHead.astro";
 import CheckoutApp from "../components/react/CheckoutApp.jsx";
 import { loadCatalog } from "../lib/catalog";
+import { pagosEnLineaActivos } from "../lib/pagos";
 import "../styles/site.css";
 
 Astro.response.headers.set(
@@ -40,7 +42,11 @@ const imagen = new URL("/assets/img/og-image.png", Astro.site).href;
   </head>
   <body>
     <Header categorias={catalog.CATS} destacados={catalog.products.slice(0, 6)} />
-    <CheckoutApp client:load catalog={catalog} />
+    <CheckoutApp
+      client:load
+      catalog={catalog}
+      pagosActivos={pagosEnLineaActivos(Astro.url.hostname)}
+    />
     <Footer />
     <WhatsappWidget client:load />
   </body>

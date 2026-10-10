@@ -176,3 +176,64 @@ ${bloqueNumeroPedido(p.order_number, { etiqueta: "NUEVO PEDIDO" })}
     texto,
   };
 }
+
+export interface DatosPagoTienda {
+  order_number: string;
+  customer_name: string;
+  total: number;
+  /** "Nequi", "tarjeta"… o null si Wompi no dijo con qué se pagó. */
+  metodo: string | null;
+  /** Enlace al panel de administración, absoluto. */
+  panel: string;
+}
+
+/**
+ * El aviso de que un pedido se pagó en línea. Lo manda el servidor cuando Wompi aprueba el
+ * pago (src/lib/pagos.ts), para que la dueña sepa que puede mandarlo a producción sin tener
+ * que estar mirando el panel.
+ *
+ * Corto a propósito: el detalle del pedido ya le llegó en la copia de "Llegó un pedido nuevo".
+ * Este solo dice qué cambió.
+ */
+export function armarCorreoPagoTienda(p: DatosPagoTienda): CorreoArmado {
+  const como = p.metodo ? ` con ${p.metodo}` : " en línea";
+
+  const contenido = `              <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;letter-spacing:2px;color:${C.inkSoft};">AVISO DE LA TIENDA</p>
+              <h1 style="margin:0 0 8px;font-family:${SANS};font-size:26px;line-height:1.2;font-weight:bold;color:${C.ink};">Pago recibido</h1>
+              <p style="margin:0;font-family:${SANS};font-size:14px;line-height:1.6;color:${C.inkSoft};">
+                ${esc(p.customer_name)} pagó ${esc(fmt(p.total))}${esc(como)}. El pedido quedó aprobado: ya puedes mandarlo a producción.
+              </p>
+${bloqueNumeroPedido(p.order_number, { etiqueta: "PEDIDO PAGADO" })}
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 28px;">
+                <tr>
+                  <td align="center" style="background:${C.ink};border-radius:30px;">
+                    <a href="${esc(p.panel)}" style="display:block;padding:16px;font-family:${SANS};font-size:15px;font-weight:bold;letter-spacing:0.3px;color:${C.blanco};text-decoration:none;">Abrir el panel de pedidos</a>
+                  </td>
+                </tr>
+              </table>`;
+
+  const html = envolverCorreo({
+    titulo: `Pago recibido ${p.order_number}`,
+    bandeja: `${p.customer_name} pagó ${fmt(p.total)}${como}.`,
+    contenido,
+    pie: "Aviso interno de la tienda. El pago lo confirmó Wompi; no hace falta marcarlo en el panel.",
+  });
+
+  const texto = [
+    `PAGO RECIBIDO ${p.order_number}`,
+    ``,
+    `${p.customer_name} pagó ${fmt(p.total)}${como}. El pedido quedó aprobado: ya puedes mandarlo a producción.`,
+    ``,
+    `Panel: ${p.panel}`,
+    ``,
+    `--`,
+    `Aviso interno de la tienda. El pago lo confirmó Wompi; no hace falta marcarlo en el panel.`,
+  ].join("\n");
+
+  return {
+    asunto: `Pago recibido ${p.order_number} · ${fmt(p.total)}`,
+    html,
+    texto,
+  };
+}

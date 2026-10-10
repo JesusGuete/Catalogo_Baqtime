@@ -34,6 +34,13 @@ export interface DatosCorreoPedido {
   seguimiento: string;
   /** "6 a 8 días hábiles". Opcional: el reenvío desde el panel no lo recalcula. */
   entrega?: string;
+  /**
+   * Enlace absoluto a la página donde se paga en línea (/pedido/gracias?p=<token>). Solo viene
+   * cuando los pagos en línea están encendidos y el pedido espera el pago: entonces el botón
+   * principal es "Pagar ahora" y WhatsApp queda para quien prefiere transferir. Sin él, el
+   * correo es el de siempre (pago por WhatsApp).
+   */
+  pagar?: string;
 }
 
 export interface CorreoArmado {
@@ -306,8 +313,23 @@ export function armarCorreoPedido(p: DatosCorreoPedido, puedeResponder: boolean)
   const ayuda = puedeResponder
     ? "Si tienes dudas, responde a este correo o escríbenos por WhatsApp."
     : "Si tienes dudas, escríbenos por WhatsApp.";
-  const aviso24h =
-    "Recuerda confirmar el pago en las próximas 24 horas. Pasado ese tiempo, el pedido queda como no confirmado.";
+  const aviso24h = p.pagar
+    ? "Recuerda pagar en las próximas 24 horas. Pasado ese tiempo, el pedido queda como no confirmado."
+    : "Recuerda confirmar el pago en las próximas 24 horas. Pasado ese tiempo, el pedido queda como no confirmado.";
+  const siguientePaso = p.pagar
+    ? "Tu pedido quedó guardado. El siguiente paso es pagarlo: con tarjeta, PSE, Nequi o Botón Bancolombia, desde la página."
+    : "Tu pedido quedó guardado. El siguiente paso es coordinar el pago por WhatsApp.";
+  // Con pago en línea, "Pagar ahora" lleva a la página de gracias, que muestra el estado y el
+  // botón; por eso no hace falta además "Ver el estado de mi pedido".
+  const botones = p.pagar
+    ? [
+        { href: p.pagar, texto: "Pagar ahora", principal: true },
+        { href: enlaceWhatsapp, texto: "Prefiero pagar por transferencia (WhatsApp)", principal: false },
+      ]
+    : [
+        { href: enlaceWhatsapp, texto: "Confirmar pago por WhatsApp", principal: true },
+        { href: p.seguimiento, texto: "Ver el estado de mi pedido", principal: false },
+      ];
 
   // Una tarjeta por producto; las iniciales bordadas van en una pastilla gris porque son lo que
   // se produce a mano y lo que más conviene que el cliente revise.
@@ -338,7 +360,7 @@ export function armarCorreoPedido(p: DatosCorreoPedido, puedeResponder: boolean)
   const contenido = `              <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;letter-spacing:2px;color:${C.inkSoft};">PEDIDO REGISTRADO</p>
               <h1 style="margin:0 0 8px;font-family:${SANS};font-size:26px;line-height:1.2;font-weight:bold;color:${C.ink};">¡Gracias, ${esc(nombre)}!</h1>
               <p style="margin:0;font-family:${SANS};font-size:14px;line-height:1.6;color:${C.inkSoft};">
-                Tu pedido quedó guardado. El siguiente paso es coordinar el pago por WhatsApp.
+                ${esc(siguientePaso)}
               </p>
 ${bloqueNumeroPedido(p.order_number, { pista: "Guárdalo: con este número consultas el estado de tu pedido." })}
 ${progresoPedido(2)}
@@ -374,17 +396,16 @@ ${progresoPedido(2)}
               </p>`
                   : ""
               }
-${botonesCorreo([
-    { href: enlaceWhatsapp, texto: "Confirmar pago por WhatsApp", principal: true },
-    { href: p.seguimiento, texto: "Ver el estado de mi pedido", principal: false },
-  ])}
+${botonesCorreo(botones)}
               <p style="margin:20px 0 28px;font-family:${SANS};font-size:12px;line-height:1.55;color:${C.inkSoft};text-align:center;">
                 ${aviso24h}
               </p>`;
 
   const html = envolverCorreo({
     titulo: asunto,
-    bandeja: `Pedido ${p.order_number} · Total ${fmt(p.total)}. El siguiente paso es confirmar el pago por WhatsApp.`,
+    bandeja: p.pagar
+      ? `Pedido ${p.order_number} · Total ${fmt(p.total)}. Ya puedes pagarlo desde la página.`
+      : `Pedido ${p.order_number} · Total ${fmt(p.total)}. El siguiente paso es confirmar el pago por WhatsApp.`,
     contenido,
     pie: `Recibes este correo porque hiciste un pedido en baqtime.store. ${ayuda}${pieLegalHtml()}`,
   });
@@ -399,7 +420,7 @@ ${botonesCorreo([
   const texto = [
     `¡Gracias, ${nombre}!`,
     ``,
-    `Tu pedido quedó guardado. El siguiente paso es coordinar el pago por WhatsApp.`,
+    siguientePaso,
     ``,
     `TU NÚMERO DE PEDIDO: ${p.order_number}`,
     ``,
@@ -412,8 +433,7 @@ ${botonesCorreo([
     `Se envía a: ${p.ship_city} · ${p.ship_address}`,
     ...(p.entrega ? [`Entrega: ${p.entrega} después de aprobado el pago.`] : []),
     ``,
-    `Confirmar pago por WhatsApp: ${enlaceWhatsapp}`,
-    `Ver el estado de mi pedido: ${p.seguimiento}`,
+    ...botones.map((b) => `${b.texto}: ${b.href}`),
     ``,
     aviso24h,
     ``,

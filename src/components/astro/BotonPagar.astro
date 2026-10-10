@@ -1,0 +1,54 @@
+---
+// El botón "Pagar ahora": lleva a /pedido/pagar/<token>, donde el cliente elige el medio de pago
+// (tarjeta, PSE, Nequi o Botón Bancolombia) y paga ahí mismo, sin la ventana de Wompi.
+//
+// Lo usan tres páginas, todas con el token del pedido en la mano: la de gracias, la de
+// resultado (para reintentar después de un rechazo) y el seguimiento por enlace privado.
+// Nunca el buscador por número: el número solo no autoriza a pagar ni a ver nada privado
+// (012_consulta_solo_por_numero.sql).
+interface Props {
+  token: string;
+  /** El texto del botón. "Intentar de nuevo" en la página de un pago rechazado. */
+  texto?: string;
+}
+
+const { token, texto = "Pagar ahora" } = Astro.props;
+---
+
+<div class="pagar">
+  <a class="pagar-btn" href={`/pedido/pagar/${encodeURIComponent(token)}`}>{texto}</a>
+  <p class="pagar-medios">
+    Tarjeta débito o crédito, PSE, Nequi o Botón Bancolombia, con la seguridad de Wompi
+    (Bancolombia).
+  </p>
+</div>
+
+<style>
+  .pagar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .pagar-btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    border-radius: var(--radius);
+    background: var(--ink);
+    color: var(--cream);
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-decoration: none;
+  }
+  .pagar-btn:hover {
+    background: var(--mocha);
+  }
+  .pagar-medios {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    text-align: center;
+  }
+</style>
