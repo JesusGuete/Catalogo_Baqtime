@@ -55,6 +55,7 @@ const LOGOS_FRANQUICIA = {
   VISA: "/assets/img/visa.svg",
   MASTERCARD: "/assets/img/mastercard.svg",
   AMEX: "/assets/img/amex.svg",
+  DINERS: "/assets/img/diners.svg",
 };
 
 const TIPOS_DOCUMENTO = [
