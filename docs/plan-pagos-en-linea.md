@@ -242,11 +242,16 @@ página. Con el interruptor apagado dicen exactamente lo de antes (comprobado te
 
 ### Fase 6 — Pruebas y salida a producción
 
-**Sandbox:**
+**Sandbox** (PR JesusGuete/Catalogo_Baqtime#97, en borrador):
 
-- Llaves de prueba en `.env` local.
-- El webhook necesita una URL pública: `cloudflared tunnel --url http://localhost:4321`, y esa
-  URL se pega como URL de eventos de sandbox en Wompi.
+- Llaves de prueba cargadas en Cloudflare (o en `.env` para probar en local) y
+  `PAGOS_EN_LINEA=1`. El código de `main` no lee esas variables, así que la tienda real no cambia.
+- El webhook necesita una URL pública. La más simple es la vista previa de la rama que crea
+  Cloudflare para el PR + `/api/pagos/wompi`, pegada como URL de eventos de sandbox en Wompi.
+  En local: `cloudflared tunnel --url http://localhost:4321`.
+- **La vista previa usa la misma base que la tienda real:** los pedidos de prueba quedan en el
+  panel (se borran desde ahí) y la copia de cada pedido llega al correo de la tienda.
+- Al terminar, dejar `PAGOS_EN_LINEA` vacío hasta el día de la salida.
 - Casos a probar:
   - Tarjeta aprobada (`4242 4242 4242 4242`) y rechazada (`4111 1111 1111 1111`), según la doc
     de sandbox.
@@ -262,8 +267,14 @@ página. Con el interruptor apagado dicen exactamente lo de antes (comprobado te
 
 **Producción:**
 
+> **Nunca hacer merge con las llaves de sandbox cargadas y el interruptor encendido.** La tienda
+> real aceptaría pagos de prueba: un pedido "pagado" con una tarjeta de prueba quedaría aprobado
+> sin que entre plata. Primero se cambian las llaves, después el merge.
+
 1. Correr `027_pagos_en_linea.sql` en Supabase.
-2. Hacer deploy con `PAGOS_EN_LINEA` apagado y cargar los secretos de producción.
+2. Con `PAGOS_EN_LINEA` vacío, cambiar a las llaves de producción y configurar la URL de eventos
+   de producción en Wompi (`https://baqtime.store/api/pagos/wompi`). Después, hacer el deploy
+   (merge).
 3. Encender el interruptor y hacer una compra real de poco valor; después anularla o
    reembolsarla desde Wompi.
 4. Durante la primera semana, revisar los logs del Worker (`[pagos]`) y el panel.
