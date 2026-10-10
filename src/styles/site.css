@@ -232,6 +232,14 @@
   .ck-medio{ display:flex; gap:12px; align-items:flex-start; padding:14px 16px; cursor:pointer; }
   .ck-medio input{ margin:3px 0 0; width:16px; height:16px; accent-color:var(--ink); flex-shrink:0; cursor:pointer; }
   .ck-medio input:disabled{ cursor:not-allowed; }
+  .ck-medio-texto{ flex:1; min-width:0; }
+  .ck-medio-logos{ display:flex; align-items:center; gap:8px; margin-left:auto; flex-shrink:0; }
+  .ck-medio-logos img{ height:26px; width:auto; display:block; }
+  @media (max-width:520px){
+    .ck-medio{ flex-wrap:wrap; }
+    .ck-medio-texto{ flex:1 1 calc(100% - 28px); }
+    .ck-medio-logos{ margin-left:28px; }
+  }
   .ck-medio-nombre{ display:block; font-size:14px; font-weight:600; color:var(--ink); }
   .ck-medio-detalle{ display:block; font-size:12px; line-height:1.5; color:var(--ink-soft); margin-top:3px; }
   .pl{ display:flex; flex-direction:column; gap:14px; }
