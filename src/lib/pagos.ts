@@ -88,6 +88,19 @@ export function pagosEnLineaActivos(): boolean {
   return leer("PAGOS_EN_LINEA") === "1" && configWompi() !== null;
 }
 
+/**
+ * A dónde lleva "Pagar ahora" en los correos (confirmación y recordatorio): la página de gracias,
+ * que tiene el botón del checkout y dice si el pedido ya se pagó. `undefined` con los pagos en
+ * línea apagados, y entonces el correo ofrece WhatsApp como siempre.
+ *
+ * Quien llama decide si el pedido todavía espera el pago; esto solo mira el interruptor.
+ */
+export function enlacePagar(token: string, sitio: string): string | undefined {
+  return pagosEnLineaActivos()
+    ? new URL(`/pedido/gracias?p=${encodeURIComponent(token)}`, sitio).href
+    : undefined;
+}
+
 interface Supabase {
   url: string;
   serviceKey: string;

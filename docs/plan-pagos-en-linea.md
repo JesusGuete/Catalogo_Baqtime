@@ -200,13 +200,23 @@ RLS: solo SELECT para admins. Ninguna escritura para `anon` ni `authenticated`: 
   "no disponible". Con el widget real de Wompi cargado, `WidgetCheckout` y su `open()` existen
   tal como los usa el código. Falta probarlo de punta a punta con llaves de sandbox.
 
-### Fase 4 — Correos
+### Fase 4 — Correos ✅
 
-- **`correo-pedido.ts`**: el botón principal pasa a ser "Pagar ahora" (→ `/pedido/gracias?p=…`)
-  y WhatsApp queda como opción secundaria. "El siguiente paso es coordinar el pago por WhatsApp"
-  → "El siguiente paso es pagar tu pedido". Esto aplica al HTML, al texto plano y al texto de
-  vista previa en la bandeja.
-- **`correo-recordatorio.ts`**: el mismo cambio.
+Con los pagos en línea encendidos y el pedido esperando el pago, los correos ofrecen pagar en la
+página. Con el interruptor apagado dicen exactamente lo de antes (comprobado texto por texto).
+
+- **Confirmación** (`correo-pedido.ts`) y **recordatorio de las 12 horas**
+  (`correo-recordatorio.ts`): el botón principal pasa a ser **Pagar ahora**, que lleva a
+  `/pedido/gracias?p=<token>`, donde están el estado del pedido y el botón del checkout.
+  WhatsApp queda como "Prefiero pagar por transferencia". También cambian el texto
+  ("El siguiente paso es pagarlo: con tarjeta, PSE, Nequi o DaviPlata"), el aviso de las 24 horas
+  y la vista previa en la bandeja, en HTML y en texto plano.
+- La regla vive en un solo lugar: `enlacePagar()` en `pagos.ts` devuelve el enlace o nada,
+  según el interruptor. Quien manda el correo decide si el pedido espera el pago:
+  - **Checkout:** siempre.
+  - **Reenvío desde el panel:** solo si sigue en `pendiente_pago` y sin pagar. Un pedido ya
+    pagado o vencido no recibe "Pagar ahora".
+  - **Recordatorio:** siempre, porque `pedidos_por_recordar()` ya filtra.
 - ~~`correo-tienda.ts`: aviso "Pago recibido".~~ Hecho en la fase 2, junto con el envío
   automático del correo de "pago confirmado" (`correo-estado.ts`, tipo `aprobado`).
 
