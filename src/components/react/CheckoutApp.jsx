@@ -27,9 +27,10 @@ import {
   OTRA_VIA,
   TIPOS_DE_VIA,
   armarDireccion,
+  direccionEnCurso,
   filtrarParte,
+  partesQueFaltan,
   validarDireccion,
-  viaPrincipal,
 } from "../../lib/direccion.js";
 
 // La compra, en una página propia (/checkout) y por pasos, como en las tiendas grandes:
@@ -307,7 +308,9 @@ export default function CheckoutApp({ catalog }) {
   }
 
   const sugerencia = sugerirCorreo(personales.email);
-  const direccionArmada = viaPrincipal(entrega);
+  // El resumen se arma mientras escribe, aunque falten partes (ver direccionEnCurso).
+  const direccionEscrita = direccionEnCurso(entrega);
+  const faltanDeLaVia = partesQueFaltan(entrega);
 
   // ===================================================================== PASO 1: CARRITO
   if (paso === "carrito") {
@@ -686,8 +689,19 @@ export default function CheckoutApp({ catalog }) {
                 )}
                 <p className="ck-dir-resumen">
                   <span className="mono">RESUMEN DE LA DIRECCIÓN</span>
-                  {direccionArmada || "Ej: Calle 15A # 54 - 20"}
+                  {direccionEscrita || (
+                    <span className="ck-dir-ejemplo">Ej: Calle 15A # 54 - 20</span>
+                  )}
                 </p>
+                {faltanDeLaVia.length > 0 && (
+                  <p className="ck-nota ck-dir-falta">
+                    Falta{" "}
+                    {faltanDeLaVia.length > 1
+                      ? `${faltanDeLaVia.slice(0, -1).join(", ")} y ${faltanDeLaVia.at(-1)}`
+                      : faltanDeLaVia[0]}
+                    .
+                  </p>
+                )}
 
                 <div className="ck-fila2">
                   <Campo id="ck-adicional" label="Información adicional (opcional)">

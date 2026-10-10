@@ -59,16 +59,51 @@ export function viaPrincipal(d) {
   return `${d.via} ${numero} # ${cruce} - ${placa}`;
 }
 
+/** "Barrio El Prado" escrito por el cliente no puede salir como "Barrio Barrio El Prado". */
+function textoBarrio(d) {
+  const barrio = d.barrio.trim().replace(/^barrio\s+/i, "");
+  return barrio ? `Barrio ${barrio}` : "";
+}
+
 /**
  * La dirección completa, tal como se guarda y la ve la transportadora:
  * "Calle 15A # 54 - 20, Apto 101, Barrio El Prado".
  */
 export function armarDireccion(d) {
-  // "Barrio El Prado" escrito por el cliente no puede salir como "Barrio Barrio El Prado".
-  const barrio = d.barrio.trim().replace(/^barrio\s+/i, "");
-  return [viaPrincipal(d), d.adicional.trim(), barrio ? `Barrio ${barrio}` : ""]
-    .filter(Boolean)
-    .join(", ");
+  return [viaPrincipal(d), d.adicional.trim(), textoBarrio(d)].filter(Boolean).join(", ");
+}
+
+/**
+ * Lo que el cliente lleva escrito, AUNQUE FALTEN PARTES: "Diagonal 32 # 88", y al completar
+ * "Diagonal 32 # 88 - 699, Torre 2, Barrio Ternera". Es el resumen que se ve mientras llena el
+ * formulario. Si solo apareciera completa, un número puesto en el campo equivocado ("699" en el
+ * del #) no se notaría hasta el final.
+ */
+export function direccionEnCurso(d) {
+  let via;
+  if (d.via === OTRA_VIA) {
+    via = d.completa.trim();
+  } else {
+    via = [d.via, d.numero.trim()].filter(Boolean).join(" ");
+    if (d.cruce.trim()) via += ` # ${d.cruce.trim()}`;
+    if (d.placa.trim()) via += ` - ${d.placa.trim()}`;
+  }
+  return [via, d.adicional.trim(), textoBarrio(d)].filter(Boolean).join(", ");
+}
+
+/**
+ * Las partes que faltan de la vía principal, en palabras, para avisar bajo el resumen:
+ * ["el número después del –"]. Vacío si está completa o si todavía no empezó a escribirla.
+ */
+export function partesQueFaltan(d) {
+  if (!d.via || d.via === OTRA_VIA) return [];
+  const empezo = d.numero.trim() || d.cruce.trim() || d.placa.trim();
+  if (!empezo) return [];
+  const faltan = [];
+  if (!d.numero.trim()) faltan.push("el número de la vía");
+  if (!d.cruce.trim()) faltan.push("el número después del #");
+  if (!d.placa.trim()) faltan.push("el número después del –");
+  return faltan;
 }
 
 /** Errores por campo, con los mismos nombres de campo. Vacío = la dirección está completa. */

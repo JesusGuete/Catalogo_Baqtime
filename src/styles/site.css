@@ -216,6 +216,8 @@
     padding:12px 14px; background:var(--surface-muted); border-radius:2px; font-size:14px; color:var(--ink);
   }
   .ck-dir-resumen .mono{ font-size:10px; letter-spacing:.08em; color:var(--ink-soft); }
+  .ck-dir-ejemplo{ color:var(--ink-soft); }
+  .ck-dir-falta{ margin-top:-8px; color:var(--draft-text); }
   .ck-metodo{ display:flex; align-items:center; gap:12px; padding:14px 16px; border:1px solid var(--ink); border-radius:2px; font-size:14px; }
   .ck-metodo-radio{ width:16px; height:16px; border-radius:50%; border:5px solid var(--ink); flex-shrink:0; }
   .ck-metodo-txt{ flex:1; }
