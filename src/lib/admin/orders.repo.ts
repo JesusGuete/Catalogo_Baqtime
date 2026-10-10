@@ -16,9 +16,11 @@ import { rest, rpc } from "../supabase/http";
 import { getAccessToken } from "../supabase/auth-store";
 import { AdminError, desdeRed } from "../supabase/errors";
 import {
+  SELECT_PAGO,
   SELECT_PEDIDO_LISTA,
   SELECT_PEDIDO_DETALLE,
   type Order,
+  type OrderPayment,
   type OrderStatusNotice,
   type OrderStatus,
   type OrderUpdate,
@@ -47,6 +49,55 @@ export async function obtener(id: string): Promise<OrderWithDetail | null> {
   pedido.order_status_history?.sort((a, b) => a.created_at.localeCompare(b.created_at));
   pedido.order_items?.sort((a, b) => a.id - b.id);
   return pedido;
+}
+
+/**
+ * Los intentos de pago en línea de un pedido (027_pagos_en_linea.sql), del más viejo al más
+ * nuevo. Solo lectura: los escribe el servidor cuando Wompi responde, nunca el panel.
+ *
+ * APARTE de obtener() a propósito, y sin lanzar: si 027 todavía no está corrida, la tabla no
+ * existe, y pedirla embebida haría fallar el pedido entero. Así el panel muestra el pedido igual
+ * y solo se queda sin la tarjeta de pagos en línea.
+ */
+export async function pagosEnLinea(orderId: string): Promise<OrderPayment[]> {
+  try {
+    return await rest<OrderPayment[]>(
+      `order_payments?select=${SELECT_PAGO}&order_id=eq.${encodeURIComponent(orderId)}&order=created_at.asc`,
+      { contexto: CTX }
+    );
+  } catch (e) {
+    console.warn("[pedidos] no se pudieron leer los pagos en línea:", e);
+    return [];
+  }
+}
+
+export interface ResumenPagos {
+  /** Pedidos que se pagaron en línea (un intento aprobado y sin nada que revisar). */
+  enLinea: Set<string>;
+  /** Pedidos con un pago para revisar a mano: monto distinto o un cobro de más que devolver. */
+  revisar: Set<string>;
+}
+
+/**
+ * Para la lista de pedidos, en una sola consulta: cuáles se pagaron en línea y cuáles tienen un
+ * pago para revisar. Mismo criterio que pagosEnLinea(): si falla, la lista se ve como antes.
+ */
+export async function resumenPagos(): Promise<ResumenPagos> {
+  const resumen: ResumenPagos = { enLinea: new Set(), revisar: new Set() };
+  try {
+    const filas = await rest<Pick<OrderPayment, "order_id" | "status" | "anomaly">[]>(
+      "order_payments?select=order_id,status,anomaly" +
+        "&or=(and(status.eq.APPROVED,anomaly.is.null),anomaly.not.is.null)",
+      { contexto: CTX }
+    );
+    for (const f of filas) {
+      if (f.anomaly) resumen.revisar.add(f.order_id);
+      else if (f.status === "APPROVED") resumen.enLinea.add(f.order_id);
+    }
+  } catch (e) {
+    console.warn("[pedidos] no se pudo leer el resumen de pagos en línea:", e);
+  }
+  return resumen;
 }
 
 /** Guía, transportadora, fecha estimada y nota. Lo único editable con un PATCH directo. */

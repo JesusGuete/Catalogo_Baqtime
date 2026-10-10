@@ -47,6 +47,12 @@ const PUNTO_POR_ESTADO: Record<OrderStatus, EstadoPunto> = {
 
 export default function OrdersView({ onAbrir, onConteo }: Props) {
   const [pedidos, setPedidos] = useState<Order[]>([]);
+  // Qué pedidos se pagaron en línea y cuáles tienen un pago para revisar. Nunca falla: sin la
+  // tabla de pagos (027), queda vacío y la lista se ve como antes.
+  const [resumenPagos, setResumenPagos] = useState<pedidosRepo.ResumenPagos>({
+    enLinea: new Set(),
+    revisar: new Set(),
+  });
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<AdminError | null>(null);
   const [filtro, setFiltro] = useState<OrderStatus | null>(null);
@@ -67,7 +73,12 @@ export default function OrdersView({ onAbrir, onConteo }: Props) {
           console.warn("[pedidos] no se pudo vencer los pendientes:", e);
         }
       }
-      setPedidos(await pedidosRepo.listar());
+      const [lista, resumen] = await Promise.all([
+        pedidosRepo.listar(),
+        pedidosRepo.resumenPagos(),
+      ]);
+      setPedidos(lista);
+      setResumenPagos(resumen);
     } catch (e) {
       setError(comoAdminError(e));
     } finally {
@@ -217,7 +228,12 @@ export default function OrdersView({ onAbrir, onConteo }: Props) {
                       <span className="adm-mono adm-fila-nombre">{p.order_number}</span>
                       <span className="adm-mono adm-fila-meta">
                         {fecha(p.created_at).toUpperCase()}
-                        {p.paid_at ? " · PAGADO" : ""}
+                        {p.paid_at
+                          ? resumenPagos.enLinea.has(p.id)
+                            ? " · PAGADO EN LÍNEA"
+                            : " · PAGADO"
+                          : ""}
+                        {resumenPagos.revisar.has(p.id) ? " · REVISAR PAGO" : ""}
                       </span>
                     </td>
                     <td className="adm-td-cliente" role="cell">

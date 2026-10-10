@@ -220,14 +220,25 @@ página. Con el interruptor apagado dicen exactamente lo de antes (comprobado te
 - ~~`correo-tienda.ts`: aviso "Pago recibido".~~ Hecho en la fase 2, junto con el envío
   automático del correo de "pago confirmado" (`correo-estado.ts`, tipo `aprobado`).
 
-### Fase 5 — Panel
+### Fase 5 — Panel ✅
 
-- **`OrderDetail.tsx`**, bloque "Pago":
-  - Método, id de la transacción en Wompi, fecha y estado de cada intento.
-  - Alerta si hubo `monto_distinto` o `pago_duplicado`. El reembolso se hace en el dashboard de
-    Wompi.
-- **`OrdersView.tsx`**: "PAGADO" pasa a ser "PAGADO · EN LÍNEA" o "PAGADO · MANUAL".
-- "Confirmar pago" a mano se queda como está.
+- **Lista de pedidos** (`OrdersView.tsx`): "PAGADO EN LÍNEA" cuando el pago lo aprobó Wompi
+  (los pagos a mano siguen diciendo "PAGADO"), y "REVISAR PAGO" cuando hay un cobro de más o un
+  monto distinto. Sale de una sola consulta aparte (`resumenPagos()` en `orders.repo.ts`).
+- **Detalle del pedido** (`OrderDetail.tsx`):
+  - El encabezado dice "PAGADO EN LÍNEA …" o "PAGO EN LÍNEA EN PROCESO".
+  - Tarjeta **PAGO EN LÍNEA · WOMPI** (`PagosEnLineaCard.tsx`). Arriba, los avisos que piden
+    actuar: "Cobro de más: hay que devolverlo" y "Pago con un monto distinto", con la referencia
+    para buscarla en el dashboard de Wompi. Debajo, cada transacción con su estado, medio de
+    pago, monto, referencia e id de Wompi. Las ventanas de pago que el cliente cerró sin pagar
+    solo se cuentan.
+  - **Confirmar pago** a mano sigue igual, pero si hay un pago en línea en proceso advierte que,
+    si ese pago se aprueba, quedará como cobro de más.
+- **Si la migración 027 no está corrida**, los pagos se leen aparte y sin lanzar error: el panel
+  se ve como antes. Por eso `order_payments` no va embebido en `SELECT_PEDIDO_DETALLE`.
+- Comprobado: la tarjeta en el navegador, con datos inventados que cubren aprobado, rechazado,
+  cobro de más y ventana cerrada sin pagar. La lista y el detalle reales no se probaron con
+  sesión de admin.
 
 ### Fase 6 — Pruebas y salida a producción
 

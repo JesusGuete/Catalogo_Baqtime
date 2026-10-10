@@ -416,6 +416,16 @@ export interface OrderPayment {
   updated_at: Timestamptz;
 }
 
+/** Cómo se lee el estado de un intento de pago en el panel. */
+export const ORDER_PAYMENT_STATUS_LABEL: Record<OrderPaymentStatus, string> = {
+  CREATED: "Abrió el pago y no pagó",
+  PENDING: "En proceso",
+  APPROVED: "Aprobado",
+  DECLINED: "Rechazado",
+  VOIDED: "Anulado",
+  ERROR: "Error",
+};
+
 /** Pedido con sus ítems, historial y avisos embebidos, como los pide el panel en un solo select. */
 export type OrderWithDetail = Order & {
   order_items?: OrderItem[];
@@ -630,6 +640,21 @@ const columnasPedidoItem = [
   "line_total",
 ] as const satisfies readonly (keyof OrderItem)[];
 
+// Fuera de SELECT_PEDIDO_DETALLE a propósito: el panel los pide aparte (orders.repo.ts,
+// pagosEnLinea), para que el pedido se siga viendo aunque 027 no esté corrida.
+const columnasPago = [
+  "id",
+  "reference",
+  "amount_in_cents",
+  "currency",
+  "provider_tx_id",
+  "status",
+  "payment_method_type",
+  "anomaly",
+  "created_at",
+  "updated_at",
+] as const satisfies readonly (keyof OrderPayment)[];
+
 const columnasPedidoHistorial = [
   "id",
   "status",
@@ -644,6 +669,7 @@ export const SELECT_PUBLICACION = columnasPublicacion.join(",");
 export const SELECT_PEDIDO_LISTA = columnasPedidoLista.join(",");
 export const SELECT_PEDIDO_ITEM = columnasPedidoItem.join(",");
 export const SELECT_PEDIDO_HISTORIAL = columnasPedidoHistorial.join(",");
+export const SELECT_PAGO = columnasPago.join(",");
 
 /** El detalle con ítems, historial y avisos embebidos: una sola petición, no N+1. */
 export const SELECT_PEDIDO_DETALLE =

@@ -28,6 +28,7 @@ import {
   ambienteDeLlave,
   consultarTransaccion,
   llavePrivadaCoincide,
+  nombreMetodo,
   type Ambiente,
   type EstadoTransaccion,
 } from "./wompi";
@@ -151,20 +152,6 @@ export type ResultadoProceso =
   | { tipo: "ajena" }
   /** Algo falló de este lado o del de Wompi (red, Supabase caído). Se puede reintentar. */
   | { tipo: "error"; motivo: string };
-
-/** Cómo se llama el medio de pago en un correo. Los que no están acá no se nombran. */
-const NOMBRE_METODO: Record<string, string> = {
-  CARD: "tarjeta",
-  NEQUI: "Nequi",
-  DAVIPLATA: "DaviPlata",
-  PSE: "PSE",
-  BANCOLOMBIA_TRANSFER: "Botón Bancolombia",
-  BANCOLOMBIA_QR: "QR",
-};
-
-export function nombreMetodo(tipo: string | null): string | null {
-  return (tipo && NOMBRE_METODO[tipo.toUpperCase()]) || null;
-}
 
 /** Lo justo del pedido para los dos correos. */
 interface FilaPedido {

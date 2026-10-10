@@ -34,6 +34,24 @@ export function ambienteDeLlave(llavePublica: string): Ambiente | null {
   return null;
 }
 
+/**
+ * Cómo se llama el medio de pago para una persona: en el correo a la tienda ("pagó con Nequi") y
+ * en el panel. Los que no están acá no se nombran. La línea del historial que ve el cliente usa
+ * la misma lista, escrita en SQL en registrar_transaccion_pago() (027_pagos_en_linea.sql).
+ */
+const NOMBRE_METODO: Record<string, string> = {
+  CARD: "tarjeta",
+  NEQUI: "Nequi",
+  DAVIPLATA: "DaviPlata",
+  PSE: "PSE",
+  BANCOLOMBIA_TRANSFER: "Botón Bancolombia",
+  BANCOLOMBIA_QR: "QR",
+};
+
+export function nombreMetodo(tipo: string | null): string | null {
+  return (tipo && NOMBRE_METODO[tipo.toUpperCase()]) || null;
+}
+
 /** La llave privada tiene que ser del mismo ambiente que la pública, o Wompi responde 401. */
 export function llavePrivadaCoincide(llavePrivada: string, ambiente: Ambiente): boolean {
   return llavePrivada.startsWith(`prv_${ambiente}_`);
