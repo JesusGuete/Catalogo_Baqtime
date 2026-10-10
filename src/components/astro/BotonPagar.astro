@@ -1,0 +1,170 @@
+---
+// El botón "Pagar ahora": abre el checkout de Wompi encima de la página.
+//
+// Lo usan tres páginas, todas con el token del pedido en la mano: la de gracias, la de
+// resultado (para reintentar después de un rechazo) y el seguimiento por enlace privado.
+// Nunca el buscador por número: el número solo no autoriza a pagar ni a ver nada privado
+// (012_consulta_solo_por_numero.sql).
+//
+// EL NAVEGADOR NO DECIDE NADA DEL COBRO. Pide el checkout ya firmado a /api/pagos/iniciar, que
+// toma el monto de la base, y se lo pasa tal cual al widget. Al terminar no da nada por
+// pagado: lleva al cliente a /pedido/pago/<token>?id=<transacción>, y esa página le pregunta a
+// Wompi (src/lib/pagos.ts).
+//
+// El widget (checkout.wompi.co/widget.js) se carga recién al pulsar el botón: quien no va a
+// pagar en línea no descarga nada de Wompi.
+interface Props {
+  token: string;
+  /** El texto del botón. "Intentar de nuevo" en la página de un pago rechazado. */
+  texto?: string;
+}
+
+const { token, texto = "Pagar ahora" } = Astro.props;
+---
+
+<div class="pagar" data-pagar={token}>
+  <button type="button" class="pagar-btn" data-pagar-boton>{texto}</button>
+  <p class="pagar-medios">
+    Tarjeta débito o crédito, PSE, Nequi, DaviPlata o Botón Bancolombia, en la ventana segura de
+    Wompi (Bancolombia).
+  </p>
+  <p class="pagar-error" role="alert" data-pagar-error hidden></p>
+</div>
+
+<script>
+  // El widget de Wompi deja este constructor en `window` al cargar.
+  interface ResultadoWidget {
+    transaction?: { id?: string };
+  }
+  interface Widget {
+    open(alTerminar: (resultado: ResultadoWidget) => void): void;
+  }
+  type ConstructorWidget = new (opciones: unknown) => Widget;
+
+  const URL_WIDGET = "https://checkout.wompi.co/widget.js";
+
+  function cargarWidget(): Promise<ConstructorWidget> {
+    const ya = (window as unknown as { WidgetCheckout?: ConstructorWidget }).WidgetCheckout;
+    if (ya) return Promise.resolve(ya);
+    return new Promise((resolver, rechazar) => {
+      const script = document.createElement("script");
+      script.src = URL_WIDGET;
+      script.async = true;
+      script.onload = () => {
+        const cargado = (window as unknown as { WidgetCheckout?: ConstructorWidget }).WidgetCheckout;
+        if (cargado) resolver(cargado);
+        else rechazar(new Error("El widget de Wompi no quedó disponible."));
+      };
+      script.onerror = () => rechazar(new Error("No se pudo cargar el widget de Wompi."));
+      document.head.appendChild(script);
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-pagar]").forEach((caja) => {
+    const token = caja.dataset.pagar ?? "";
+    const boton = caja.querySelector<HTMLButtonElement>("[data-pagar-boton]");
+    const aviso = caja.querySelector<HTMLElement>("[data-pagar-error]");
+    if (!boton || !aviso) return;
+    const textoOriginal = boton.textContent ?? "Pagar ahora";
+
+    function listo() {
+      boton!.disabled = false;
+      boton!.textContent = textoOriginal;
+    }
+    function fallo(mensaje: string) {
+      aviso!.textContent = mensaje;
+      aviso!.hidden = false;
+      listo();
+    }
+
+    boton.addEventListener("click", async () => {
+      aviso.hidden = true;
+      boton.disabled = true;
+      boton.textContent = "Preparando el pago…";
+
+      // Cada clic pide un checkout nuevo: Wompi exige una referencia distinta por intento, y
+      // la base la crea (crear_intento_pago). Por eso no se guarda el de un clic anterior.
+      let checkout: unknown;
+      try {
+        const res = await fetch("/api/pagos/iniciar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+        const datos = (await res.json().catch(() => ({}))) as { checkout?: unknown; error?: string };
+        if (!res.ok || !datos.checkout) {
+          fallo(datos.error || "No pudimos preparar el pago. Intenta de nuevo.");
+          return;
+        }
+        checkout = datos.checkout;
+      } catch {
+        fallo("No pudimos conectarnos. Revisa tu internet e intenta de nuevo.");
+        return;
+      }
+
+      let Widget: ConstructorWidget;
+      try {
+        Widget = await cargarWidget();
+      } catch {
+        fallo("No se pudo abrir la ventana de pago. Revisa tu internet o desactiva el bloqueador de anuncios e intenta de nuevo.");
+        return;
+      }
+
+      new Widget(checkout).open((resultado) => {
+        const id = resultado?.transaction?.id;
+        // Con una transacción, a la página que le pregunta a Wompi cómo quedó. Sin ella (cerró
+        // la ventana sin pagar), el botón ya está listo para intentarlo otra vez.
+        if (id) {
+          window.location.href = `/pedido/pago/${encodeURIComponent(token)}?id=${encodeURIComponent(id)}`;
+        }
+      });
+      // La ventana de Wompi ya está abierta. Si el cliente la cierra sin pagar, puede que el
+      // widget no avise; el botón queda listo de una vez para no dejarlo trabado.
+      listo();
+    });
+  });
+</script>
+
+<style>
+  .pagar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .pagar-btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    border: 0;
+    border-radius: var(--radius);
+    background: var(--ink);
+    color: var(--cream);
+    font: inherit;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+  .pagar-btn:hover:not(:disabled) {
+    background: var(--mocha);
+  }
+  .pagar-btn:disabled {
+    opacity: 0.7;
+    cursor: progress;
+  }
+  .pagar-medios {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    text-align: center;
+  }
+  .pagar-error {
+    margin: 0;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--vino);
+    background: var(--error-bg);
+    border-radius: var(--radius);
+  }
+</style>

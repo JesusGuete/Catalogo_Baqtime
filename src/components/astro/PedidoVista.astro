@@ -9,6 +9,7 @@
 //
 // Es el reflejo, del lado del front, de lo que `pedido_publico()` hace en SQL: una sola
 // definición de qué ve un cliente.
+import BotonPagar from "./BotonPagar.astro";
 import { urlRastreo } from "../../lib/tracking";
 import { fmt } from "../../lib/pricing.js";
 import { ORDER_FLOW, ORDER_STATUS_LABEL } from "../../types/database";
@@ -16,9 +17,24 @@ import type { OrderPublic, OrderStatus } from "../../types/database";
 
 interface Props {
   pedido: OrderPublic;
+  /**
+   * El token del pedido, SOLO cuando se llegó por el enlace privado. Con él se puede pagar desde
+   * acá. El buscador por número no lo pasa: el número solo no autoriza a pagar.
+   */
+  token?: string;
+  /** Si los pagos en línea están encendidos (pagosEnLineaActivos(), src/lib/pagos.ts). */
+  pagosActivos?: boolean;
 }
 
-const { pedido } = Astro.props;
+const { pedido, token, pagosActivos = false } = Astro.props;
+
+// "Pagar ahora" en el seguimiento: para quien cerró la página de gracias sin pagar y vuelve
+// desde el correo. `pago` llega desde 027_pagos_en_linea.sql.
+const pagoEnLinea =
+  Boolean(token) &&
+  pagosActivos &&
+  pedido.status === "pendiente_pago" &&
+  (pedido.pago === "pendiente" || pedido.pago === "en_proceso");
 
 // 'no_confirmado' no es un paso del flujo sino su interrupción, así que la línea de tiempo
 // se apaga entera en vez de marcar un avance que no ocurrió.
@@ -75,7 +91,23 @@ const estaEnviado = pedido.status === "enviado" || pedido.status === "entregado"
       <p class="seg-estado-nota">Entrega estimada: {fechaSolaDe(pedido.estimated_date)}</p>
     )
   }
+  {
+    pagoEnLinea && pedido.pago === "en_proceso" && (
+      <p class="seg-estado-nota">
+        Tu pago se está procesando. Te avisaremos por correo apenas se confirme; no hace falta
+        que vuelvas a pagar.
+      </p>
+    )
+  }
 </section>
+
+{
+  pagoEnLinea && pedido.pago === "pendiente" && token && (
+    <section class="seg-pagar">
+      <BotonPagar token={token} />
+    </section>
+  )
+}
 
 {
   estaEnviado && pedido.tracking_number && (
@@ -192,6 +224,9 @@ const estaEnviado = pedido.status === "enviado" || pedido.status === "entregado"
 </section>
 
 <style>
+  .seg-pagar {
+    margin-bottom: 16px;
+  }
   .seg-head {
     margin-bottom: 20px;
   }

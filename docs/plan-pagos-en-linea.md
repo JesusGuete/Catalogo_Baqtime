@@ -165,10 +165,15 @@ RLS: solo SELECT para admins. Ninguna escritura para `anon` ni `authenticated`: 
   deploys gracias a `keep_vars`. Apagado, todo funciona como hoy. Sirve para volver atrás en un
   minuto sin hacer deploy.
 
-### Fase 3 — Tienda
+### Fase 3 — Tienda ✅
 
-- **`Checkout.jsx`**: con el interruptor encendido, el botón dice "Continuar al pago". Nada
-  más cambia: guarda el pedido y redirige a gracias.
+- **`Checkout.jsx`**: ~~el botón dice "Continuar al pago"~~. Se quedó en "Confirmar pedido":
+  sigue siendo cierto (confirma el pedido y lleva a pagar), el mensaje para invitar clientes lo
+  nombra así, y cambiarlo según el interruptor obligaba a pasar el dato a una página que se
+  cachea en el borde.
+- **`BotonPagar.astro`**: el botón **Pagar ahora**, compartido por las tres páginas de abajo.
+  Pide el checkout firmado, carga el widget recién al pulsar y, con la transacción, lleva a
+  `/pedido/pago/<token>?id=…`. Si algo falla, muestra el motivo y queda listo para reintentar.
 - **`/pedido/gracias`** pasa a ser la pantalla de pago:
   - Botón principal **Pagar ahora**: llama a `POST /api/pagos/iniciar` y abre
     `new WidgetCheckout({...}).open(cb)` con `https://checkout.wompi.co/widget.js`, que se
@@ -177,15 +182,23 @@ RLS: solo SELECT para admins. Ninguna escritura para `anon` ni `authenticated`: 
 - **Nueva `/pedido/pago/<token>?id=<tx>`**: es el `redirect-url` que ya manda `iniciar` (ruta y
   no `?p=`, porque Wompi le agrega `?id=`), y también a donde lleva el callback del widget.
   - Llama a `procesarTransaccion(id)` y comprueba que la transacción sea del pedido del token.
-  - Muestra uno de tres estados:
+  - Muestra un estado. El pedido manda: si está pagado, está pagado.
     - **Aprobado:** "¡Pago recibido!", con el número de pedido y el enlace al seguimiento.
-    - **En proceso:** "PSE puede tardar unos minutos; te avisamos por correo". Se recarga sola
-      cada ~10 s durante 2 min.
-    - **Rechazado:** "No se completó el pago", con el botón **Intentar de nuevo**.
-  - Usa `cabecerasPrivadas()`.
+    - **En proceso:** "Tu pago se está procesando". Se recarga sola cada 10 s durante 2 min.
+    - **Rechazado:** "No se completó el pago", con el botón **Intentar de nuevo** y la opción de
+      transferencia.
+    - **En revisión:** Wompi aprobó pero el pedido no quedó pagado (monto distinto o pago
+      duplicado). Se le avisa que lo estamos revisando.
+    - **Confirmando:** Wompi o la base no contestaron. Se reintenta sola.
+    - **Sin pago:** no llegó una transacción de este pedido. Ofrece pagar.
+  - Usa `cabecerasPrivadas()` y responde 404 si el token no existe, sin preguntarle a Wompi.
 - **`PedidoVista.astro`** (seguimiento): con `pago === 'pendiente'` y el pedido sin vencer,
   muestra el botón **Pagar ahora**. Con `en_proceso`, un aviso. El texto de `no_confirmado`
-  sigue mandando a WhatsApp.
+  sigue mandando a WhatsApp. **Solo por el enlace privado:** el buscador por número no pasa el
+  token y no muestra el botón.
+- Comprobado en el navegador con el interruptor apagado: el botón se ve y muestra el aviso de
+  "no disponible". Con el widget real de Wompi cargado, `WidgetCheckout` y su `open()` existen
+  tal como los usa el código. Falta probarlo de punta a punta con llaves de sandbox.
 
 ### Fase 4 — Correos
 

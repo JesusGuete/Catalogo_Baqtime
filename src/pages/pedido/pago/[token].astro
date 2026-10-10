@@ -1,0 +1,314 @@
+---
+// A dónde vuelve el cliente después de pagar: /pedido/pago/<token>?id=<transacción>.
+//
+// Es el `redirect-url` que manda /api/pagos/iniciar (Wompi le agrega `?id=`), y también a donde
+// lleva el botón cuando el widget termina sin salir de la página.
+//
+// LA URL NO PRUEBA NADA. Cualquiera puede escribir un `id` a mano. Por eso esta página no lee el
+// estado de la URL: le pasa el id a procesarTransaccion() (src/lib/pagos.ts), que le pregunta a
+// Wompi con la llave privada y anota el resultado. Es el mismo camino que el webhook, así que si
+// el webhook todavía no llegó, el pedido queda aprobado desde acá; y si ya llegó, no pasa nada
+// dos veces.
+//
+// Además, la transacción tiene que ser DE ESTE pedido: su referencia empieza por el número del
+// pedido (crear_intento_pago, 027). Con el id de otro pedido, la página no muestra nada de esa
+// transacción, solo el estado de este pedido.
+//
+// Mismas reglas que /pedido/<token>: `private, no-store`, noindex, y 404 si el token no existe.
+import PedidoHead from "../../../components/astro/PedidoHead.astro";
+import Header from "../../../components/astro/Header.astro";
+import Footer from "../../../components/astro/Footer.astro";
+import WhatsappWidget from "../../../components/react/WhatsappWidget.jsx";
+import BotonPagar from "../../../components/astro/BotonPagar.astro";
+import { obtenerPedido, cabecerasPrivadas } from "../../../lib/pedido";
+import { pagosEnLineaActivos, procesarTransaccion, type ResultadoProceso } from "../../../lib/pagos";
+import { buildOrderMessage, whatsappUrl } from "../../../lib/whatsapp.js";
+import { fmt } from "../../../lib/pricing.js";
+import "../../../styles/site.css";
+
+export const prerender = false;
+
+cabecerasPrivadas(Astro.response.headers);
+
+const token = Astro.params.token ?? "";
+const txId = (Astro.url.searchParams.get("id") ?? "").trim();
+/** Cuántas veces se recargó sola esperando a un pago en proceso. */
+const vuelta = Math.max(0, Number(Astro.url.searchParams.get("n")) || 0);
+const MAX_VUELTAS = 12; // cada 10 segundos: dos minutos
+
+// Primero el pedido: si el token no existe, no se le pregunta nada a Wompi.
+const antes = await obtenerPedido(token);
+if (antes.estado === "error") {
+  return new Response(
+    "No pudimos consultar tu pedido en este momento. Vuelve a intentar en unos minutos.",
+    { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
+  );
+}
+if (antes.estado === "no-existe") {
+  return new Response(null, { status: 404, statusText: "Pedido no encontrado" });
+}
+
+// Wompi devuelve ids con letras, números y guiones (1234-1610641025-49201). Cualquier otra cosa
+// no se le manda.
+let transaccion: ResultadoProceso | null = null;
+if (/^[A-Za-z0-9-]{1,100}$/.test(txId)) {
+  const cfContext = Astro.locals.cfContext;
+  transaccion = await procesarTransaccion(txId, {
+    sitio: Astro.url.origin,
+    enSegundoPlano: cfContext ? (p) => cfContext.waitUntil(p) : undefined,
+  });
+}
+
+// Se vuelve a leer: si el pago se acaba de aprobar acá mismo, el pedido ya cambió.
+const despues = await obtenerPedido(token);
+const pedido = despues.estado === "ok" ? despues.pedido : antes.pedido;
+
+const deEstePedido =
+  transaccion?.tipo === "ok" && transaccion.reference.startsWith(`${pedido.order_number}-`);
+const estadoTx = deEstePedido && transaccion?.tipo === "ok" ? transaccion.estado : null;
+
+/**
+ * Qué se le muestra al cliente. El pedido manda: si está pagado, está pagado, diga lo que diga
+ * la transacción de la URL.
+ */
+type Vista = "pagado" | "en_proceso" | "revision" | "rechazado" | "verificando" | "sin_pago";
+const vista: Vista =
+  pedido.pago === "pagado"
+    ? "pagado"
+    : estadoTx === "PENDING" || (!estadoTx && pedido.pago === "en_proceso")
+      ? "en_proceso"
+      : estadoTx === "APPROVED"
+        ? "revision" // aprobada pero el pedido no quedó pagado: monto distinto o pago duplicado
+        : estadoTx === "DECLINED" || estadoTx === "ERROR" || estadoTx === "VOIDED"
+          ? "rechazado"
+          : transaccion?.tipo === "error"
+            ? "verificando" // Wompi o la base no contestaron: se reintenta solo
+            : "sin_pago";
+
+// Mientras el banco procesa, la página se recarga sola un rato. Pasado eso, el webhook y la
+// conciliación lo terminan, y el cliente se entera por correo.
+const recargar = (vista === "en_proceso" || vista === "verificando") && vuelta < MAX_VUELTAS;
+const urlRecarga = `${Astro.url.pathname}?${new URLSearchParams({
+  ...(txId ? { id: txId } : {}),
+  n: String(vuelta + 1),
+}).toString()}`;
+
+const puedePagar = pagosEnLineaActivos() && pedido.status === "pendiente_pago";
+const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
+const nombre = pedido.customer_name.split(" ")[0];
+---
+
+<html lang="es-CO">
+  <head>
+    <PedidoHead title={`Pago del pedido ${pedido.order_number} — Baqtime`} />
+  </head>
+  <body>
+    <Header />
+
+    <main class="pag-wrap">
+      <section class="pag-card">
+        {
+          vista === "pagado" && (
+            <>
+              <p class="pag-eyebrow mono">PAGO RECIBIDO</p>
+              <h1 class="pag-titulo">¡Gracias, {nombre}!</h1>
+              <p class="pag-bajada">
+                Recibimos tu pago. Tu pedido entró a producción y te avisaremos por correo cuando
+                salga el envío.
+              </p>
+            </>
+          )
+        }
+        {
+          vista === "en_proceso" && (
+            <>
+              <p class="pag-eyebrow mono">PAGO EN PROCESO</p>
+              <h1 class="pag-titulo">Tu pago se está procesando</h1>
+              <p class="pag-bajada">
+                {recargar
+                  ? "El banco todavía no lo confirma. Esta página se actualiza sola; no hace falta que vuelvas a pagar."
+                  : "El banco todavía no lo confirma. Te avisaremos por correo apenas se apruebe; no hace falta que vuelvas a pagar."}
+              </p>
+            </>
+          )
+        }
+        {
+          vista === "verificando" && (
+            <>
+              <p class="pag-eyebrow mono">CONFIRMANDO</p>
+              <h1 class="pag-titulo">Estamos confirmando tu pago</h1>
+              <p class="pag-bajada">
+                {recargar
+                  ? "No pudimos comprobarlo en este momento. Esta página lo vuelve a intentar sola; no hace falta que vuelvas a pagar."
+                  : "No pudimos comprobarlo todavía. Si el pago salió, te avisaremos por correo; no hace falta que vuelvas a pagar."}
+              </p>
+            </>
+          )
+        }
+        {
+          vista === "revision" && (
+            <>
+              <p class="pag-eyebrow mono">PAGO EN REVISIÓN</p>
+              <h1 class="pag-titulo">Recibimos tu pago</h1>
+              <p class="pag-bajada">
+                Lo estamos revisando antes de confirmar tu pedido. Te escribiremos pronto; si
+                tienes dudas, escríbenos por WhatsApp.
+              </p>
+            </>
+          )
+        }
+        {
+          vista === "rechazado" && (
+            <>
+              <p class="pag-eyebrow mono">PAGO NO COMPLETADO</p>
+              <h1 class="pag-titulo">No se completó el pago</h1>
+              <p class="pag-bajada">
+                El banco o la entidad no aprobó la transacción, así que no se te cobró nada. Tu
+                pedido sigue guardado: puedes intentarlo de nuevo, con el mismo medio o con otro.
+              </p>
+            </>
+          )
+        }
+        {
+          vista === "sin_pago" && (
+            <>
+              <p class="pag-eyebrow mono">PAGO PENDIENTE</p>
+              <h1 class="pag-titulo">Tu pedido espera el pago</h1>
+              <p class="pag-bajada">
+                No encontramos un pago para este pedido. Si ya pagaste, espera unos minutos y
+                revisa tu correo.
+              </p>
+            </>
+          )
+        }
+
+        <div class="pag-numero-caja">
+          <span class="pag-numero-label mono">PEDIDO</span>
+          <strong class="pag-numero mono">{pedido.order_number}</strong>
+          <span class="pag-total">{fmt(pedido.total)}</span>
+        </div>
+
+        {
+          (vista === "rechazado" || vista === "sin_pago") && puedePagar && (
+            <div class="pag-acciones">
+              <BotonPagar token={token} texto="Intentar de nuevo" />
+              <a class="pag-alterno" href={enlaceWhatsapp}>
+                Prefiero pagar por transferencia (WhatsApp)
+              </a>
+            </div>
+          )
+        }
+
+        <a class="pag-seguimiento" href={`/pedido/${encodeURIComponent(token)}`}>
+          Ver el estado de mi pedido
+        </a>
+      </section>
+    </main>
+
+    <Footer />
+    <WhatsappWidget client:load />
+
+    {
+      recargar && (
+        <script is:inline define:vars={{ urlRecarga }}>
+          setTimeout(function () {
+            window.location.replace(urlRecarga);
+          }, 10000);
+        </script>
+      )
+    }
+
+    <style>
+      .pag-wrap {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 48px 20px 72px;
+      }
+      .pag-card {
+        background: var(--white-card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 32px 28px;
+      }
+      .pag-eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        color: var(--mocha);
+        margin: 0 0 10px;
+      }
+      .pag-titulo {
+        font-family: "Unna", serif;
+        font-size: 30px;
+        line-height: 1.15;
+        margin: 0 0 8px;
+        color: var(--ink);
+      }
+      .pag-bajada {
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--ink-soft);
+        margin: 0 0 24px;
+      }
+      .pag-numero-caja {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 6px 14px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+        background: var(--draft-bg);
+        border: 1px solid var(--draft-border);
+        border-radius: var(--radius);
+      }
+      .pag-numero-label {
+        flex: 1 0 100%;
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        color: var(--draft-text);
+      }
+      .pag-numero {
+        font-size: 24px;
+        letter-spacing: 0.06em;
+        color: var(--ink);
+        font-weight: 400;
+      }
+      .pag-total {
+        margin-left: auto;
+        font-size: 18px;
+        color: var(--ink);
+      }
+      .pag-acciones {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .pag-alterno {
+        font-size: 13px;
+        color: var(--ink-soft);
+        text-align: center;
+      }
+      .pag-seguimiento {
+        display: block;
+        padding: 13px;
+        text-align: center;
+        text-decoration: none;
+        border: 1px solid var(--ink);
+        border-radius: var(--radius);
+        color: var(--ink);
+        font-size: 14px;
+      }
+      @media (max-width: 520px) {
+        .pag-wrap {
+          padding: 28px 16px 56px;
+        }
+        .pag-card {
+          padding: 24px 18px;
+        }
+        .pag-titulo {
+          font-size: 25px;
+        }
+      }
+    </style>
+  </body>
+</html>
