@@ -317,7 +317,7 @@ export function armarCorreoPedido(p: DatosCorreoPedido, puedeResponder: boolean)
     ? "Recuerda pagar en las próximas 24 horas. Pasado ese tiempo, el pedido queda como no confirmado."
     : "Recuerda confirmar el pago en las próximas 24 horas. Pasado ese tiempo, el pedido queda como no confirmado.";
   const siguientePaso = p.pagar
-    ? "Tu pedido quedó guardado. El siguiente paso es pagarlo: con tarjeta, PSE, Nequi o DaviPlata, desde la página."
+    ? "Tu pedido quedó guardado. El siguiente paso es pagarlo: con tarjeta, PSE, Nequi o Botón Bancolombia, desde la página."
     : "Tu pedido quedó guardado. El siguiente paso es coordinar el pago por WhatsApp.";
   // Con pago en línea, "Pagar ahora" lleva a la página de gracias, que muestra el estado y el
   // botón; por eso no hace falta además "Ver el estado de mi pedido".

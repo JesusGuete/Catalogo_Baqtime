@@ -1,5 +1,5 @@
-// Lo que la tienda necesita de Wompi: firmar un cobro, verificar un evento y consultar una
-// transacción. Documentación: https://docs.wompi.co/docs/colombia/
+// Lo que la tienda necesita de Wompi: firmar un cobro, crear y consultar una transacción y
+// verificar un evento. Documentación: https://docs.wompi.co/docs/colombia/
 //
 // SIN ESTADO Y SIN SECRETOS ESCRITOS ACÁ: cada función recibe la llave o el secreto que usa.
 // Quién los lee (del entorno del Worker) y qué se hace con el resultado vive en pagos.ts. Así
@@ -22,6 +22,15 @@ export interface Transaccion {
   currency: string;
   status: EstadoTransaccion;
   payment_method_type: string | null;
+  /**
+   * Lo que el navegador necesita mientras el pago sigue en proceso (pago directo por API):
+   * - `urlExterna`: a dónde mandar al cliente para que autorice (PSE, Botón Bancolombia).
+   * - `tresDs`: el paso de 3D Secure de una tarjeta, con el HTML del reto si el banco lo pide.
+   */
+  extra?: {
+    urlExterna: string | null;
+    tresDs: { paso: string; estadoPaso: string; html: string | null } | null;
+  };
 }
 
 /**
@@ -188,6 +197,13 @@ export async function consultarTransaccion(
   ) {
     throw new Error(`Wompi devolvió una transacción con una forma inesperada (${id}).`);
   }
+  // payment_method.extra trae lo de PSE / Bancolombia (async_payment_url) y lo de 3D Secure
+  // (three_ds_auth). Se lee con cuidado: la forma cambia según el medio de pago.
+  const extra = ((t.payment_method as Record<string, unknown> | undefined)?.extra ?? {}) as Record<
+    string,
+    unknown
+  >;
+  const tds = (extra.three_ds_auth ?? null) as Record<string, unknown> | null;
   return {
     id: t.id,
     reference: t.reference,
@@ -195,5 +211,118 @@ export async function consultarTransaccion(
     currency: t.currency,
     status: t.status,
     payment_method_type: typeof t.payment_method_type === "string" ? t.payment_method_type : null,
+    extra: {
+      urlExterna: typeof extra.async_payment_url === "string" ? extra.async_payment_url : null,
+      tresDs: tds
+        ? {
+            paso: String(tds.current_step ?? ""),
+            estadoPaso: String(tds.current_step_status ?? ""),
+            html: typeof tds.three_ds_method_data === "string" ? tds.three_ds_method_data : null,
+          }
+        : null,
+    },
   };
+}
+
+// ============================================================================
+// Pago directo por API: condiciones, bancos y creación de la transacción
+// ============================================================================
+
+/**
+ * Lo que la tienda tiene que mostrar antes de cobrar por API: los dos contratos de Wompi (su
+ * reglamento y la autorización de datos), con sus tokens, y las cuotas que admite el comercio.
+ * El cliente acepta los dos con casillas en la página; los tokens viajan en la transacción.
+ */
+export interface Condiciones {
+  tokenReglamento: string;
+  enlaceReglamento: string;
+  tokenDatos: string;
+  enlaceDatos: string;
+  cuotas: number[];
+}
+
+export async function obtenerCondiciones(llavePublica: string, ambiente: Ambiente): Promise<Condiciones> {
+  // /merchants/info y no /merchants/<llave>: Wompi retira el segundo el 31 de octubre de 2026.
+  const res = await fetch(`${urlApi(ambiente)}/merchants/info`, {
+    headers: { "x-merchant-public-key": llavePublica },
+    signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
+  });
+  if (!res.ok) throw new Error(`Wompi ${res.status} al leer las condiciones: ${await res.text()}`);
+  const d = ((await res.json()) as { data?: Record<string, unknown> }).data ?? {};
+  const reglamento = d.presigned_acceptance as Record<string, unknown> | undefined;
+  const datos = d.presigned_personal_data_auth as Record<string, unknown> | undefined;
+  if (
+    typeof reglamento?.acceptance_token !== "string" ||
+    typeof datos?.acceptance_token !== "string"
+  ) {
+    throw new Error("Wompi no devolvió los tokens de aceptación.");
+  }
+  const config = d.installments_config as { enabled?: boolean; available_installments?: unknown } | undefined;
+  const cuotas =
+    config?.enabled && Array.isArray(config.available_installments)
+      ? config.available_installments.filter((n): n is number => Number.isInteger(n) && n >= 1)
+      : [1];
+  return {
+    tokenReglamento: reglamento.acceptance_token,
+    enlaceReglamento: String(reglamento.permalink ?? ""),
+    tokenDatos: datos.acceptance_token,
+    enlaceDatos: String(datos.permalink ?? ""),
+    cuotas: cuotas.length ? cuotas : [1],
+  };
+}
+
+export interface BancoPse {
+  codigo: string;
+  nombre: string;
+}
+
+/** Los bancos de PSE, para la lista. En sandbox son tres bancos de prueba. */
+export async function bancosPse(llavePublica: string, ambiente: Ambiente): Promise<BancoPse[]> {
+  const res = await fetch(`${urlApi(ambiente)}/pse/financial_institutions`, {
+    headers: { Authorization: `Bearer ${llavePublica}` },
+    signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
+  });
+  if (!res.ok) throw new Error(`Wompi ${res.status} al leer los bancos PSE: ${await res.text()}`);
+  const lista = ((await res.json()) as { data?: unknown }).data;
+  return (Array.isArray(lista) ? lista : [])
+    .map((b) => b as Record<string, unknown>)
+    .filter((b) => typeof b.financial_institution_code === "string" && typeof b.financial_institution_name === "string")
+    .map((b) => ({ codigo: b.financial_institution_code as string, nombre: b.financial_institution_name as string }));
+}
+
+/** Un rechazo de Wompi al crear la transacción, con el detalle para el log. */
+export class ErrorWompi extends Error {
+  readonly estado: number;
+  readonly detalle: string;
+  constructor(mensaje: string, estado: number, detalle: string) {
+    super(mensaje);
+    this.estado = estado;
+    this.detalle = detalle;
+  }
+}
+
+/**
+ * Crea la transacción con la LLAVE PRIVADA, desde el servidor (así lo pide Wompi para la
+ * integración por API). El cuerpo lo arma pagos.ts, con el monto de la base y la firma.
+ */
+export async function crearTransaccion(
+  cuerpo: Record<string, unknown>,
+  llavePrivada: string,
+  ambiente: Ambiente
+): Promise<{ id: string; status: EstadoTransaccion }> {
+  const res = await fetch(`${urlApi(ambiente)}/transactions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${llavePrivada}`, "Content-Type": "application/json" },
+    body: JSON.stringify(cuerpo),
+    signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
+  });
+  const texto = await res.text();
+  if (!res.ok) {
+    throw new ErrorWompi(`Wompi ${res.status} al crear la transacción`, res.status, texto.slice(0, 1000));
+  }
+  const d = (JSON.parse(texto) as { data?: Record<string, unknown> }).data;
+  if (!d || typeof d.id !== "string" || !esEstado(d.status)) {
+    throw new ErrorWompi("Wompi devolvió una transacción con una forma inesperada", res.status, texto.slice(0, 1000));
+  }
+  return { id: d.id, status: d.status };
 }

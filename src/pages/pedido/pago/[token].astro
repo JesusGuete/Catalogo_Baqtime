@@ -1,8 +1,9 @@
 ---
 // A dónde vuelve el cliente después de pagar: /pedido/pago/<token>?id=<transacción>.
 //
-// Es el `redirect-url` que manda /api/pagos/iniciar (Wompi le agrega `?id=`), y también a donde
-// lleva el botón cuando el widget termina sin salir de la página.
+// Es el `redirect_url` de cada transacción (crearPagoDirecto, src/lib/pagos.ts): ahí vuelve el
+// cliente desde su banco (PSE, Botón Bancolombia), con `?id=` que agrega Wompi. Y es a donde lleva
+// la página de pago (PagoEnLinea.jsx) cuando la tarjeta o Nequi terminan sin salir de la tienda.
 //
 // LA URL NO PRUEBA NADA. Cualquiera puede escribir un `id` a mano. Por eso esta página no lee el
 // estado de la URL: le pasa el id a procesarTransaccion() (src/lib/pagos.ts), que le pregunta a

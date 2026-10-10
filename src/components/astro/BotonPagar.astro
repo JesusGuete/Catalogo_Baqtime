@@ -1,13 +1,11 @@
 ---
-// El botón "Pagar ahora": abre el checkout de Wompi encima de la página.
+// El botón "Pagar ahora": lleva a /pedido/pagar/<token>, donde el cliente elige el medio de pago
+// (tarjeta, PSE, Nequi o Botón Bancolombia) y paga ahí mismo, sin la ventana de Wompi.
 //
 // Lo usan tres páginas, todas con el token del pedido en la mano: la de gracias, la de
 // resultado (para reintentar después de un rechazo) y el seguimiento por enlace privado.
 // Nunca el buscador por número: el número solo no autoriza a pagar ni a ver nada privado
 // (012_consulta_solo_por_numero.sql).
-//
-// Abrir la ventana de Wompi lo hace src/lib/pago-widget.ts, que comparte con el paso de pago de
-// la compra (CheckoutApp.jsx). El navegador no decide nada del cobro: ver ese archivo.
 interface Props {
   token: string;
   /** El texto del botón. "Intentar de nuevo" en la página de un pago rechazado. */
@@ -17,42 +15,13 @@ interface Props {
 const { token, texto = "Pagar ahora" } = Astro.props;
 ---
 
-<div class="pagar" data-pagar={token}>
-  <button type="button" class="pagar-btn" data-pagar-boton>{texto}</button>
+<div class="pagar">
+  <a class="pagar-btn" href={`/pedido/pagar/${encodeURIComponent(token)}`}>{texto}</a>
   <p class="pagar-medios">
-    Tarjeta débito o crédito, PSE, Nequi, DaviPlata o Botón Bancolombia, en la ventana segura de
-    Wompi (Bancolombia).
+    Tarjeta débito o crédito, PSE, Nequi o Botón Bancolombia, con la seguridad de Wompi
+    (Bancolombia).
   </p>
-  <p class="pagar-error" role="alert" data-pagar-error hidden></p>
 </div>
-
-<script>
-  import { abrirPagoWompi } from "../../lib/pago-widget";
-
-  document.querySelectorAll<HTMLElement>("[data-pagar]").forEach((caja) => {
-    const token = caja.dataset.pagar ?? "";
-    const boton = caja.querySelector<HTMLButtonElement>("[data-pagar-boton]");
-    const aviso = caja.querySelector<HTMLElement>("[data-pagar-error]");
-    if (!boton || !aviso) return;
-    const textoOriginal = boton.textContent ?? "Pagar ahora";
-
-    boton.addEventListener("click", async () => {
-      aviso.hidden = true;
-      boton.disabled = true;
-      boton.textContent = "Preparando el pago…";
-
-      const resultado = await abrirPagoWompi(token);
-      if (!resultado.ok) {
-        aviso.textContent = resultado.error;
-        aviso.hidden = false;
-      }
-      // Abierta o con error, el botón queda listo: si el cliente cierra la ventana de Wompi sin
-      // pagar, puede que el widget no avise, y no puede quedar trabado en "Preparando…".
-      boton.disabled = false;
-      boton.textContent = textoOriginal;
-    });
-  });
-</script>
 
 <style>
   .pagar {
@@ -64,21 +33,16 @@ const { token, texto = "Pagar ahora" } = Astro.props;
     display: block;
     width: 100%;
     padding: 15px;
-    border: 0;
     border-radius: var(--radius);
     background: var(--ink);
     color: var(--cream);
-    font: inherit;
     font-size: 14px;
     letter-spacing: 0.04em;
-    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
   }
-  .pagar-btn:hover:not(:disabled) {
+  .pagar-btn:hover {
     background: var(--mocha);
-  }
-  .pagar-btn:disabled {
-    opacity: 0.7;
-    cursor: progress;
   }
   .pagar-medios {
     margin: 0;
@@ -86,14 +50,5 @@ const { token, texto = "Pagar ahora" } = Astro.props;
     line-height: 1.55;
     color: var(--ink-soft);
     text-align: center;
-  }
-  .pagar-error {
-    margin: 0;
-    padding: 10px 12px;
-    font-size: 13px;
-    line-height: 1.5;
-    color: var(--vino);
-    background: var(--error-bg);
-    border-radius: var(--radius);
   }
 </style>

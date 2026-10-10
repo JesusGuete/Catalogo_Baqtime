@@ -10,9 +10,9 @@
 // necesita si tiene su número.
 //
 // EL PAGO: con los pagos en línea encendidos (PAGOS_EN_LINEA, src/lib/pagos.ts), el botón
-// principal es "Pagar ahora" y abre el checkout de Wompi acá mismo. WhatsApp queda como opción
-// secundaria, para quien prefiere transferir. Con el interruptor apagado, la página es la de
-// siempre: el pago se coordina por WhatsApp.
+// principal es "Pagar ahora" y lleva a /pedido/pagar/<token>, con los medios de pago de Wompi en
+// la misma tienda. WhatsApp queda como opción secundaria, para quien prefiere transferir. Con el
+// interruptor apagado, la página es la de siempre: el pago se coordina por WhatsApp.
 import PedidoHead from "../../components/astro/PedidoHead.astro";
 import Header from "../../components/astro/Header.astro";
 import Footer from "../../components/astro/Footer.astro";

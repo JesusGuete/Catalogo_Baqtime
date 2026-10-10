@@ -10,8 +10,8 @@
 // EL TONO: es un correo que se puede sentir insistente, así que dice una vez qué pasa y qué
 // hacer, ofrece el botón para pagar y le da salida a quien ya pagó: "ignora este mensaje".
 //
-// EL BOTÓN: con los pagos en línea encendidos es "Pagar ahora" (la página de gracias, con el
-// checkout de Wompi) y WhatsApp queda para quien prefiere transferir. Sin ellos, el de siempre:
+// EL BOTÓN: con los pagos en línea encendidos es "Pagar ahora" (/pedido/pagar/<token>, con los
+// medios de pago en la tienda) y WhatsApp queda para quien prefiere transferir. Sin ellos, el de siempre:
 // WhatsApp, que es como se coordina el pago.
 
 import type { OrderPublicItem } from "../types/database";
@@ -68,7 +68,7 @@ export function armarCorreoRecordatorio(
     parrafos: [
       "Guardamos tu pedido, pero todavía no hemos recibido el pago.",
       p.pagar
-        ? `Si no lo recibimos ${plazo}, se marcará como no confirmado. Puedes pagarlo ahora mismo desde la página, con tarjeta, PSE, Nequi o DaviPlata.`
+        ? `Si no lo recibimos ${plazo}, se marcará como no confirmado. Puedes pagarlo ahora mismo desde la página, con tarjeta, PSE, Nequi o Botón Bancolombia.`
         : `Si no lo confirmamos ${plazo}, se marcará como no confirmado. Escríbenos por WhatsApp y te compartimos los medios de pago.`,
     ],
     numero: p.order_number,

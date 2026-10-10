@@ -12,12 +12,16 @@
 //
 // Variables (Cloudflare → Settings → Variables and Secrets; .env en local):
 //   WOMPI_PUBLIC_KEY        texto.   pub_test_… (sandbox) o pub_prod_… (producción). Va al
-//                                    navegador dentro del checkout; no es un secreto.
-//   WOMPI_PRIVATE_KEY       SECRETO. prv_test_… / prv_prod_…. Consulta transacciones.
+//                                    navegador para tokenizar la tarjeta; no es un secreto.
+//   WOMPI_PRIVATE_KEY       SECRETO. prv_test_… / prv_prod_…. Crea y consulta transacciones.
 //   WOMPI_INTEGRITY_SECRET  SECRETO. test_integrity_… / prod_integrity_…. Firma el monto.
 //   WOMPI_EVENTS_SECRET     SECRETO. test_events_… / prod_events_…. Verifica el webhook.
 //   PAGOS_EN_LINEA          texto.   "1" muestra "Pagar ahora" en la tienda. Cualquier otra
 //                                    cosa (o vacío) deja la tienda como antes, con WhatsApp.
+//   WOMPI_3DS               texto.   "0" apaga 3D Secure en los pagos con tarjeta (por si Wompi
+//                                    no lo tiene activo para el comercio). Por defecto, encendido.
+//   WOMPI_3DS_SANDBOX       texto.   Solo sandbox: qué escenario de 3D Secure simula Wompi
+//                                    (challenge_v2 por defecto; ver docs/plan-pagos-en-linea.md).
 //
 // WOMPI_PUBLIC_KEY se lee en tiempo de ejecución y no como PUBLIC_: así se pasa de sandbox a
 // producción cambiando la variable en Cloudflare, sin reconstruir el sitio. Las cuatro tienen
@@ -27,10 +31,15 @@ import { env } from "cloudflare:workers";
 import {
   ambienteDeLlave,
   consultarTransaccion,
+  crearTransaccion,
+  ErrorWompi,
+  firmaIntegridad,
   llavePrivadaCoincide,
   nombreMetodo,
+  obtenerCondiciones,
   type Ambiente,
   type EstadoTransaccion,
+  type Transaccion,
 } from "./wompi";
 import { enviarAvisoEstado, enviarAvisoPagoTienda } from "./correo";
 
@@ -109,14 +118,15 @@ export function pagosEnLineaActivos(host: string): boolean {
 }
 
 /**
- * A dónde lleva "Pagar ahora" en los correos (confirmación y recordatorio): la página de gracias,
- * que tiene el botón del checkout y dice si el pedido ya se pagó. `undefined` con los pagos en
- * línea apagados, y entonces el correo ofrece WhatsApp como siempre.
+ * A dónde lleva "Pagar ahora" en los correos (confirmación y recordatorio): la página para pagar
+ * el pedido (/pedido/pagar/<token>), que muestra los medios de pago y, si el pedido ya se pagó,
+ * lleva al seguimiento. `undefined` con los pagos en línea apagados, y entonces el correo ofrece
+ * WhatsApp como siempre.
  *
  * Quien llama decide si el pedido todavía espera el pago; esto solo mira el interruptor.
  */
 export function enlacePagar(token: string, sitio: string): string | undefined {
-  const destino = new URL(`/pedido/gracias?p=${encodeURIComponent(token)}`, sitio);
+  const destino = new URL(`/pedido/pagar/${encodeURIComponent(token)}`, sitio);
   return pagosEnLineaActivos(destino.hostname) ? destino.href : undefined;
 }
 
@@ -165,6 +175,8 @@ export type ResultadoProceso =
       orderId: string;
       aprobadoAhora: boolean;
       anomalia: string | null;
+      /** A dónde mandar al cliente (PSE, Bancolombia) o el paso de 3D Secure. */
+      extra: Transaccion["extra"] | null;
     }
   /** La transacción no existe en Wompi, o su referencia no es de esta tienda. No se reintenta. */
   | { tipo: "ajena" }
@@ -315,6 +327,7 @@ export async function procesarTransaccion(
     orderId: registro.order_id,
     aprobadoAhora,
     anomalia: registro.anomalia ?? null,
+    extra: tx.extra ?? null,
   };
 }
 
@@ -368,4 +381,212 @@ export async function conciliarPagosPendientes(sitio: string): Promise<number | 
     console.log(`[pagos] Conciliación: ${pendientes.length} pendiente(s), ${resueltos} resuelto(s).`);
   }
   return resueltos;
+}
+
+// ============================================================================
+// Pago directo por API: el cliente elige el medio y paga en la página de la tienda
+// ============================================================================
+
+/** Lo que devuelve crear_intento_pago() (027_pagos_en_linea.sql). */
+type Intento =
+  | {
+      ok: true;
+      reference: string;
+      amount_in_cents: number;
+      currency: string;
+      order_number: string;
+      customer_name: string;
+      customer_email: string | null;
+      customer_phone: string;
+    }
+  | { ok: false; motivo: string };
+
+/** Qué se le dice al cliente cuando el pedido no se puede pagar. El motivo lo decide la base. */
+export const RECHAZOS_INTENTO: Record<string, { status: number; error: string }> = {
+  no_existe: { status: 404, error: "No encontramos ese pedido." },
+  pagado: { status: 409, error: "Este pedido ya está pagado." },
+  en_proceso: {
+    status: 409,
+    error:
+      "Ya hay un pago en proceso para este pedido. Espera unos minutos: te avisaremos por correo cuando se confirme.",
+  },
+  vencido: {
+    status: 409,
+    error: "Este pedido venció y ya no se puede pagar en línea. Escríbenos por WhatsApp y lo reactivamos.",
+  },
+  no_disponible: {
+    status: 409,
+    error: "Este pedido ya no se puede pagar en línea. Escríbenos por WhatsApp.",
+  },
+  demasiados_intentos: {
+    status: 429,
+    error: "Se alcanzó el máximo de intentos de pago para este pedido. Escríbenos por WhatsApp.",
+  },
+};
+
+/** Los medios que el cliente paga dentro de la página de la tienda. */
+export const METODOS_DIRECTOS = ["CARD", "PSE", "NEQUI", "BANCOLOMBIA_TRANSFER"] as const;
+export type MetodoDirecto = (typeof METODOS_DIRECTOS)[number];
+
+export interface SolicitudPago {
+  /** El token del pedido (orders.public_token): es la autorización del cliente. */
+  tokenPedido: string;
+  metodo: MetodoDirecto;
+  /** CARD: el token de Wompi (la tarjeta nunca llega acá), las cuotas y lo que pide 3D Secure. */
+  tarjeta?: { token: string; cuotas: number; navegador: Record<string, string> };
+  /** PSE: banco, persona natural (0) o jurídica (1), y documento. */
+  pse?: { banco: string; tipoPersona: 0 | 1; tipoDocumento: string; documento: string };
+  /** NEQUI: el celular registrado en Nequi. */
+  nequi?: { telefono: string };
+  /** La IP del cliente: Wompi la usa contra el fraude. */
+  ip: string | null;
+  /** Origen absoluto de la tienda, para la URL de regreso y los correos. */
+  sitio: string;
+  enSegundoPlano?: (promesa: Promise<unknown>) => void;
+}
+
+export type ResultadoCrearPago =
+  | { tipo: "ok"; txId: string }
+  | { tipo: "rechazo"; status: number; error: string };
+
+/**
+ * Crea el pago de un pedido con el medio que eligió el cliente, por la API de Wompi.
+ *
+ * El MONTO sale de la base (crear_intento_pago), la FIRMA de integridad la pone el servidor, y
+ * la transacción se crea con la LLAVE PRIVADA. Del
+ * navegador solo llegan el medio y sus datos (el banco, el celular, o el token de la tarjeta).
+ *
+ * Después de crearla la procesa una vez (procesarTransaccion): queda anotada con su id en la
+ * base, así el webhook y la conciliación la encuentran aunque el cliente cierre la página.
+ *
+ * No lanza: todo vuelve como ResultadoCrearPago, con un mensaje para el cliente.
+ */
+export async function crearPagoDirecto(s: SolicitudPago): Promise<ResultadoCrearPago> {
+  const config = configWompi();
+  const sb = supabaseServidor();
+  if (!config || !sb) {
+    return { tipo: "rechazo", status: 503, error: "Los pagos en línea no están disponibles en este momento." };
+  }
+
+  let intento: Intento;
+  try {
+    intento = await rpcServidor<Intento>(sb, "crear_intento_pago", { p_token: s.tokenPedido });
+  } catch (e) {
+    console.error("[pagos] No se pudo crear el intento de pago:", e);
+    return { tipo: "rechazo", status: 502, error: "No pudimos preparar el pago. Intenta de nuevo." };
+  }
+  if (!intento.ok) {
+    const r = RECHAZOS_INTENTO[intento.motivo] ?? {
+      status: 409,
+      error: "Este pedido no se puede pagar en línea. Escríbenos por WhatsApp.",
+    };
+    return { tipo: "rechazo", ...r };
+  }
+  if (!intento.customer_email) {
+    return { tipo: "rechazo", status: 409, error: "Este pedido no tiene correo. Escríbenos por WhatsApp." };
+  }
+
+  let condiciones;
+  try {
+    condiciones = await obtenerCondiciones(config.llavePublica, config.ambiente);
+  } catch (e) {
+    console.error("[pagos] No se pudieron leer las condiciones de Wompi:", e);
+    return { tipo: "rechazo", status: 502, error: "No pudimos conectarnos con el sistema de pagos. Intenta de nuevo." };
+  }
+
+  const firma = await firmaIntegridad({
+    reference: intento.reference,
+    amountInCents: intento.amount_in_cents,
+    currency: intento.currency,
+    secreto: config.secretoIntegridad,
+  });
+  // Wompi pide máximo 64 caracteres y sin comillas simples.
+  const descripcion = `Pedido ${intento.order_number} en Baqtime`;
+  const regreso = new URL(`/pedido/pago/${encodeURIComponent(s.tokenPedido)}`, s.sitio).href;
+  const cliente: Record<string, unknown> = {
+    full_name: intento.customer_name,
+    phone_number: intento.customer_phone,
+  };
+
+  const cuerpo: Record<string, unknown> = {
+    // Las dos aceptaciones que el cliente marcó en la página (reglamento y datos de Wompi).
+    acceptance_token: condiciones.tokenReglamento,
+    accept_personal_auth: condiciones.tokenDatos,
+    amount_in_cents: intento.amount_in_cents,
+    currency: intento.currency,
+    signature: firma,
+    customer_email: intento.customer_email,
+    reference: intento.reference,
+    redirect_url: regreso,
+    payment_method_type: s.metodo,
+    customer_data: cliente,
+  };
+  if (s.ip) cuerpo.ip = s.ip;
+
+  switch (s.metodo) {
+    case "CARD": {
+      if (!s.tarjeta) return { tipo: "rechazo", status: 400, error: "Faltan los datos de la tarjeta." };
+      cuerpo.payment_method = { type: "CARD", token: s.tarjeta.token, installments: s.tarjeta.cuotas };
+      // 3D SECURE: el banco puede pedirle al cliente que confirme la compra. Se apaga con
+      // WOMPI_3DS=0 si Wompi no lo tiene activo para el comercio. En sandbox Wompi exige decir qué
+      // escenario simular (por defecto, con reto, que es el que más hay que probar).
+      if (leer("WOMPI_3DS") !== "0") {
+        cuerpo.is_three_ds = true;
+        cuerpo.customer_data = { ...cliente, browser_info: s.tarjeta.navegador };
+        if (config.ambiente === "test") {
+          cuerpo.three_ds_auth_type = leer("WOMPI_3DS_SANDBOX") ?? "challenge_v2";
+        }
+      }
+      break;
+    }
+    case "PSE": {
+      if (!s.pse) return { tipo: "rechazo", status: 400, error: "Faltan los datos de PSE." };
+      cuerpo.payment_method = {
+        type: "PSE",
+        user_type: s.pse.tipoPersona,
+        user_legal_id_type: s.pse.tipoDocumento,
+        user_legal_id: s.pse.documento,
+        financial_institution_code: s.pse.banco,
+        payment_description: descripcion,
+      };
+      break;
+    }
+    case "NEQUI": {
+      if (!s.nequi) return { tipo: "rechazo", status: 400, error: "Falta el celular de Nequi." };
+      cuerpo.payment_method = { type: "NEQUI", phone_number: s.nequi.telefono };
+      break;
+    }
+    case "BANCOLOMBIA_TRANSFER": {
+      cuerpo.payment_method = {
+        type: "BANCOLOMBIA_TRANSFER",
+        user_type: "PERSON",
+        payment_description: descripcion,
+        ecommerce_url: regreso,
+      };
+      break;
+    }
+  }
+
+  let tx;
+  try {
+    tx = await crearTransaccion(cuerpo, config.llavePrivada, config.ambiente);
+  } catch (e) {
+    const detalle = e instanceof ErrorWompi ? ` (${e.estado}) ${e.detalle}` : "";
+    console.error(`[pagos] Wompi no creó la transacción de ${intento.reference}${detalle}`, e);
+    return {
+      tipo: "rechazo",
+      status: 502,
+      error:
+        e instanceof ErrorWompi && e.estado === 422
+          ? "Wompi no aceptó los datos del pago. Revísalos e intenta de nuevo."
+          : "No pudimos iniciar el pago. Intenta de nuevo en unos minutos.",
+    };
+  }
+
+  // Anotada desde ya: si el cliente cierra la página, el webhook y la conciliación la encuentran.
+  const r = await procesarTransaccion(tx.id, { sitio: s.sitio, enSegundoPlano: s.enSegundoPlano });
+  if (r.tipo !== "ok") {
+    console.error(`[pagos] La transacción ${tx.id} se creó pero no se pudo anotar todavía (${r.tipo}).`);
+  }
+  return { tipo: "ok", txId: tx.id };
 }

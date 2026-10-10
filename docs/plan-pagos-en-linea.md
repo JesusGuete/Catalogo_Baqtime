@@ -1,8 +1,8 @@
 # Plan — Pagos en línea (sin pasar por WhatsApp)
 
-> Estado (2026-10-09): **fases 0 a 2 hechas** en la rama `feature/pagos-en-linea`: cuenta de
-> Wompi abierta, migración `027_pagos_en_linea.sql` y servidor, con el interruptor apagado. Falta
-> correr la 027 en Supabase, cargar las llaves de sandbox y seguir con la fase 3 (tienda).
+> Estado (2026-10-10): **fases 0 a 5 hechas** en la rama `feature/pagos-en-linea` y probadas en
+> sandbox con la ventana de Wompi. Ahora el cliente paga **dentro de la tienda**, sin esa ventana
+> (fase 3b): falta probar esa parte en la vista previa con los datos de sandbox.
 > Retoma la decisión que había quedado pendiente en `docs/estado-proyecto.md` ("pasarelas de
 > pago — PLAN SEPARADO").
 
@@ -13,10 +13,10 @@
 recibe el comprobante y marca el pago a mano en el panel (`confirm_order_payment`). El correo de
 confirmación y el recordatorio de las 12 h llevan al mismo botón de WhatsApp.
 
-**Después:** el pedido se guarda igual → en `/pedido/gracias` el botón principal es
-**Pagar ahora**, que abre el checkout de Wompi encima de la página (tarjeta débito y crédito,
-PSE, Botón Bancolombia, Nequi, DaviPlata, QR Bancolombia y pagos a cuotas, que son los medios
-del plan de la cuenta). Cuando Wompi aprueba, la tienda marca el pedido como pagado y
+**Después:** en el paso de pago de la compra el cliente elige el medio y paga ahí mismo, como
+en las tiendas grandes: tarjeta débito o crédito (con cuotas), PSE, Nequi o Botón Bancolombia,
+sin que se abra la ventana de Wompi (fase 3b). El pedido se guarda al pulsar "Pagar". Cuando
+Wompi aprueba, la tienda marca el pedido como pagado y
 aprobado por su cuenta, le manda al cliente el correo de "pago confirmado" y a la tienda un aviso.
 La dueña no tiene que hacer nada para que el pedido siga.
 
@@ -36,9 +36,9 @@ La dueña no tiene que hacer nada para que el pedido siga.
   Agregador + Compra y paga después Bancolombia) incluye tarjetas débito y crédito, PSE, Botón
   Bancolombia, Nequi, DaviPlata, QR Bancolombia, SU+ Pay y Compra y Paga Después, todos a
   2,65 % + $700 + IVA. Mercado Pago se solapa casi entero; no vale la pena tener dos.
-- El checkout lo aloja Wompi (widget): los datos de la tarjeta nunca pasan por nuestro
-  servidor.
-- No hace falta un SDK: un `<script>`, una firma SHA-256 y un webhook. Encaja en el Worker de
+- Los datos de la tarjeta nunca pasan por nuestro servidor: el navegador los cifra y los
+  manda directo a Wompi, que devuelve un token (fase 3b).
+- No hace falta un SDK: la API de Wompi, una firma SHA-256 y un webhook. Encaja en el Worker de
   Cloudflare sin dependencias nuevas (`crypto.subtle`).
 - **Costo (verificar al contratar):** plan general 2,65 % + $700 + IVA por transacción
   aprobada. En un pedido de $150.000 son unos $5.560. Desde septiembre de 2026 el QR anuncia
@@ -148,10 +148,8 @@ RLS: solo SELECT para admins. Ninguna escritura para `anon` ni `authenticated`: 
   en `waitUntil` el correo `aprobado` (`enviarAvisoEstado`, que lo deja anotado en
   `order_notifications`, así el panel no lo repite) y el aviso "Pago recibido" a la tienda
   (`enviarAvisoPagoTienda`, plantilla nueva en `correo-tienda.ts`).
-- **`POST /api/pagos/iniciar`**, body `{ token }`: llama a `crear_intento_pago`, firma y
-  responde `{ checkout: { publicKey, reference, amountInCents, currency, signature,
-  redirectUrl, customerData } }`, con la forma exacta que espera `new WidgetCheckout(...)`. No
-  usa `expirationTime`: el plazo del pedido ya lo controla `crear_intento_pago` al pulsar.
+- ~~**`POST /api/pagos/iniciar`**: firmaba el checkout del widget de Wompi.~~ Reemplazado en la
+  fase 3b por `POST /api/pagos/crear`, que crea la transacción desde el servidor.
 - **`POST /api/pagos/wompi`** (el webhook):
   1. Verifica el checksum. Si no coincide, responde 401.
   2. Verifica que `environment` corresponda a las llaves configuradas.
@@ -172,15 +170,12 @@ RLS: solo SELECT para admins. Ninguna escritura para `anon` ni `authenticated`: 
   nombra así, y cambiarlo según el interruptor obligaba a pasar el dato a una página que se
   cachea en el borde.
 - **`BotonPagar.astro`**: el botón **Pagar ahora**, compartido por las tres páginas de abajo.
-  Pide el checkout firmado, carga el widget recién al pulsar y, con la transacción, lleva a
-  `/pedido/pago/<token>?id=…`. Si algo falla, muestra el motivo y queda listo para reintentar.
-- **`/pedido/gracias`** pasa a ser la pantalla de pago:
-  - Botón principal **Pagar ahora**: llama a `POST /api/pagos/iniciar` y abre
-    `new WidgetCheckout({...}).open(cb)` con `https://checkout.wompi.co/widget.js`, que se
-    carga solo en esta página. Debajo, los logos o nombres de los métodos aceptados.
-  - Opción secundaria, si se decide conservarla: "Prefiero pagar por transferencia (WhatsApp)".
-- **Nueva `/pedido/pago/<token>?id=<tx>`**: es el `redirect-url` que ya manda `iniciar` (ruta y
-  no `?p=`, porque Wompi le agrega `?id=`), y también a donde lleva el callback del widget.
+  Desde la fase 3b es un enlace a `/pedido/pagar/<token>`.
+- **`/pedido/gracias`**: botón principal **Pagar ahora** y, debajo, "Prefiero pagar por
+  transferencia (WhatsApp)".
+- **Nueva `/pedido/pago/<token>?id=<tx>`**: el `redirect_url` de cada transacción (ruta y no
+  `?p=`, porque Wompi le agrega `?id=`). Ahí vuelve el cliente desde su banco, y ahí lleva la
+  página de pago cuando la tarjeta o Nequi terminan.
   - Llama a `procesarTransaccion(id)` y comprueba que la transacción sea del pedido del token.
   - Muestra un estado. El pedido manda: si está pagado, está pagado.
     - **Aprobado:** "¡Pago recibido!", con el número de pedido y el enlace al seguimiento.
@@ -196,9 +191,61 @@ RLS: solo SELECT para admins. Ninguna escritura para `anon` ni `authenticated`: 
   muestra el botón **Pagar ahora**. Con `en_proceso`, un aviso. El texto de `no_confirmado`
   sigue mandando a WhatsApp. **Solo por el enlace privado:** el buscador por número no pasa el
   token y no muestra el botón.
-- Comprobado en el navegador con el interruptor apagado: el botón se ve y muestra el aviso de
-  "no disponible". Con el widget real de Wompi cargado, `WidgetCheckout` y su `open()` existen
-  tal como los usa el código. Falta probarlo de punta a punta con llaves de sandbox.
+- Probado de punta a punta en sandbox con la ventana de Wompi (BQ-079086 por PSE, BQ-467995
+  con una tarjeta rechazada y después aprobada).
+
+### Fase 3b — Pagar dentro de la tienda, sin la ventana de Wompi
+
+Decidido por Jesús el 2026-10-10: "como Adidas / Vélez". El cliente elige el medio en la página
+y paga ahí, con los campos de la tarjeta en la tienda. Medios: **tarjeta débito o crédito, PSE,
+Nequi y Botón Bancolombia**, más la transferencia por WhatsApp mientras siga.
+
+- **`PagoEnLinea.jsx`**: la lista de medios, cada uno con su formulario. Lo usan el paso de pago
+  de la compra (`CheckoutApp.jsx`) y la página nueva `/pedido/pagar/<token>`.
+  - **Tarjeta:** número (con la franquicia), vencimiento MM/AA, CVV, nombre y cuotas (las que
+    permita el comercio; con débito, 1). Se valida en la página (Luhn, vencimiento, largo del CVV).
+  - **PSE:** banco (la lista real de Wompi), persona natural o jurídica, tipo y número de
+    documento. Lleva al cliente a su banco y el banco lo devuelve al resultado.
+  - **Nequi:** el celular. "Revisa tu celular y acepta la notificación" y espera el resultado.
+  - **Botón Bancolombia:** lleva a Bancolombia y vuelve al resultado.
+  - **Las dos casillas de Wompi** (reglamento y autorización de datos), obligatorias, con sus
+    enlaces. Sin ellas el servidor no crea la transacción.
+- **La tarjeta nunca llega a nuestro servidor** (`tarjeta-wompi.ts`): el navegador la cifra
+  (JWE, RSA-OAEP-256 + A256GCM, con la llave de cifrado que publica Wompi) y la manda directo a
+  Wompi, que devuelve un token `tok_…`. Al servidor solo llega ese token. Con los campos en
+  nuestra página el cumplimiento PCI pasa a **SAQ A-EP**: la página de pago debe servirse siempre
+  por HTTPS y sin scripts de terceros que no hagan falta.
+- **El servidor crea la transacción** (`crearPagoDirecto` en `pagos.ts`), con la llave privada:
+  el monto sale de `crear_intento_pago`, la firma de integridad la pone el servidor, y del
+  navegador solo llegan el medio y sus datos. La deja anotada de una vez (`procesarTransaccion`),
+  así el webhook y la conciliación la encuentran aunque el cliente cierre la página.
+- **3D Secure** en las tarjetas: se pide siempre (`is_three_ds`), con los datos del navegador
+  que exige el banco. Si el banco pide un reto, se muestra dentro de la página, en un marco de
+  500 px de alto. `WOMPI_3DS=0` lo apaga si Wompi no lo tiene activo para el comercio.
+  - **Pendiente:** Wompi exige mostrar el **logo de Mastercard ID Check** durante la
+    verificación. Hoy hay un texto en su lugar; falta el archivo oficial del logo.
+- **Endpoints nuevos:**
+  - `GET /api/pagos/opciones`: llave pública, ambiente, enlaces de las condiciones, cuotas y
+    bancos de PSE. Nada de ningún cliente; se cachea 5 minutos.
+  - `POST /api/pagos/crear`: valida el medio y sus datos y crea la transacción. Responde `txId`.
+  - `GET /api/pagos/estado?p=<token>&id=<tx>`: consulta y anota la transacción (el mismo
+    `procesarTransaccion`) y responde el estado, la URL del banco o el paso de 3D Secure. Solo
+    por transacciones del pedido del token.
+- **La página pregunta por el estado** cada 2,5 s, hasta 5 minutos. Con un estado final lleva a
+  `/pedido/pago/<token>?id=<tx>`, que lo vuelve a comprobar y muestra el resumen.
+- **Un solo pedido por compra:** el pedido se guarda al pulsar "Pagar", pero el carrito se vacía
+  recién al salir de la página. Si el pago falla y el cliente reintenta, cambia de medio o
+  recarga, se usa el mismo pedido (queda anotado en `sessionStorage` con lo que se compra y los
+  datos; si algo de eso cambia, es otro pedido).
+- **Nueva `/pedido/pagar/<token>`**: el resumen del pedido y los medios de pago, para un pedido
+  ya guardado. Ahí llevan el "Pagar ahora" de los correos, de gracias y del seguimiento, y el
+  "Intentar de nuevo" de un pago rechazado. Pedido pagado o en otro estado → al seguimiento;
+  pagos en línea apagados → a gracias; pago en proceso → un aviso.
+- **Se quitan** `pago-widget.ts` y `/api/pagos/iniciar`: el widget de Wompi ya no se usa en
+  ninguna parte.
+- Comprobado en local con llaves inventadas y respuestas simuladas: los cuatro medios y la
+  transferencia, las validaciones, el cifrado de la tarjeta, el reto de 3D Secure en el marco, un
+  reintento con el mismo pedido y la vista en celular. Falta la prueba real en sandbox.
 
 ### Fase 4 — Correos ✅
 
@@ -207,9 +254,9 @@ página. Con el interruptor apagado dicen exactamente lo de antes (comprobado te
 
 - **Confirmación** (`correo-pedido.ts`) y **recordatorio de las 12 horas**
   (`correo-recordatorio.ts`): el botón principal pasa a ser **Pagar ahora**, que lleva a
-  `/pedido/gracias?p=<token>`, donde están el estado del pedido y el botón del checkout.
+  `/pedido/pagar/<token>`, con el resumen y los medios de pago (antes, a `/pedido/gracias`).
   WhatsApp queda como "Prefiero pagar por transferencia". También cambian el texto
-  ("El siguiente paso es pagarlo: con tarjeta, PSE, Nequi o DaviPlata"), el aviso de las 24 horas
+  ("El siguiente paso es pagarlo: con tarjeta, PSE, Nequi o Botón Bancolombia"), el aviso de las 24 horas
   y la vista previa en la bandeja, en HTML y en texto plano.
 - La regla vive en un solo lugar: `enlacePagar()` en `pagos.ts` devuelve el enlace o nada,
   según el interruptor. Quien manda el correo decide si el pedido espera el pago:
@@ -257,10 +304,12 @@ página. Con el interruptor apagado dicen exactamente lo de antes (comprobado te
 - Al terminar, dejar `PAGOS_EN_LINEA` vacío hasta el día de la salida.
 - Casos a probar:
   - Tarjeta aprobada (`4242 4242 4242 4242`) y rechazada (`4111 1111 1111 1111`), según la doc
-    de sandbox.
-  - Nequi aprobado y rechazado, con los números de prueba de la doc.
-  - PSE en estado pendiente que luego se aprueba.
-  - Cerrar el widget sin pagar.
+    de sandbox. Con 3D Secure, el escenario lo elige `WOMPI_3DS_SANDBOX` (`challenge_v2` por
+    defecto, el que muestra el reto).
+  - Nequi aprobado (`3991111111`) y rechazado (`3992222222`).
+  - PSE: banco "1" aprueba, "2" rechaza.
+  - Botón Bancolombia.
+  - Abandonar el pago en el banco o cerrar la página a mitad de camino.
   - Pagar dos veces.
   - Volver a la página de resultado con el `id` de la transacción de otro pedido.
   - Webhook con el checksum alterado (debe rechazarse).
@@ -297,11 +346,13 @@ página. Con el interruptor apagado dicen exactamente lo de antes (comprobado te
 
 | Variable | Tipo | Para qué |
 |---|---|---|
-| `WOMPI_PUBLIC_KEY` | texto | Va al widget. Se lee en tiempo de ejecución y no como `PUBLIC_`, para poder pasar de sandbox a producción sin reconstruir el sitio |
-| `WOMPI_PRIVATE_KEY` | **secreto** | Consultar transacciones |
+| `WOMPI_PUBLIC_KEY` | texto | Va al navegador para tokenizar la tarjeta. Se lee en tiempo de ejecución y no como `PUBLIC_`, para poder pasar de sandbox a producción sin reconstruir el sitio |
+| `WOMPI_PRIVATE_KEY` | **secreto** | Crear y consultar transacciones |
 | `WOMPI_INTEGRITY_SECRET` | **secreto** | Firmar el monto |
 | `WOMPI_EVENTS_SECRET` | **secreto** | Verificar el webhook |
 | `PAGOS_EN_LINEA` | texto | `1` = encendido |
+| `WOMPI_3DS` | texto | `0` apaga 3D Secure en las tarjetas. Vacío = encendido |
+| `WOMPI_3DS_SANDBOX` | texto | Solo sandbox: el escenario de 3D Secure. Vacío = `challenge_v2` |
 
 Se documentan en `.env.example`, con el mismo estilo de las demás.
 
@@ -309,7 +360,7 @@ Se documentan en `.env.example`, con el mismo estilo de las demás.
 
 | Caso | Qué pasa |
 |---|---|
-| El cliente cierra el widget | El pedido sigue pendiente. Puede pagar desde gracias, el seguimiento o el correo, y a las 12 h le llega el recordatorio |
+| El cliente abandona el pago (cierra la página o no vuelve del banco) | El pedido sigue pendiente. Puede pagar desde gracias, el seguimiento o el correo, y a las 12 h le llega el recordatorio |
 | PSE se queda `PENDING` durante horas | No se vence ni se recuerda mientras haya un intento en proceso; el webhook lo resuelve |
 | Pago aprobado después de vencido | Se aprueba igual y el pedido se reactiva |
 | Dos intentos aprobados | Vale el primero; el segundo queda marcado `pago_duplicado` para reembolsarlo |
@@ -330,6 +381,12 @@ Tomadas por Jesús el 2026-10-09:
 4. **Comisión:** se suben los precios para cubrirla, comisión e IVA incluidos. Cómo: ver
    `docs/plan-precios-con-comision.md`.
 5. **Correo de "pago confirmado":** sale automático cuando Wompi aprueba.
+
+El 2026-10-10:
+
+6. **Pagar dentro de la tienda**, sin la ventana de Wompi, con los campos de la tarjeta en la
+   página ("como Adidas"). Medios: tarjeta débito o crédito, PSE, Nequi y Botón Bancolombia.
+   DaviPlata y QR quedan por fuera (no se ofrecen sin la ventana de Wompi).
 
 ## Orden de entrega (un PR por paso)
 
