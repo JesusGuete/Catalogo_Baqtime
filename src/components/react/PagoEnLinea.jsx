@@ -192,8 +192,12 @@ export default function PagoEnLinea({
   /** Pregunta por la transacción hasta que haya que hacer algo con ella. */
   async function seguir(token, txId, metodo) {
     const inicio = Date.now();
+    let fallos = 0;
     await esperar(1500);
     while (vivo.current && Date.now() - inicio < TOPE) {
+      // Si la tienda no logra saber cómo va el pago (unos 30 segundos seguidos), no se deja al
+      // cliente mirando "Procesando": la página de resultado sigue preguntando sola.
+      if (fallos >= 12) return salirA(urlResultado(token, txId));
       let r = null;
       try {
         const res = await fetch(
@@ -205,6 +209,7 @@ export default function PagoEnLinea({
       } catch {
         // Un corte de internet no corta el pago: se sigue preguntando.
       }
+      fallos = r ? 0 : fallos + 1;
       if (!vivo.current) return;
       if (r) {
         if (r.estado !== "PENDING") return salirA(urlResultado(token, txId));

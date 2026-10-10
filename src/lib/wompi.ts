@@ -178,10 +178,18 @@ export async function consultarTransaccion(
   llavePrivada: string,
   ambiente: Ambiente
 ): Promise<Transaccion | null> {
-  const res = await fetch(`${urlApi(ambiente)}/transactions/${encodeURIComponent(id)}`, {
+  const url = `${urlApi(ambiente)}/transactions/${encodeURIComponent(id)}`;
+  let res = await fetch(url, {
     headers: { Authorization: `Bearer ${llavePrivada}` },
     signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
   });
+  // En producción Wompi ha rechazado esta consulta con la llave privada aunque la misma llave
+  // crea transacciones, mientras que sin autenticar sí responde. Antes de dar la consulta por
+  // fallida se reintenta así: lo que llega sigue siendo de Wompi, por HTTPS, y se valida igual.
+  if (!res.ok && res.status !== 404) {
+    console.error(`[wompi] Consulta de ${id} con la llave privada: ${res.status}. Se reintenta sin ella.`);
+    res = await fetch(url, { signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS) });
+  }
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Wompi ${res.status} al consultar ${id}: ${await res.text()}`);
 
