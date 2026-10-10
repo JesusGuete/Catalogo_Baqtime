@@ -52,7 +52,9 @@ const MEDIOS = [
 // El logo de la franquicia junto al número, apenas se reconoce. Solo archivos oficiales de cada
 // marca (en public/assets/img); mientras no haya archivo, se muestra el nombre.
 const LOGOS_FRANQUICIA = {
+  VISA: "/assets/img/visa.svg",
   MASTERCARD: "/assets/img/mastercard.svg",
+  AMEX: "/assets/img/amex.svg",
 };
 
 const TIPOS_DOCUMENTO = [
