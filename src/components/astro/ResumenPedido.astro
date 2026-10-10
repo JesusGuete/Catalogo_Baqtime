@@ -1,0 +1,114 @@
+---
+// El resumen de la compra: cada producto con sus iniciales, el subtotal, el envío y el total.
+//
+// Lo muestran la página de gracias y la de resultado del pago, para que el cliente vea qué
+// compró y cuánto pagó sin tener que buscar el correo. Sale de pedido_publico(), así que no
+// lleva el documento ni la dirección exacta: solo la ciudad de entrega.
+import type { OrderPublic } from "../../types/database";
+import { fmt } from "../../lib/pricing.js";
+import { detalleItem } from "../../lib/correo-pedido";
+
+interface Props {
+  pedido: OrderPublic;
+  /** "Total pagado" o "Total a pagar". */
+  etiquetaTotal: string;
+}
+
+const { pedido, etiquetaTotal } = Astro.props;
+---
+
+<section class="rp" aria-label="Resumen de tu compra">
+  <p class="rp-titulo mono">RESUMEN DE TU COMPRA</p>
+  <ul class="rp-items">
+    {
+      pedido.items.map((it) => {
+        const detalle = detalleItem(it);
+        return (
+          <li class="rp-item">
+            <span class="rp-item-txt">
+              <span class="rp-nombre">{it.product_name}</span>
+              {detalle && <span class="rp-detalle">{detalle}</span>}
+            </span>
+            <span class="rp-precio mono">{fmt(it.line_total)}</span>
+          </li>
+        );
+      })
+    }
+  </ul>
+  <div class="rp-fila">
+    <span>Subtotal</span>
+    <span class="mono">{fmt(pedido.subtotal)}</span>
+  </div>
+  <div class="rp-fila">
+    <span>Envío a {pedido.ship_city}</span>
+    <span class="mono">{fmt(pedido.shipping_cost)}</span>
+  </div>
+  <div class="rp-fila rp-total">
+    <span>{etiquetaTotal}</span>
+    <span class="mono">{fmt(pedido.total)}</span>
+  </div>
+</section>
+
+<style>
+  .rp {
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    background: var(--cream);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .rp-titulo {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft);
+    margin: 0 0 10px;
+  }
+  .rp-items {
+    list-style: none;
+    margin: 0 0 8px;
+    padding: 0;
+  }
+  .rp-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .rp-item-txt {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+  .rp-nombre {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .rp-detalle {
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .rp-precio {
+    font-size: 13px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .rp-fila {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 6px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .rp-total {
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--ink);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+</style>

@@ -20,10 +20,11 @@ import Header from "../../../components/astro/Header.astro";
 import Footer from "../../../components/astro/Footer.astro";
 import WhatsappWidget from "../../../components/react/WhatsappWidget.jsx";
 import BotonPagar from "../../../components/astro/BotonPagar.astro";
+import NumeroPedido from "../../../components/astro/NumeroPedido.astro";
+import ResumenPedido from "../../../components/astro/ResumenPedido.astro";
 import { obtenerPedido, cabecerasPrivadas } from "../../../lib/pedido";
 import { pagosEnLineaActivos, procesarTransaccion, type ResultadoProceso } from "../../../lib/pagos";
 import { buildOrderMessage, whatsappUrl } from "../../../lib/whatsapp.js";
-import { fmt } from "../../../lib/pricing.js";
 import "../../../styles/site.css";
 
 export const prerender = false;
@@ -182,11 +183,11 @@ const nombre = pedido.customer_name.split(" ")[0];
           )
         }
 
-        <div class="pag-numero-caja">
-          <span class="pag-numero-label mono">PEDIDO</span>
-          <strong class="pag-numero mono">{pedido.order_number}</strong>
-          <span class="pag-total">{fmt(pedido.total)}</span>
-        </div>
+        <NumeroPedido numero={pedido.order_number} />
+        <ResumenPedido
+          pedido={pedido}
+          etiquetaTotal={vista === "pagado" ? "Total pagado" : "Total a pagar"}
+        />
 
         {
           (vista === "rechazado" || vista === "sin_pago") && puedePagar && (
@@ -196,6 +197,15 @@ const nombre = pedido.customer_name.split(" ")[0];
                 Prefiero pagar por transferencia (WhatsApp)
               </a>
             </div>
+          )
+        }
+
+        {
+          vista === "pagado" && (
+            <p class="pag-correo">
+              Te enviamos la confirmación del pago a tu correo. Si no la ves en unos minutos,
+              revisa la carpeta de Spam o Promociones.
+            </p>
           )
         }
 
@@ -249,34 +259,6 @@ const nombre = pedido.customer_name.split(" ")[0];
         color: var(--ink-soft);
         margin: 0 0 24px;
       }
-      .pag-numero-caja {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: baseline;
-        gap: 6px 14px;
-        padding: 16px 20px;
-        margin-bottom: 20px;
-        background: var(--draft-bg);
-        border: 1px solid var(--draft-border);
-        border-radius: var(--radius);
-      }
-      .pag-numero-label {
-        flex: 1 0 100%;
-        font-size: 9px;
-        letter-spacing: 0.1em;
-        color: var(--draft-text);
-      }
-      .pag-numero {
-        font-size: 24px;
-        letter-spacing: 0.06em;
-        color: var(--ink);
-        font-weight: 400;
-      }
-      .pag-total {
-        margin-left: auto;
-        font-size: 18px;
-        color: var(--ink);
-      }
       .pag-acciones {
         display: flex;
         flex-direction: column;
@@ -285,6 +267,13 @@ const nombre = pedido.customer_name.split(" ")[0];
       }
       .pag-alterno {
         font-size: 13px;
+        color: var(--ink-soft);
+        text-align: center;
+      }
+      .pag-correo {
+        margin: 0 0 16px;
+        font-size: 12px;
+        line-height: 1.55;
         color: var(--ink-soft);
         text-align: center;
       }

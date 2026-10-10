@@ -15,6 +15,7 @@ import {
   validateShipping,
 } from "../../lib/shipping-validation.js";
 import { POLITICA_DATOS_RUTA, TERMINOS_RUTA } from "../../lib/legal";
+import { abrirPagoWompi } from "../../lib/pago-widget";
 import {
   DEPARTAMENTOS,
   calcularEnvio,
@@ -124,9 +125,15 @@ function IconoQuitar() {
 }
 
 /**
- * @param {{ catalog: import("../../lib/catalog").Catalogo }} props
+ * @param {{
+ *   catalog: import("../../lib/catalog").Catalogo,
+ *   pagosActivos?: boolean,
+ * }} props
+ *   `pagosActivos`: los pagos en línea están encendidos (pagosEnLineaActivos(), src/lib/pagos.ts).
+ *   Con ellos, el paso de pago ofrece pagar con Wompi ahí mismo; sin ellos, "Confirmar pedido"
+ *   lleva a la página de gracias y el pago se coordina por WhatsApp, como siempre.
  */
-export default function CheckoutApp({ catalog }) {
+export default function CheckoutApp({ catalog, pagosActivos = false }) {
   const items = useCart();
   const { products, categories } = catalog;
 
@@ -148,6 +155,17 @@ export default function CheckoutApp({ catalog }) {
   const [errores, setErrores] = useState({});
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState("");
+
+  // El medio de pago elegido en el paso 3. "linea" abre Wompi ahí mismo; "transferencia" guarda
+  // el pedido y lleva a coordinar el pago por WhatsApp.
+  const [medio, setMedio] = useState("linea");
+  const pagaEnLinea = pagosActivos && medio === "linea";
+  // Cuando el pedido ya se guardó y se abrió Wompi: el carrito se vació, pero la página no puede
+  // quedar en "Tu carrito está vacío". Si el cliente cierra la ventana sin pagar, desde acá la
+  // vuelve a abrir.
+  const [pedidoCreado, setPedidoCreado] = useState(null);
+  const [abriendoPago, setAbriendoPago] = useState(false);
+  const [errorPago, setErrorPago] = useState("");
 
   useEffect(() => {
     setMontado(true);
@@ -277,12 +295,72 @@ export default function CheckoutApp({ catalog }) {
         setEnviando(false);
         return;
       }
+      if (pagaEnLinea) {
+        // El pedido ya existe: se muestra "falta el pago" y se abre Wompi sin cambiar de página.
+        // Si paga, el widget lleva a /pedido/pago/<token>, que muestra el resumen de la compra.
+        setPedidoCreado({ token: datos.public_token, numero: datos.order_number, total: datos.total });
+        clearCart();
+        setEnviando(false);
+        window.scrollTo(0, 0);
+        await pagar(datos.public_token);
+        return;
+      }
       clearCart();
       window.location.href = `/pedido/gracias?p=${encodeURIComponent(datos.public_token)}`;
     } catch {
       setErrorEnvio("No pudimos conectarnos. Revisa tu internet e intenta de nuevo.");
       setEnviando(false);
     }
+  }
+
+  async function pagar(token) {
+    setErrorPago("");
+    setAbriendoPago(true);
+    const resultado = await abrirPagoWompi(token);
+    if (!resultado.ok) setErrorPago(resultado.error);
+    // Abierta o con error, el botón queda listo: si el cliente cierra la ventana de Wompi sin
+    // pagar, puede que el widget no avise.
+    setAbriendoPago(false);
+  }
+
+  // Antes que el "carrito vacío": acá el carrito se vació porque el pedido ya se guardó.
+  if (pedidoCreado) {
+    const { token, numero, total: totalPedido } = pedidoCreado;
+    return (
+      <main className="ck-wrap">
+        <section className="ck-creado">
+          <p className="ck-subtitulo mono">PEDIDO GUARDADO · {numero}</p>
+          <h1 className="ck-titulo">Falta el pago</h1>
+          <p className="ck-creado-txt">
+            Tu pedido quedó guardado. Completa el pago en la ventana de Wompi; si la cerraste,
+            vuelve a abrirla aquí.
+          </p>
+          <div className="ck-total-pago">
+            <span>Total a pagar</span>
+            <span className="mono">{fmt(totalPedido)}</span>
+          </div>
+          {errorPago && (
+            <div className="field-error" role="alert">
+              {errorPago}
+            </div>
+          )}
+          <button
+            type="button"
+            className="whatsapp-btn"
+            onClick={() => pagar(token)}
+            disabled={abriendoPago}
+          >
+            {abriendoPago ? "Abriendo el pago…" : `Pagar ${fmt(totalPedido)}`}
+          </button>
+          <a className="ck-alterno" href={`/pedido/gracias?p=${encodeURIComponent(token)}`}>
+            Ver mi pedido y otras formas de pago
+          </a>
+          <p className="ck-nota ck-nota-centro">
+            También te enviamos a tu correo el enlace para pagarlo.
+          </p>
+        </section>
+      </main>
+    );
   }
 
   if (!montado) {
@@ -769,9 +847,47 @@ export default function CheckoutApp({ catalog }) {
                   <span>Total a pagar</span>
                   <span className="mono">{fmt(total)}</span>
                 </div>
+                {pagosActivos && (
+                  <div className="ck-medios" role="radiogroup" aria-label="Medio de pago">
+                    <label className={`ck-medio ${medio === "linea" ? "is-activo" : ""}`}>
+                      <input
+                        type="radio"
+                        name="ck-medio"
+                        value="linea"
+                        checked={medio === "linea"}
+                        onChange={() => setMedio("linea")}
+                      />
+                      <span>
+                        <span className="ck-medio-nombre">Pago en línea</span>
+                        <span className="ck-medio-detalle">
+                          Tarjeta débito o crédito, PSE, Nequi, DaviPlata o Botón Bancolombia, en la
+                          ventana segura de Wompi.
+                        </span>
+                      </span>
+                    </label>
+                    <label className={`ck-medio ${medio === "transferencia" ? "is-activo" : ""}`}>
+                      <input
+                        type="radio"
+                        name="ck-medio"
+                        value="transferencia"
+                        checked={medio === "transferencia"}
+                        onChange={() => setMedio("transferencia")}
+                      />
+                      <span>
+                        <span className="ck-medio-nombre">Transferencia por WhatsApp</span>
+                        <span className="ck-medio-detalle">
+                          Guardamos tu pedido y te compartimos por WhatsApp los datos para
+                          transferir.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                )}
                 <p className="ck-nota">
-                  Al confirmar guardamos tu pedido y te llevamos a pagarlo. Los productos
-                  personalizados no tienen cambio ni retracto, salvo por garantía.
+                  {pagaEnLinea
+                    ? "Al pagar guardamos tu pedido y se abre la ventana de pago de Wompi."
+                    : "Al confirmar guardamos tu pedido y te llevamos a coordinar el pago."}{" "}
+                  Los productos personalizados no tienen cambio ni retracto, salvo por garantía.
                 </p>
                 {errorEnvio && (
                   <div className="field-error" role="alert">
@@ -784,7 +900,11 @@ export default function CheckoutApp({ catalog }) {
                   onClick={confirmar}
                   disabled={enviando || hayAgotados || !aceptaDatos}
                 >
-                  {enviando ? "Guardando tu pedido…" : "Confirmar pedido"}
+                  {enviando
+                    ? "Guardando tu pedido…"
+                    : pagaEnLinea
+                      ? `Pagar ${fmt(total)}`
+                      : "Confirmar pedido"}
                 </button>
               </div>
             )}
