@@ -1021,10 +1021,21 @@ input.adm-input { display: block; }
 .adm-estudio-tercios i:nth-child(2) { left: 66.66%; top: 0; bottom: 0; width: 1px; }
 .adm-estudio-tercios i:nth-child(3) { top: 33.33%; left: 0; right: 0; height: 1px; }
 .adm-estudio-tercios i:nth-child(4) { top: 66.66%; left: 0; right: 0; height: 1px; }
+/* La manija es un área de toque de 40px (la mínima cómoda para un dedo) y el punto
+   visible va adentro, con ::after. Antes era el punto de 16px solo, centrado SOBRE la
+   esquina: como el recorte arranca casi siempre pegado a dos bordes de la foto (la
+   caja automática ocupa el 100% de un eje, ver lib/admin/crop.ts) y el lienzo tiene
+   overflow:hidden, se veía y se podía tocar apenas un cuarto de 8px — en el celular,
+   imposible de agarrar. Ahora sobresale solo 12px hacia afuera: lo que el lienzo
+   recorte, sobran 28px hacia adentro, y el punto siempre se ve entero. */
 .adm-estudio-manija {
-  position: absolute; right: -7px; bottom: -7px; width: 16px; height: 16px;
+  position: absolute; right: -12px; bottom: -12px; width: 40px; height: 40px;
+  cursor: nwse-resize; touch-action: none;
+}
+.adm-estudio-manija::after {
+  content: ""; position: absolute; right: 14px; bottom: 14px; width: 16px; height: 16px;
   background: var(--mocha); border: 2px solid var(--cream); border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(38, 34, 29, 0.4); cursor: nwse-resize; touch-action: none;
+  box-shadow: 0 0 0 1px rgba(38, 34, 29, 0.4);
 }
 .adm-estudio-cifra { color: var(--ink-soft); }
 

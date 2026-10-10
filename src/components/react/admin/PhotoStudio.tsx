@@ -44,7 +44,31 @@ function acotar(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
 
-type Arrastre = { modo: "mover" | "redimensionar"; x0: number; y0: number; cajaInicio: CajaRecorte } | null;
+/**
+ * `touch-action: none` (admin.css) alcanza en Chrome/Firefox, pero iOS Safari a veces
+ * igual arranca su propio gesto de scroll apenas el dedo se mueve — más todavía acá,
+ * dentro de `.adm-estudio`, que tiene scroll propio — y cancela el arrastre
+ * (pointercancel) antes de que llegue un solo pointermove: la caja no se mueve ni se
+ * redimensiona. Mismo respaldo que useArrastreOrden.ts: cancelar el `touchstart` con
+ * un listener nativo NO pasivo, porque el `onTouchStart` de React se agrega pasivo y
+ * `preventDefault()` ahí no hace nada. Va fuera del componente para que la referencia
+ * sea estable y React no lo quite y lo vuelva a poner en cada render del arrastre.
+ */
+function bloquearScrollTactil(nodo: HTMLElement | null) {
+  if (!nodo) return;
+  const cancelar = (e: TouchEvent) => e.preventDefault();
+  nodo.addEventListener("touchstart", cancelar, { passive: false });
+  return () => nodo.removeEventListener("touchstart", cancelar);
+}
+
+type Arrastre = {
+  modo: "mover" | "redimensionar";
+  x0: number;
+  y0: number;
+  cajaInicio: CajaRecorte;
+  /** ancho/alto de la FOTO, en píxeles reales — ver `alMoverPuntero`. */
+  relacionFoto: number;
+} | null;
 
 export default function PhotoStudio({
   foto,
@@ -117,10 +141,19 @@ export default function PhotoStudio({
   function iniciarArrastre(e: ReactPointerEvent, modo: "mover" | "redimensionar") {
     e.stopPropagation();
     e.preventDefault();
-    if (!cajaActiva) return;
-    arrastreRef.current = { modo, x0: e.clientX, y0: e.clientY, cajaInicio: cajaActiva };
+    if (!cajaActiva || !dimensiones) return;
+    arrastreRef.current = {
+      modo,
+      x0: e.clientX,
+      y0: e.clientY,
+      cajaInicio: cajaActiva,
+      relacionFoto: dimensiones.nw / dimensiones.nh,
+    };
     window.addEventListener("pointermove", alMoverPuntero);
     window.addEventListener("pointerup", alSoltarPuntero);
+    // Si el navegador se queda el gesto igual (ver bloquearScrollTactil), sin esto los
+    // listeners quedaban colgados en `window` hasta el próximo toque.
+    window.addEventListener("pointercancel", alSoltarPuntero);
   }
 
   function alMoverPuntero(e: PointerEvent) {
@@ -139,14 +172,20 @@ export default function PhotoStudio({
         y: acotar(st.cajaInicio.y + dyPct, 0, 100 - st.cajaInicio.h),
       };
     } else {
+      // `w` es % del ANCHO de la foto y `h` % de su ALTO, así que "1:1" o "3:4" en
+      // píxeles reales no es `h = w / relacion` — eso solo vale si la foto es cuadrada.
+      // En una foto vertical u horizontal deformaba la caja, y la tienda (crop-style.js
+      // escala cada eje por separado) mostraba la foto estirada. La cuenta correcta:
+      //   (w·nw) / (h·nh) = relacion  →  h = w · (nw/nh) / relacion
+      const k = st.relacionFoto / relacion;
       // El mayor de los dos deltas manda, para que arrastrar en cualquier dirección
       // de la manija achique o agrande — no solo cuando el mouse va "hacia afuera".
-      const delta = Math.abs(dxPct) > Math.abs(dyPct) ? dxPct : dyPct * relacion;
+      const delta = Math.abs(dxPct) > Math.abs(dyPct) ? dxPct : dyPct / k;
       let w = acotar(st.cajaInicio.w + delta, TAMANO_MIN, 100 - st.cajaInicio.x);
-      let h = w / relacion;
+      let h = w * k;
       if (st.cajaInicio.y + h > 100) {
         h = 100 - st.cajaInicio.y;
-        w = h * relacion;
+        w = h / k;
       }
       nueva = { ...st.cajaInicio, w, h };
     }
@@ -157,6 +196,7 @@ export default function PhotoStudio({
     arrastreRef.current = null;
     window.removeEventListener("pointermove", alMoverPuntero);
     window.removeEventListener("pointerup", alSoltarPuntero);
+    window.removeEventListener("pointercancel", alSoltarPuntero);
   }
 
   function alTecladoCaja(e: KeyboardEvent<HTMLDivElement>) {
@@ -369,6 +409,7 @@ export default function PhotoStudio({
             />
             {cajaActiva && (
               <div
+                ref={bloquearScrollTactil}
                 className="adm-estudio-caja"
                 role="group"
                 tabIndex={0}
