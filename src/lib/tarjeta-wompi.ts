@@ -1,12 +1,13 @@
 // La tarjeta del cliente, en el navegador: validarla, cifrarla y cambiarla por un token de Wompi.
 //
-// LOS DATOS DE LA TARJETA NUNCA LLEGAN AL SERVIDOR DE LA TIENDA. Salen del navegador cifrados
-// (JWE, RSA-OAEP-256 + A256GCM, con la llave de cifrado que publica Wompi) directo a Wompi, que
-// devuelve un token (tok_…). Al servidor de la tienda solo viaja ese token, que no sirve para nada
-// fuera de una transacción de este comercio y se puede usar como máximo dos veces.
+// LOS DATOS DE LA TARJETA NUNCA LLEGAN AL SERVIDOR DE LA TIENDA. Salen del navegador por HTTPS
+// directo a Wompi (POST /tokens/cards con la llave pública), que devuelve un token (tok_…). Al
+// servidor de la tienda solo viaja ese token, que no sirve fuera de una transacción de este
+// comercio.
 //
-// Sin dependencias: el cifrado lo hace la Web Crypto API del navegador. Funciona igual en Node,
-// que es como se prueba contra los ejemplos.
+// No se usa la variante cifrada (JWE con /tokens/keys/tokenization): Wompi no permite llamarla
+// desde el navegador (sus respuestas no traen CORS), y la tarjeta tendría que pasar por nuestro
+// servidor, que es justo lo que se evita.
 
 export type Ambiente = "test" | "prod";
 
@@ -96,68 +97,6 @@ export function validarTarjeta(
 }
 
 // ============================================================================
-// Cifrado JWE (RSA-OAEP-256 + A256GCM), formato compacto
-// ============================================================================
-
-function base64url(bytes: Uint8Array): string {
-  let binario = "";
-  for (const b of bytes) binario += String.fromCharCode(b);
-  return btoa(binario).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-function pemABytes(pem: string): Uint8Array<ArrayBuffer> {
-  const b64 = pem.replace(/-----(BEGIN|END) PUBLIC KEY-----/g, "").replace(/\s+/g, "");
-  const binario = atob(b64);
-  const bytes = new Uint8Array(new ArrayBuffer(binario.length));
-  for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i);
-  return bytes;
-}
-
-/**
- * Cifra `datos` para la llave pública PEM de Wompi. Devuelve el JWE compacto:
- * header.llave_cifrada.iv.texto_cifrado.etiqueta (todo en base64url).
- */
-export async function cifrarJwe(datos: unknown, pemPublica: string): Promise<string> {
-  const sutil = globalThis.crypto.subtle;
-  const llaveRsa = await sutil.importKey(
-    "spki",
-    pemABytes(pemPublica),
-    { name: "RSA-OAEP", hash: "SHA-256" },
-    false,
-    ["encrypt"]
-  );
-
-  const cabecera = base64url(
-    new TextEncoder().encode(JSON.stringify({ alg: "RSA-OAEP-256", enc: "A256GCM" }))
-  );
-  // La llave de contenido (CEK): 256 bits al azar, una por cada cifrado.
-  const cek = globalThis.crypto.getRandomValues(new Uint8Array(32));
-  const iv = globalThis.crypto.getRandomValues(new Uint8Array(12));
-
-  const cekCifrada = new Uint8Array(await sutil.encrypt({ name: "RSA-OAEP" }, llaveRsa, cek));
-  const llaveAes = await sutil.importKey("raw", cek, { name: "AES-GCM" }, false, ["encrypt"]);
-  // AES-GCM devuelve el texto cifrado con la etiqueta de 16 bytes pegada al final.
-  const cifrado = new Uint8Array(
-    await sutil.encrypt(
-      {
-        name: "AES-GCM",
-        iv,
-        additionalData: new TextEncoder().encode(cabecera),
-        tagLength: 128,
-      },
-      llaveAes,
-      new TextEncoder().encode(JSON.stringify(datos))
-    )
-  );
-  const texto = cifrado.slice(0, cifrado.length - 16);
-  const etiqueta = cifrado.slice(cifrado.length - 16);
-
-  return [cabecera, base64url(cekCifrada), base64url(iv), base64url(texto), base64url(etiqueta)].join(
-    "."
-  );
-}
-
-// ============================================================================
 // Tokenización
 // ============================================================================
 
@@ -176,36 +115,18 @@ export async function tokenizarTarjeta(
   llavePublica: string,
   ambiente: Ambiente
 ): Promise<TokenTarjeta> {
-  const api = urlApiWompi(ambiente);
-  const autorizacion = { Authorization: `Bearer ${llavePublica}` };
-
-  let pem: string;
-  try {
-    const res = await fetch(`${api}/tokens/keys/tokenization`, { headers: autorizacion });
-    const cuerpo = (await res.json()) as { data?: { publicKey?: string } };
-    if (!res.ok || !cuerpo.data?.publicKey) throw new Error(String(res.status));
-    pem = cuerpo.data.publicKey;
-  } catch {
-    throw new Error("No pudimos conectarnos con el sistema de pagos. Intenta de nuevo.");
-  }
-
-  const payload = await cifrarJwe(
-    {
-      number: soloDigitos(t.numero),
-      cvc: soloDigitos(t.cvc),
-      exp_month: t.mes,
-      exp_year: t.anio,
-      card_holder: t.titular.trim(),
-    },
-    pem
-  );
-
   let res: Response;
   try {
-    res = await fetch(`${api}/tokens/cards`, {
+    res = await fetch(`${urlApiWompi(ambiente)}/tokens/cards`, {
       method: "POST",
-      headers: { ...autorizacion, "Content-Type": "application/json" },
-      body: JSON.stringify({ payload }),
+      headers: { Authorization: `Bearer ${llavePublica}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        number: soloDigitos(t.numero),
+        cvc: soloDigitos(t.cvc),
+        exp_month: t.mes,
+        exp_year: t.anio,
+        card_holder: t.titular.trim(),
+      }),
     });
   } catch {
     throw new Error("No pudimos conectarnos con el sistema de pagos. Intenta de nuevo.");

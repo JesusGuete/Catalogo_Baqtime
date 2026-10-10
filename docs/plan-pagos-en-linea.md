@@ -36,8 +36,8 @@ La dueña no tiene que hacer nada para que el pedido siga.
   Agregador + Compra y paga después Bancolombia) incluye tarjetas débito y crédito, PSE, Botón
   Bancolombia, Nequi, DaviPlata, QR Bancolombia, SU+ Pay y Compra y Paga Después, todos a
   2,65 % + $700 + IVA. Mercado Pago se solapa casi entero; no vale la pena tener dos.
-- Los datos de la tarjeta nunca pasan por nuestro servidor: el navegador los cifra y los
-  manda directo a Wompi, que devuelve un token (fase 3b).
+- Los datos de la tarjeta nunca pasan por nuestro servidor: el navegador los manda
+  por HTTPS directo a Wompi, que devuelve un token (fase 3b).
 - No hace falta un SDK: la API de Wompi, una firma SHA-256 y un webhook. Encaja en el Worker de
   Cloudflare sin dependencias nuevas (`crypto.subtle`).
 - **Costo (verificar al contratar):** plan general 2,65 % + $700 + IVA por transacción
@@ -210,9 +210,9 @@ Nequi y Botón Bancolombia**, más la transferencia por WhatsApp mientras siga.
   - **Botón Bancolombia:** lleva a Bancolombia y vuelve al resultado.
   - **Las dos casillas de Wompi** (reglamento y autorización de datos), obligatorias, con sus
     enlaces. Sin ellas el servidor no crea la transacción.
-- **La tarjeta nunca llega a nuestro servidor** (`tarjeta-wompi.ts`): el navegador la cifra
-  (JWE, RSA-OAEP-256 + A256GCM, con la llave de cifrado que publica Wompi) y la manda directo a
-  Wompi, que devuelve un token `tok_…`. Al servidor solo llega ese token. Con los campos en
+- **La tarjeta nunca llega a nuestro servidor** (`tarjeta-wompi.ts`): el navegador la manda
+  por HTTPS directo a Wompi (`POST /tokens/cards` con la llave pública; la variante cifrada con
+  JWE no se puede llamar desde el navegador porque Wompi no responde CORS ahí), que devuelve un token `tok_…`. Al servidor solo llega ese token. Con los campos en
   nuestra página el cumplimiento PCI pasa a **SAQ A-EP**: la página de pago debe servirse siempre
   por HTTPS y sin scripts de terceros que no hagan falta.
 - **El servidor crea la transacción** (`crearPagoDirecto` en `pagos.ts`), con la llave privada:
@@ -244,7 +244,7 @@ Nequi y Botón Bancolombia**, más la transferencia por WhatsApp mientras siga.
 - **Se quitan** `pago-widget.ts` y `/api/pagos/iniciar`: el widget de Wompi ya no se usa en
   ninguna parte.
 - Comprobado en local con llaves inventadas y respuestas simuladas: los cuatro medios y la
-  transferencia, las validaciones, el cifrado de la tarjeta, el reto de 3D Secure en el marco, un
+  transferencia, las validaciones, la tokenización de la tarjeta, el reto de 3D Secure en el marco, un
   reintento con el mismo pedido y la vista en celular. Falta la prueba real en sandbox.
 
 ### Fase 4 — Correos ✅
