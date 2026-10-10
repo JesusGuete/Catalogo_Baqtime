@@ -24,6 +24,7 @@ import {
   Selector,
   Texto,
   dinero,
+  notaComision,
 } from "./ui";
 
 // Pantalla 03 del diseño. Crea o edita un producto del BORRADOR.
@@ -319,7 +320,12 @@ export default function ProductEditor({
                   invalido={!!errores.category_key}
                 />
               </Campo>
-              <Campo etiqueta="PRECIO" ayuda="pesos enteros" error={errores.price}>
+              <Campo
+                etiqueta="PRECIO"
+                ayuda="pesos enteros"
+                nota={notaComision(form.price)}
+                error={errores.price}
+              >
                 <Numero
                   value={form.price}
                   onChange={(v) => actualizar("price", v)}

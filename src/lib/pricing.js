@@ -10,6 +10,65 @@ export function fmt(n) {
 }
 
 /**
+ * LA COMISIÓN DE WOMPI, plan "Avanzado Agregador": 2,65 % + $700 por transacción exitosa, más
+ * IVA sobre esa comisión. Es la misma para todos los medios en línea (tarjetas, PSE, Nequi…).
+ * Si algún día se cambia de plan, se cambia esto y nada más.
+ *
+ * Los precios se suben para que la cubran (docs/plan-precios-con-comision.md):
+ *   * el PORCENTAJE va en el precio de cada producto (ya está en la base, migración 028);
+ *   * la parte FIJA va en el envío, porque Wompi la cobra una vez por pedido y cada pedido
+ *     tiene exactamente un envío. Puesta en cada producto, un pedido de tres bolsos la pagaría
+ *     tres veces.
+ * Con eso, en cualquier pedido: lo que paga el cliente − la comisión ≥ lo que se cobraba antes.
+ */
+export const COMISION_WOMPI = { porcentaje: 0.0265, fijo: 700, iva: 0.19 };
+
+/** La parte proporcional de la comisión, con su IVA: 3,1535 % de lo que se cobra. */
+const PROPORCION = COMISION_WOMPI.porcentaje * (1 + COMISION_WOMPI.iva);
+/** La parte fija de la comisión, con su IVA: $833 por pedido. */
+const FIJO = COMISION_WOMPI.fijo * (1 + COMISION_WOMPI.iva);
+
+/**
+ * Siempre hacia arriba, para que el redondeo nunca deje la comisión sin cubrir. El margen
+ * descuenta el error de los decimales: sin él, un 124000.0000001 subiría a 125.000.
+ */
+function redondearArriba(valor, paso) {
+  return Math.ceil(valor / paso - 1e-9) * paso;
+}
+
+/**
+ * La tarifa de envío que paga el cliente: lo que cobra la transportadora más la comisión
+ * completa (la parte fija y el porcentaje sobre todo eso), redondeado a la centena.
+ * $10.000 → $11.200.
+ *
+ * @param {number} tarifa pesos enteros, lo que cotizó la transportadora
+ */
+export function envioConComision(tarifa) {
+  return redondearArriba((tarifa + FIJO) / (1 - PROPORCION), 100);
+}
+
+/**
+ * Un cargo que se suma a un envío ya cobrado (el bolso adicional): solo el porcentaje, porque la
+ * parte fija ya la cubrió el envío. Redondeado a la centena. $4.000 → $4.200.
+ *
+ * @param {number} cargo pesos enteros
+ */
+export function cargoEnvioConComision(cargo) {
+  return redondearArriba(cargo / (1 - PROPORCION), 100);
+}
+
+/**
+ * Lo que queda de un precio de producto (o de un recargo) después del porcentaje de Wompi. Es
+ * lo que el panel muestra junto a cada precio: "Con Wompi recibes ≈ $120.090". La parte fija no
+ * se descuenta acá porque la paga el envío.
+ *
+ * @param {number} precio pesos enteros
+ */
+export function recibesConWompi(precio) {
+  return Math.floor(precio * (1 - PROPORCION));
+}
+
+/**
  * Recargo por iniciales bordadas, leído de la CATEGORÍA.
  *
  * Antes esto era `category === "tote" && count > 3 ? 10000 : 0`, escrito a mano en
