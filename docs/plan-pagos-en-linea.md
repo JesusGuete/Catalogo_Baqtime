@@ -222,8 +222,8 @@ Nequi y Botón Bancolombia**, más la transferencia por WhatsApp mientras siga.
 - **3D Secure** en las tarjetas: se pide siempre (`is_three_ds`), con los datos del navegador
   que exige el banco. Si el banco pide un reto, se muestra dentro de la página, en un marco de
   500 px de alto. `WOMPI_3DS=0` lo apaga si Wompi no lo tiene activo para el comercio.
-  - **Pendiente:** Wompi exige mostrar el **logo de Mastercard ID Check** durante la
-    verificación. Hoy hay un texto en su lugar; falta el archivo oficial del logo.
+  - Wompi exige mostrar el logo de Mastercard ID Check durante la verificación: va el símbolo
+    oficial de Mastercard (`public/assets/img/mastercard.svg`, del brand center) con "ID CHECK".
 - **Endpoints nuevos:**
   - `GET /api/pagos/opciones`: llave pública, ambiente, enlaces de las condiciones, cuotas y
     bancos de PSE. Nada de ningún cliente; se cachea 5 minutos.

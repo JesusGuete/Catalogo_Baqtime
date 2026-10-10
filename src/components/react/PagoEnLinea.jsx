@@ -309,7 +309,11 @@ export default function PagoEnLinea({
     const reto = tresDs?.paso === "CHALLENGE";
     return (
       <div className="pl-3ds" role="status">
-        <p className="pl-3ds-marca mono">VERIFICACIÓN SEGURA · MASTERCARD ID CHECK · VISA SECURE</p>
+        {/* Wompi exige el logo de Mastercard ID Check a la vista durante la verificación. */}
+        <p className="pl-3ds-marca">
+          <img src="/assets/img/mastercard.svg" alt="Mastercard" width="52" height="37" />
+          <span className="mono">ID CHECK · VISA SECURE</span>
+        </p>
         <p className="pl-espera-titulo">Tu banco está verificando la compra</p>
         <p className="pl-espera-txt">
           {reto
