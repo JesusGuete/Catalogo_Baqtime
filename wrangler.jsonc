@@ -23,6 +23,11 @@
   "compatibility_date": "2025-07-01",
   "compatibility_flags": ["nodejs_compat"],
 
+  // Logs del Worker en Cloudflare (Workers → catalogo-baqtime → Observability). Ahí quedan los
+  // console.error de pagos ([pagos], [wompi]) para saber qué pasó con un pago. Va acá y no solo
+  // en el dashboard: cada deploy desde GitHub aplica esta configuración.
+  "observability": { "logs": { "enabled": true, "invocation_logs": true } },
+
   // CONSERVAR LAS VARIABLES QUE SE PONEN EN EL PANEL DE CLOUDFLARE.
   //
   // Por defecto este archivo manda: en cada deploy, wrangler BORRA las variables de texto que
