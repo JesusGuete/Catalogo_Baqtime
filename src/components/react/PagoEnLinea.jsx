@@ -26,26 +26,37 @@ import {
 //   - Nequi: "acepta la notificación en tu celular" y espera.
 //   - Tarjeta: si el banco pide 3D Secure, muestra la verificación del banco acá mismo.
 
+// `logos`: las marcas que se ven a la derecha de cada medio. Solo archivos oficiales de cada
+// marca en public/assets/img; si falta alguno, ese logo no se muestra y el medio sigue igual.
 const MEDIOS = [
   {
     id: "CARD",
     nombre: "Tarjeta débito o crédito",
     detalle: "Visa, Mastercard, American Express o Diners.",
+    logos: [
+      { src: "/assets/img/visa.svg", alt: "Visa" },
+      { src: "/assets/img/mastercard.svg", alt: "Mastercard" },
+      { src: "/assets/img/amex.svg", alt: "American Express" },
+      { src: "/assets/img/diners.svg", alt: "Diners Club" },
+    ],
   },
   {
     id: "PSE",
     nombre: "PSE",
     detalle: "Débito desde tu cuenta de ahorros o corriente, en cualquier banco.",
+    logos: [{ src: "/assets/img/pse.png", alt: "PSE" }],
   },
   {
     id: "NEQUI",
     nombre: "Nequi",
     detalle: "Aceptas el pago con una notificación en tu celular.",
+    logos: [{ src: "/assets/img/nequi.png", alt: "Nequi" }],
   },
   {
     id: "BANCOLOMBIA_TRANSFER",
     nombre: "Botón Bancolombia",
     detalle: "Pagas desde tu cuenta Bancolombia, en la página del banco.",
+    logos: [{ src: "/assets/img/bancolombia.png", alt: "Bancolombia" }],
   },
 ];
 
@@ -385,9 +396,22 @@ export default function PagoEnLinea({
                   setMensaje("");
                 }}
               />
-              <span>
+              <span className="ck-medio-texto">
                 <span className="ck-medio-nombre">{m.nombre}</span>
                 <span className="ck-medio-detalle">{m.detalle}</span>
+              </span>
+              <span className="ck-medio-logos">
+                {m.logos.map((l) => (
+                  <img
+                    key={l.src}
+                    src={l.src}
+                    alt={l.alt}
+                    height="26"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                ))}
               </span>
             </label>
 
