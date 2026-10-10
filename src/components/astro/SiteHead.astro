@@ -19,6 +19,11 @@ interface Props {
   // páginas no los declaran.
   imageSize?: { width: number; height: number };
   type?: "website" | "product";
+  /**
+   * Para páginas que no tiene sentido que aparezcan en Google (la de compra): se pueden
+   * seguir sus enlaces, pero no se indexan.
+   */
+  noindex?: boolean;
 }
 
 const {
@@ -29,6 +34,7 @@ const {
   imageAlt,
   imageSize,
   type = "website",
+  noindex = false,
 } = Astro.props;
 ---
 
@@ -37,6 +43,7 @@ const {
 <title>{title}</title>
 <meta name="description" content={description} />
 <link rel="canonical" href={url} />
+{noindex && <meta name="robots" content="noindex, follow" />}
 
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="icon" type="image/x-icon" href="/favicon.ico" />

@@ -1,0 +1,47 @@
+---
+// La página de compra: el carrito y, después, los datos del cliente (CheckoutApp.jsx).
+//
+// Antes la compra era un modal encima de la tienda. Como página propia se puede llegar desde
+// cualquier lado ("Finalizar compra" en la ficha o en el carrito lateral), el "atrás" del
+// navegador funciona entre los pasos, y hay espacio para el resumen al lado del formulario.
+//
+// El carrito NO viene en el HTML: vive en el localStorage del navegador. Lo que sí viene es el
+// catálogo, para mostrar las fotos y los precios de hoy. Por eso la página se puede cachear en
+// el borde igual que el catálogo: no lleva nada de ningún cliente.
+import Header from "../components/astro/Header.astro";
+import Footer from "../components/astro/Footer.astro";
+import WhatsappWidget from "../components/react/WhatsappWidget.jsx";
+import SiteHead from "../components/astro/SiteHead.astro";
+import CheckoutApp from "../components/react/CheckoutApp.jsx";
+import { loadCatalog } from "../lib/catalog";
+import "../styles/site.css";
+
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, s-maxage=60, stale-while-revalidate=300"
+);
+
+const catalog = await loadCatalog();
+
+const url = new URL("/checkout", Astro.site).href;
+const imagen = new URL("/assets/img/og-image.png", Astro.site).href;
+---
+
+<html lang="es-CO">
+  <head>
+    <SiteHead
+      title="Finalizar compra — Baqtime"
+      description="Revisa tu carrito y completa tus datos de entrega."
+      url={url}
+      image={imagen}
+      imageAlt="Baqtime"
+      noindex
+    />
+  </head>
+  <body>
+    <Header categorias={catalog.CATS} destacados={catalog.products.slice(0, 6)} />
+    <CheckoutApp client:load catalog={catalog} />
+    <Footer />
+    <WhatsappWidget client:load />
+  </body>
+</html>

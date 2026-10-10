@@ -78,7 +78,7 @@ export function whatsappUrl(message) {
  * busque una palabra concreta y que tenga que interpretar una descripción. Si alguno se
  * renombra en la tienda, hay que cambiarlo también acá:
  *   ProductView.jsx   → "Finalizar compra"
- *   Checkout.jsx      → "Confirmar pedido"
+ *   CheckoutApp.jsx   → "Confirmar pedido"
  *   pedido/gracias    → "Confirmar pago por WhatsApp"
  *
  * Los asteriscos son la negrita de WhatsApp. Acá SÍ se usan, al contrario que en

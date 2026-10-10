@@ -2,14 +2,22 @@ import { useEffect, useState } from "react";
 import CatalogExplorer from "./CatalogExplorer.jsx";
 import ProductView from "./ProductView.jsx";
 import CartPanel from "./CartPanel.jsx";
-import Checkout from "./Checkout.jsx";
 import { useCart } from "../../lib/useCart.js";
 import { rutaProducto } from "../../lib/product-url.ts";
 
-// Isla principal de la tienda. Junta catálogo + vista de producto + carrito +
-// checkout porque los cuatro comparten estado (qué producto está abierto, qué hay
-// en el carrito, qué panel está visible). En la versión vanilla ese estado vivía
-// repartido entre state.js y clases CSS en el DOM.
+// Isla principal de la tienda. Junta catálogo + vista de producto + carrito porque
+// comparten estado (qué producto está abierto, qué hay en el carrito, qué panel está
+// visible). En la versión vanilla ese estado vivía repartido entre state.js y clases CSS
+// en el DOM.
+//
+// La compra ya no vive acá: es una página propia, /checkout (CheckoutApp.jsx). Los botones
+// de "Finalizar compra" llevan allá; el carrito se comparte por localStorage.
+
+/** La página de compra. El carrito ya quedó guardado en localStorage (cart-store.js). */
+function irALaCompra() {
+  window.location.href = "/checkout";
+}
+
 /**
  * @param {{
  *   catalog: import("../../lib/catalog").Catalogo,
@@ -19,8 +27,8 @@ import { rutaProducto } from "../../lib/product-url.ts";
  */
 export default function ShopApp({ catalog, initialProductId = null, mostrarCatalogo = true }) {
   const items = useCart();
-  // Tres modos: la portada (sin catálogo: vive en /catalogo, pero el carrito y el
-  // checkout siguen haciendo falta acá), /catalogo (la grilla completa) y
+  // Tres modos: la portada (sin catálogo: vive en /catalogo, pero el carrito sigue
+  // haciendo falta acá), /catalogo (la grilla completa) y
   // /producto/[slug] (el producto ES la página).
   const isProductPage = Boolean(initialProductId);
   // En /producto/[slug] la isla arranca con ese producto ya abierto. Astro renderiza
@@ -30,7 +38,6 @@ export default function ShopApp({ catalog, initialProductId = null, mostrarCatal
     () => catalog.products.find((p) => p.id === initialProductId) ?? null
   );
   const [cartOpen, setCartOpen] = useState(false);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   // El botón del carrito vive en el encabezado (isla CartBadge, aparte), así que
   // pide abrir el panel mediante un evento, igual que el carrusel de colecciones.
@@ -117,12 +124,9 @@ export default function ShopApp({ catalog, initialProductId = null, mostrarCatal
   useEffect(() => {
     if (isProductPage) return;
     function alVolver() {
-      // Se cierra TODO lo que está encima del catálogo, no solo la ficha. El checkout se
-      // abre sobre ella sin cerrarla, así que cerrar únicamente la ficha dejaría el
-      // formulario de envío flotando sobre la grilla, sin el producto que lo explicaba.
-      // "Atrás" significa una sola cosa acá: volver al catálogo.
+      // Se cierra TODO lo que está encima del catálogo, no solo la ficha: "atrás"
+      // significa una sola cosa acá, volver al catálogo.
       setOpenProduct(null);
-      setCheckoutOpen(false);
       setCartOpen(false);
     }
     window.addEventListener("popstate", alVolver);
@@ -156,10 +160,7 @@ export default function ShopApp({ catalog, initialProductId = null, mostrarCatal
                 }
               : abrirProducto
           }
-          // El checkout se abre ENCIMA de la ficha, sin cerrarla: al volver, el cliente
-          // sigue en el producto que estaba mirando. Cerrarla no es opción en
-          // /producto/[slug], donde cerrar significa irse a la portada.
-          onCheckout={() => setCheckoutOpen(true)}
+          onCheckout={irALaCompra}
         />
       )}
 
@@ -169,19 +170,7 @@ export default function ShopApp({ catalog, initialProductId = null, mostrarCatal
           products={catalog.products}
           categories={catalog.categories}
           onClose={() => setCartOpen(false)}
-          onCheckout={() => {
-            setCartOpen(false);
-            setCheckoutOpen(true);
-          }}
-        />
-      )}
-
-      {checkoutOpen && (
-        <Checkout
-          items={items}
-          products={catalog.products}
-          categories={catalog.categories}
-          onClose={() => setCheckoutOpen(false)}
+          onCheckout={irALaCompra}
         />
       )}
     </>
