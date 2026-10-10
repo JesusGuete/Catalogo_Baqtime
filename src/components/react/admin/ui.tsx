@@ -10,6 +10,7 @@
 
 import type { ReactNode, ChangeEvent } from "react";
 import type { AdminError } from "../../../lib/supabase/errors";
+import { recibesConWompi } from "../../../lib/pricing.js";
 
 // ============================================================================
 // Texto y estructura
@@ -133,11 +134,13 @@ interface CampoProps {
   etiqueta: string;
   /** Aclaración corta que va en la misma línea de la etiqueta, en gris. */
   ayuda?: string;
+  /** Una línea bajo el campo, en gris: un dato que depende de lo que se escribió. */
+  nota?: string;
   error?: string;
   children: ReactNode;
 }
 
-export function Campo({ etiqueta, ayuda, error, children }: CampoProps) {
+export function Campo({ etiqueta, ayuda, nota, error, children }: CampoProps) {
   return (
     <label className="adm-campo">
       <span className="adm-mono adm-campo-label">
@@ -145,6 +148,7 @@ export function Campo({ etiqueta, ayuda, error, children }: CampoProps) {
         {ayuda && <span className="adm-campo-ayuda"> · {ayuda}</span>}
       </span>
       {children}
+      {nota && <span className="adm-campo-nota">{nota}</span>}
       {error && <span className="adm-campo-error">{error}</span>}
     </label>
   );
@@ -380,3 +384,13 @@ export function Vacio({ titulo, children }: { titulo: string; children?: ReactNo
 
 /** Formato de pesos consistente en todo el panel. */
 export const dinero = (n: number): string => "$ " + n.toLocaleString("es-CO");
+
+/**
+ * "Con Wompi recibes ≈ $ 120.090": lo que queda de un precio después del porcentaje de Wompi
+ * (recibesConWompi() en pricing.js). Va bajo cada precio que se escribe en el panel, para que
+ * un producto nuevo no se publique por debajo de lo que se quiere recibir sin notarlo.
+ * Ver docs/plan-precios-con-comision.md.
+ */
+export function notaComision(precio: number | null | undefined): string | undefined {
+  return precio && precio > 0 ? `Con Wompi recibes ≈ ${dinero(recibesConWompi(precio))}` : undefined;
+}

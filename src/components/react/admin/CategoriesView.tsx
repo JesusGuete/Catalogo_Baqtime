@@ -20,6 +20,7 @@ import {
   Texto,
   Vacio,
   dinero,
+  notaComision,
 } from "./ui";
 
 // Pantalla 05 del diseño. Es la que justifica 008_category_rules.sql.
@@ -340,7 +341,11 @@ export default function CategoriesView({
                   invalido={!!errores.label}
                 />
               </Campo>
-              <Campo etiqueta="PRECIO BASE" error={errores.default_price}>
+              <Campo
+                etiqueta="PRECIO BASE"
+                nota={notaComision(form.default_price)}
+                error={errores.default_price}
+              >
                 <Numero
                   value={form.default_price}
                   onChange={(v) => actualizar("default_price", v ?? 0)}
@@ -406,7 +411,11 @@ export default function CategoriesView({
                     invalido={!!errores.free_initials}
                   />
                 </Campo>
-                <Campo etiqueta="RECARGO" error={errores.extra_initials_price}>
+                <Campo
+                  etiqueta="RECARGO"
+                  nota={notaComision(form.extra_initials_price)}
+                  error={errores.extra_initials_price}
+                >
                   <Numero
                     value={form.extra_initials_price}
                     onChange={(v) => actualizar("extra_initials_price", v ?? 0)}

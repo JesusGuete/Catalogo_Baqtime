@@ -280,6 +280,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
 .adm-campo-label { font-size: 10px; color: var(--ink-soft); letter-spacing: 0.06em; }
 .adm-campo-ayuda { color: var(--ink-faint); }
 .adm-campo-error { font-size: 11px; color: var(--vino); line-height: 1.45; }
+.adm-campo-nota { font-size: 11px; color: var(--ink-soft); line-height: 1.45; }
 
 .adm-fila-campos { display: flex; gap: 16px; flex-wrap: wrap; }
 
