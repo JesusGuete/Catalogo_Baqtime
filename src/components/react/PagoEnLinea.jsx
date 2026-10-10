@@ -49,6 +49,12 @@ const MEDIOS = [
   },
 ];
 
+// El logo de la franquicia junto al número, apenas se reconoce. Solo archivos oficiales de cada
+// marca (en public/assets/img); mientras no haya archivo, se muestra el nombre.
+const LOGOS_FRANQUICIA = {
+  MASTERCARD: "/assets/img/mastercard.svg",
+};
+
 const TIPOS_DOCUMENTO = [
   { id: "CC", nombre: "Cédula de ciudadanía" },
   { id: "CE", nombre: "Cédula de extranjería" },
@@ -397,7 +403,12 @@ export default function PagoEnLinea({
                       value={tarjeta.numero}
                       onChange={(e) => cambiar(setTarjeta, "numero", formatearNumero(e.target.value))}
                     />
-                    {marca && <span className="pl-marca mono">{marca}</span>}
+                    {marca &&
+                      (LOGOS_FRANQUICIA[marca] ? (
+                        <img className="pl-marca-logo" src={LOGOS_FRANQUICIA[marca]} alt={marca} />
+                      ) : (
+                        <span className="pl-marca mono">{marca}</span>
+                      ))}
                   </div>
                 </Campo>
                 <div className="ck-fila2 pl-fila-corta">
