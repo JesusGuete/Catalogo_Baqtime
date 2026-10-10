@@ -319,12 +319,10 @@ export function armarCorreoPedido(p: DatosCorreoPedido, puedeResponder: boolean)
   const siguientePaso = p.pagar
     ? "Tu pedido quedó guardado. El siguiente paso es pagarlo: con tarjeta, PSE, Nequi o Botón Bancolombia, desde la página."
     : "Tu pedido quedó guardado. El siguiente paso es coordinar el pago por WhatsApp.";
-  // Con pago en línea, "Pagar ahora" lleva a la página de gracias, que muestra el estado y el
-  // botón; por eso no hace falta además "Ver el estado de mi pedido".
   const botones = p.pagar
     ? [
         { href: p.pagar, texto: "Pagar ahora", principal: true },
-        { href: enlaceWhatsapp, texto: "Prefiero pagar por transferencia (WhatsApp)", principal: false },
+        { href: p.seguimiento, texto: "Ver el estado de mi pedido", principal: false },
       ]
     : [
         { href: enlaceWhatsapp, texto: "Confirmar pago por WhatsApp", principal: true },

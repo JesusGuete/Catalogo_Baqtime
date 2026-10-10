@@ -77,7 +77,7 @@ export function armarCorreoRecordatorio(
     botones: p.pagar
       ? [
           { href: p.pagar, texto: "Pagar ahora", principal: true },
-          { href: enlaceWhatsapp, texto: "Prefiero pagar por transferencia (WhatsApp)", principal: false },
+          { href: p.seguimiento, texto: "Ver el estado de mi pedido", principal: false },
         ]
       : [
           { href: enlaceWhatsapp, texto: "Confirmar pago por WhatsApp", principal: true },

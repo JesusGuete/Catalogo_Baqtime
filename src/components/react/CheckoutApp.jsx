@@ -161,8 +161,8 @@ function IconoQuitar() {
  *   pagosActivos?: boolean,
  * }} props
  *   `pagosActivos`: los pagos en línea están encendidos (pagosEnLineaActivos(), src/lib/pagos.ts).
- *   Con ellos, el paso de pago muestra los medios de Wompi ahí mismo (PagoEnLinea.jsx) y la
- *   transferencia por WhatsApp como uno más; sin ellos, "Confirmar pedido" lleva a la página de
+ *   Con ellos, el paso de pago muestra los medios de Wompi ahí mismo (PagoEnLinea.jsx); sin
+ *   ellos, "Confirmar pedido" lleva a la página de
  *   gracias y el pago se coordina por WhatsApp, como siempre.
  */
 export default function CheckoutApp({ catalog, pagosActivos = false }) {
@@ -346,7 +346,7 @@ export default function CheckoutApp({ catalog, pagosActivos = false }) {
     clearCart();
   }
 
-  // Transferencia por WhatsApp (o todo el pago, con los pagos en línea apagados): guarda el pedido
+  // Con los pagos en línea apagados, el pago se coordina por WhatsApp: guarda el pedido
   // y lleva a la página de gracias, que tiene el botón de WhatsApp.
   async function confirmarTransferencia() {
     if (!items.length || enviando || !aceptaDatos || hayAgotados) return;
@@ -892,12 +892,6 @@ export default function CheckoutApp({ catalog, pagosActivos = false }) {
                     }
                     telefono={personales.phone}
                     documento={personales.doc}
-                    transferencia={{
-                      nombre: "Transferencia por WhatsApp",
-                      detalle:
-                        "Guardamos tu pedido y te compartimos por WhatsApp los datos para transferir.",
-                      contenido: botonTransferencia,
-                    }}
                   />
                 ) : (
                   botonTransferencia

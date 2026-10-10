@@ -387,6 +387,8 @@ El 2026-10-10:
 6. **Pagar dentro de la tienda**, sin la ventana de Wompi, con los campos de la tarjeta en la
    página ("como Adidas"). Medios: tarjeta débito o crédito, PSE, Nequi y Botón Bancolombia.
    DaviPlata y QR quedan por fuera (no se ofrecen sin la ventana de Wompi).
+7. **Se quita la transferencia por WhatsApp** (2026-10-10), ya con los pagos en línea
+   funcionando en producción. Solo vuelve si se apaga `PAGOS_EN_LINEA`.
 
 ## Orden de entrega (un PR por paso)
 

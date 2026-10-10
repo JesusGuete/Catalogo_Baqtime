@@ -25,7 +25,6 @@ import NumeroPedido from "../../../components/astro/NumeroPedido.astro";
 import ResumenPedido from "../../../components/astro/ResumenPedido.astro";
 import { obtenerPedido, cabecerasPrivadas } from "../../../lib/pedido";
 import { pagosEnLineaActivos, procesarTransaccion, type ResultadoProceso } from "../../../lib/pagos";
-import { buildOrderMessage, whatsappUrl } from "../../../lib/whatsapp.js";
 import "../../../styles/site.css";
 
 export const prerender = false;
@@ -96,7 +95,6 @@ const urlRecarga = `${Astro.url.pathname}?${new URLSearchParams({
 }).toString()}`;
 
 const puedePagar = pagosEnLineaActivos(Astro.url.hostname) && pedido.status === "pendiente_pago";
-const enlaceWhatsapp = whatsappUrl(buildOrderMessage(pedido));
 const nombre = pedido.customer_name.split(" ")[0];
 ---
 
@@ -194,9 +192,6 @@ const nombre = pedido.customer_name.split(" ")[0];
           (vista === "rechazado" || vista === "sin_pago") && puedePagar && (
             <div class="pag-acciones">
               <BotonPagar token={token} texto="Intentar de nuevo" />
-              <a class="pag-alterno" href={enlaceWhatsapp}>
-                Prefiero pagar por transferencia (WhatsApp)
-              </a>
             </div>
           )
         }
@@ -265,11 +260,6 @@ const nombre = pedido.customer_name.split(" ")[0];
         flex-direction: column;
         gap: 12px;
         margin-bottom: 20px;
-      }
-      .pag-alterno {
-        font-size: 13px;
-        color: var(--ink-soft);
-        text-align: center;
       }
       .pag-correo {
         margin: 0 0 16px;
